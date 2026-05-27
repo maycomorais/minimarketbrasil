@@ -8,12 +8,9 @@
 
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Rubik', sans-serif; -webkit-tap-highlight-color:transparent; }
 html { height: 100%; }
-body { 
-    background: var(--bg); 
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    /* padding-bottom: 80px; espaço para cart-float */
+body {
+  background: var(--bg);
+  min-height: 100vh;
 }
 main.menu-container { flex: 1; }
 
@@ -402,6 +399,16 @@ main.menu-container { flex: 1; }
   -webkit-tap-highlight-color: transparent;
 }
 .btn-comprar:active { opacity: 0.82; }
+
+/* Hover no desktop */
+@media (hover: hover) {
+  .product-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  }
+  .product-item:hover .prod-img { transform: scale(1.06); }
+  .btn-comprar:hover { filter: brightness(0.9); }
+}
 
 /* ocultar desc (não cabe no card pequeno) */
 .prod-info { display: none; }
@@ -1215,97 +1222,147 @@ footer {
    ═══════════════════════════════════════════ */
 
 /* Mobile first: sidebar oculta, layout normal */
-.desktop-layout {
-    display: block;
-    max-width: 100%;
-}
-.desktop-left { display: block; }
-.desktop-right { display: none; }  /* OCULTO no mobile */
+/* ══════════════════════════════════════════════════════════════
+   LAYOUT DESKTOP — header sticky + grid com scroll normal
+   ══════════════════════════════════════════════════════════════ */
 
-/* Desktop: grid de 2 colunas */
+.app-header.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+}
+
+/* Mobile: layout normal, scroll da página */
+.desktop-layout { display: block; width: 100%; }
+.desktop-left   { display: block; }
+.desktop-right  { display: none; }
+
+/* ── Desktop ≥ 1024px ──────────────────────────────────────── */
 @media (min-width: 1024px) {
-    .desktop-layout {
-        display: grid;
-        grid-template-columns: 1fr 340px;
-        max-width: 1200px;
-        margin: 0 auto;
-        gap: 0;
-        align-items: start;
-    }
-    .desktop-left {
-        min-width: 0;
-    }
-    .desktop-right {
-        display: flex;
-        flex-direction: column;
-        position: sticky;
-        top: 80px;
-        max-height: calc(100vh - 100px);
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-        overflow: hidden;
-        margin: 16px 16px 0 0;
-    }
-    /* Esconde o botão flutuante no desktop */
-    .cart-float { display: none !important; }
+
+  /* Grid 2 colunas — scroll normal da página (sem overflow:hidden no body) */
+  .desktop-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    align-items: start;
+    width: 100%;
+  }
+
+  /* Coluna de conteúdo — scroll normal */
+  .desktop-left {
+    min-width: 0;
+    padding: 0 12px 40px 20px;
+  }
+
+  /* Carrinho fica sticky conforme página scrolla */
+  .desktop-right {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 88px;                      /* logo abaixo do header */
+    height: calc(100vh - 100px);
+    background: #fff;
+    border-left: 1px solid #f0f0f0;
+    overflow: hidden;
+  }
+
+  /* Esconde botão flutuante */
+  .cart-float { display: none !important; }
+
+  /* Grid: 3 colunas */
+  .product-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+  /* Cards maiores */
+  .prod-img-wrap { height: 140px; }
+  .prod-title    { font-size: 0.84rem; }
+  .prod-price    { font-size: 0.9rem; }
+  .btn-comprar   { font-size: 0.78rem; padding: 8px 6px; }
+
+  /* Hamburger sticky dentro da coluna */
+  .cat-hamburger-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #fff;
+    padding: 8px 0;
+    margin-bottom: 4px;
+  }
+
+  /* Banner */
+  .banner-area { border-radius: 16px; height: 180px; margin: 12px 0; }
 }
 
+/* ── Desktop largo ≥ 1440px: 4 colunas ────────────────────── */
+@media (min-width: 1440px) {
+  .desktop-layout { grid-template-columns: 1fr 320px; }
+  .product-grid   { grid-template-columns: repeat(4, 1fr); }
+  .prod-img-wrap  { height: 150px; }
+}
+
+/* ── Carrinho lateral — componentes ───────────────────────── */
 .desktop-cart-header {
-    background: var(--primary);
-    color: white;
-    padding: 16px 20px;
-    font-weight: 700;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  background: var(--primary);
+  color: #fff;
+  padding: 14px 18px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 .desktop-cart-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 12px;
-    max-height: 380px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
 }
+.desktop-cart-body::-webkit-scrollbar { width: 4px; }
+.desktop-cart-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
 .desktop-cart-empty {
-    text-align: center;
-    color: #bbb;
-    padding: 40px 20px;
+  text-align: center;
+  color: #bbb;
+  padding: 36px 20px;
 }
-.desktop-cart-empty i { font-size: 2rem; display: block; margin-bottom: 10px; }
-.desktop-cart-empty small { font-size: 0.78rem; }
+.desktop-cart-empty i     { font-size: 2rem; display: block; margin-bottom: 10px; }
+.desktop-cart-empty small { font-size: 0.75rem; }
+
 .desktop-cart-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 8px 0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.85rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 7px 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.82rem;
 }
-.desktop-cart-item-name { color: #333; font-weight: 600; flex: 1; }
+.desktop-cart-item-name  { color: #333; font-weight: 600; flex: 1; }
 .desktop-cart-item-price { color: var(--primary); font-weight: 700; white-space: nowrap; margin-left: 8px; }
+
 .desktop-cart-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 20px;
-    border-top: 2px solid #f0f0f0;
-    font-weight: 700;
-    font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  border-top: 2px solid #f0f0f0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex-shrink: 0;
 }
 .desktop-cart-btn {
-    margin: 0;
-    padding: 14px 20px;
-    background: var(--primary);
-    color: white;
-    border: none;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.2s;
+  padding: 14px 20px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s;
+  flex-shrink: 0;
 }
-.desktop-cart-btn:hover:not(:disabled) { background: #c0392b; }
-.desktop-cart-btn:disabled { background: #ccc; cursor: not-allowed; }
+.desktop-cart-btn:hover:not(:disabled) { filter: brightness(0.92); }
+.desktop-cart-btn:disabled { background: #d1d5db; cursor: not-allowed; }
 
 /* ═══════════════════════════════════════════
    🍕 PIZZA BUILDER — UX Passo a Passo

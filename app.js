@@ -609,7 +609,9 @@ function mostrarIndicadorAgendamento() {
 // 4b. RENDER DE CARD DE PRODUTO (global — usada por renderMenu e _renderSecaoPaginada)
 // ==========================================
 function renderProdutoDiv(item) {
-  const img = item.img || "https://cdn-icons-png.flaticon.com/512/2252/2252075.png";
+  // Placeholder SVG — caixa limpa sem imagem externa
+  const PLACEHOLDER_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f3f4f6'/%3E%3Crect x='60' y='55' width='80' height='65' rx='6' fill='%23d1d5db'/%3E%3Ccircle cx='82' cy='76' r='9' fill='%23e5e7eb'/%3E%3Cpolygon points='60,120 90,88 110,105 135,78 160,120' fill='%23d1d5db'/%3E%3C/svg%3E`;
+  const img = item.img && item.img.trim() && !item.img.includes('undefined') ? item.img : PLACEHOLDER_SVG;
   const cfg  = item.montagem;
 
   // ── Detecta tipo de produto ─────────────────────────────
