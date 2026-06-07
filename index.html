@@ -473,32 +473,18 @@ window.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
 
-    <!-- ── HAMBURGER + GAVETA DE CATEGORIAS ──────────────────── -->
-    <div class="cat-hamburger-bar" id="cat-hamburger-bar">
-      <button class="cat-hamburger-btn" id="cat-hamburger-btn"
-        onclick="catDrawerAbrir()" aria-label="Categorias" aria-expanded="false">
-        <span class="cat-hamburger-icon">
-          <span></span><span></span><span></span>
-        </span>
-        <span class="cat-hamburger-arrow" id="cat-hamburger-arrow">›</span>
-      </button>
-      <!-- Pill da categoria ativa -->
-      <span class="cat-ativa-pill" id="cat-ativa-pill"></span>
+    <!-- ── MENU INLINE DE CATEGORIAS (scroll horizontal) ──────── -->
+    <div class="cat-inline-bar" id="cat-inline-bar">
+      <!-- Pills injetados pelo JS via renderMenu() -->
+      <div class="cat-inline-list" id="category-nav"></div>
     </div>
 
-    <!-- Overlay escuro que fecha a gaveta ao clicar fora -->
-    <div class="cat-drawer-overlay" id="cat-drawer-overlay"
-      onclick="catDrawerFechar()"></div>
-
-    <!-- Gaveta lateral de categorias -->
-    <nav class="cat-drawer" id="cat-drawer" aria-hidden="true">
-      <div class="cat-drawer-header">
-        <span>📂 Categorias</span>
-        <button class="cat-drawer-close" onclick="catDrawerFechar()"
-          aria-label="Fechar">✕</button>
-      </div>
-      <!-- Pills injetados pelo JS via renderMenu() -->
-      <div class="cat-drawer-list" id="category-nav"></div>
+    <!-- Overlay e drawer removidos — menu agora é inline -->
+    <!-- Mantemos os elementos ocultos para compatibilidade com catDrawerFechar() no JS -->
+    <div class="cat-drawer-overlay" id="cat-drawer-overlay" style="display:none!important"></div>
+    <nav class="cat-drawer" id="cat-drawer" style="display:none!important" aria-hidden="true">
+      <div class="cat-drawer-header" style="display:none"></div>
+      <div class="cat-drawer-list" id="_cat-drawer-list-compat"></div>
     </nav>
 
     <!-- ===== RASTREADOR DE PEDIDO (CARD FIXO) ===== -->
@@ -687,7 +673,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="cli-nome" placeholder="Ej: Juan Pérez" class="input-field">
                     <span id="erro-nome" class="msg-erro-texto">El nombre es obligatorio</span>
                     
-                    <label style="font-size: 0.8rem; color: #666;" data-lang-key="label-zap">WhatsApp</label>
+                    <label style="font-size: 0.8rem; color: #666;" data-lang-key="label-zap" id="label-whatsapp-field">WhatsApp <span id="zap-obrig-badge" style="display:none;color:#e74c3c;font-weight:700">*</span> <span id="zap-opt-badge" style="font-size:0.72rem;color:#888;font-weight:400">(Opcional)</span></label>
                     <div class="row">
                         <select id="cli-ddi" class="input-field small">
                             <option value="+595">🇵🇾 +595 (PY)</option>
@@ -747,7 +733,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                         <div id="box-troco" class="hidden mt-10">
                             <label style="font-size: 0.8rem;" data-lang-key="label-troco">💵 ¿Con cuánto vas a pagar? <span style="color:#e74c3c">*</span></label>
-                            <input type="text" id="troco-valor" placeholder="Ej: 100.000" class="input-field" inputmode="numeric" required>
+                            <input type="text" id="troco-valor" placeholder="100.000" class="input-field" inputmode="numeric" data-mask="gs" oninput="mascaraGs(this)" autocomplete="off">
                         </div>
 
                         <!-- ===== MULTIPAGAMENTO (cards como na image 3) ===== -->

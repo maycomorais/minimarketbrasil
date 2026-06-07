@@ -631,8 +631,8 @@ function setAdminLang(lang) {
   _adminLang = lang;
   localStorage.setItem('admin_lang', lang);
   applyAdminI18n();
-  // Atualiza botões do seletor
-  document.querySelectorAll('.lang-btn').forEach(btn => {
+  // Atualiza botões do seletor (suporta classe antiga e nova)
+  document.querySelectorAll('.lang-btn, .sb-lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === lang);
   });
 }
@@ -641,7 +641,7 @@ function setAdminLang(lang) {
 document.addEventListener('DOMContentLoaded', () => {
   applyAdminI18n();
   // Marca botão ativo
-  document.querySelectorAll('.lang-btn').forEach(btn => {
+  document.querySelectorAll('.lang-btn, .sb-lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === _adminLang);
   });
 });

@@ -2196,180 +2196,107 @@ body[data-mode="varejo"] .product-item {
    ══════════════════════════════════════════════════════════════ */
 
 /* Barra que substitui o category-nav horizontal */
-.cat-hamburger-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
+/* ══════════════════════════════════════════════════════════════
+   MENU INLINE DE CATEGORIAS — scroll horizontal
+   Substitui o antigo hamburguer+gaveta no app do cliente.
+   Em desktop (≥800px): sidebar vertical à esquerda (mantém).
+   ══════════════════════════════════════════════════════════════ */
+
+/* Barra inline (mobile) */
+.cat-inline-bar {
+  width: 100%;
   background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1.5px solid #f0f0f0;
   position: sticky;
   top: 0;
   z-index: 95;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-}
-
-/* Botão hambúrguer */
-.cat-hamburger-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--primary, #1a7a2e);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 9px 14px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: filter 0.15s;
-}
-.cat-hamburger-btn:active { filter: brightness(0.88); }
-
-/* Ícone de 3 linhas */
-.cat-hamburger-icon {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 18px;
-}
-.cat-hamburger-icon span {
-  display: block;
-  height: 2px;
-  background: #fff;
-  border-radius: 2px;
-  transition: transform 0.2s;
-}
-
-.cat-hamburger-label { white-space: nowrap; }
-
-.cat-hamburger-arrow {
-  font-size: 1.1rem;
-  transition: transform 0.2s ease;
-  opacity: 0.8;
-}
-
-/* Pill da categoria ativa na barra */
-.cat-ativa-pill {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--primary, #1a7a2e);
-  background: #ecfdf5;
-  border: 1.5px solid #a7f3d0;
-  border-radius: 20px;
-  padding: 4px 12px;
-  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 160px;
 }
-.cat-ativa-pill:empty { display: none; }
 
-/* ── Overlay escuro ── */
-.cat-drawer-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  z-index: 199;
-  backdrop-filter: blur(1px);
-}
-.cat-drawer-overlay.visible { display: block; }
-
-/* ── Gaveta lateral ── */
-.cat-drawer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: min(280px, 80vw);
-  background: #fff;
-  z-index: 200;
-  transform: translateX(-100%);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+/* Lista horizontal com scroll */
+.cat-inline-list {
   display: flex;
-  flex-direction: column;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.12);
-  overscroll-behavior: contain;
-}
-.cat-drawer.open { transform: translateX(0); }
-
-/* Cabeçalho da gaveta */
-.cat-drawer-header {
-  display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-  padding: 16px 18px;
-  font-weight: 700;
-  font-size: 1rem;
-  border-bottom: 1px solid #f0f0f0;
-  color: var(--dark, #333);
-  flex-shrink: 0;
+  gap: 6px;
+  padding: 10px 14px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  /* Oculta scrollbar mas mantém funcionalidade */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.cat-drawer-close {
-  background: #f3f4f6;
-  border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #555;
-}
+.cat-inline-list::-webkit-scrollbar { display: none; }
 
-/* Lista de pills na gaveta */
-.cat-drawer-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 12px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Pill individual dentro da gaveta */
+/* Pill individual (reusa .cat-drawer-pill semântica mas novo visual) */
 .cat-drawer-pill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  text-align: left;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #444;
+  gap: 5px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #e5e7eb;
+  background: #fafafa;
+  text-align: center;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #555;
   cursor: pointer;
-  transition: background 0.15s;
-  width: 100%;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
 }
-.cat-drawer-pill:hover  { background: #f3f4f6; }
-.cat-drawer-pill.active {
-  background: #ecfdf5;
+.cat-drawer-pill:hover {
+  background: #f0fdf4;
+  border-color: var(--primary, #1a7a2e);
   color: var(--primary, #1a7a2e);
+}
+.cat-drawer-pill.active {
+  background: var(--primary, #1a7a2e);
+  border-color: var(--primary, #1a7a2e);
+  color: #fff;
   font-weight: 700;
+  box-shadow: 0 2px 8px rgba(26,122,46,0.25);
+}
+.cat-drawer-pill:active { transform: scale(0.96); }
+
+/* Divider "Cardápio" — vira separador vertical na barra inline */
+.cat-drawer-divider {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  padding: 0 6px;
+  flex-shrink: 0;
+  user-select: none;
+  border-left: 1.5px solid #e5e7eb;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
 }
 
-/* Em telas largas (desktop): a gaveta fica aberta como sidebar */
+/* Oculta elementos do antigo hamburguer (se remanescentes) */
+.cat-hamburger-bar,
+.cat-drawer-overlay,
+.cat-drawer-close,
+.cat-drawer-header { display: none !important; }
+
+/* Em telas largas (desktop): a lista vira coluna vertical */
 @media (min-width: 800px) {
-  .cat-drawer-overlay { display: none !important; }
-  .cat-drawer {
-    position: sticky;
-    top: 60px;
-    height: calc(100vh - 60px);
-    transform: none;
-    box-shadow: none;
-    border-right: 1px solid #f0f0f0;
-    width: 220px;
-    flex-shrink: 0;
+  .cat-inline-bar {
+    display: none; /* No desktop o layout usa a sidebar do desktop-layout */
   }
-  .cat-hamburger-bar { display: none; }
 }
+
+/* Barra hamburguer legado — nunca exibir */
+.cat-hamburger-btn,
+.cat-hamburger-icon,
+.cat-hamburger-arrow,
+.cat-ativa-pill { display: none !important; }
+
 
 /* ══════════════════════════════════════════════════════════════
    8. PROMOÇÃO + UNIDADE + DESTAQUE — badges no app do cliente
@@ -2463,16 +2390,7 @@ body[data-mode="varejo"] .product-item {
   50%       { opacity: 0.55; }
 }
 
-/* Divisor de grupo na gaveta ("Cardápio") */
-.cat-drawer-divider {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #9ca3af;
-  padding: 16px 14px 6px;
-  user-select: none;
-}
+/* Divisor de grupo na barra inline ("Cardápio") — já definido no bloco de menu inline acima */
 
 /* ══════════════════════════════════════════════════════════════
    9. BOTÃO "VER MAIS" (paginação)

@@ -19,6 +19,53 @@ let QR_ALIAS_URL = ""; // URL da imagem do QR code Alias PY (carregado do banco)
 let QR_PY_URL = ""; // URL opcional da imagem QR para QrPy (Tigo/Personal/Bancard)
 let WHATSAPP_LOJA_APP = "";
 
+// ══════════════════════════════════════════════════════════════
+//  MÁSCARA DE MOEDA GUARANI (Gs)
+//  Formato: 100000 → "100.000" (sufixo "Gs" exibido fora do input)
+//  Uso: <input oninput="mascaraGs(this)" inputmode="numeric">
+//  Leitura: parsearGs(input.value) → número inteiro
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Aplica máscara de moeda guarani em tempo real.
+ * Remove tudo que não é dígito, formata com ponto de milhar.
+ * @param {HTMLInputElement} el
+ */
+function mascaraGs(el) {
+  const raw  = el.value.replace(/\D/g, "");
+  const num  = parseInt(raw, 10);
+  el.value   = isNaN(num) ? "" : num.toLocaleString("es-PY");
+}
+
+/**
+ * Lê o valor de um input com máscara Gs e retorna o número.
+ * @param {HTMLInputElement|string} elOrVal
+ * @returns {number}
+ */
+function parsearGs(elOrVal) {
+  const str = typeof elOrVal === "string" ? elOrVal : (elOrVal?.value || "");
+  return parseInt(str.replace(/\./g, "").replace(/\D/g, ""), 10) || 0;
+}
+
+/**
+ * Inicializa máscara Gs em todos os inputs marcados com data-mask="gs"
+ * Chamado no DOMContentLoaded e sempre que novos modais abrirem.
+ */
+function iniciarMascarasGs() {
+  document.querySelectorAll('input[data-mask="gs"]').forEach(el => {
+    // Evita duplicar listener
+    if (el._gsMaskAttached) return;
+    el._gsMaskAttached = true;
+    el.setAttribute("inputmode", "numeric");
+    // Aplica no valor inicial se houver
+    if (el.value) mascaraGs(el);
+    el.addEventListener("input", () => mascaraGs(el));
+  });
+}
+
+// Inicializa ao carregar
+document.addEventListener("DOMContentLoaded", iniciarMascarasGs);
+
 // ── Toast notifications ────────────────────────────────────────────────────
 function mostrarToast(msg, tipo = "info", duracao = 3000) {
   const cores = {
@@ -729,18 +776,18 @@ async function filtrarProdutos(query) {
 
   const sec     = _getSearchSection();
   const content = document.getElementById("menu-content");
-  const hambar  = document.getElementById("cat-hamburger-bar");
+  const catBar  = document.getElementById("cat-inline-bar") || document.getElementById("cat-hamburger-bar");
 
   if (!query || query.trim().length < 2) {
     sec.classList.remove("visible");
     if (content) content.style.display = "";
-    if (hambar)  hambar.style.display  = "";
+    if (catBar)  catBar.style.display  = "";
     return;
   }
 
   // Oculta menu normal, mostra resultados
   if (content) content.style.display = "none";
-  if (hambar)  hambar.style.display  = "none";
+  if (catBar)  catBar.style.display  = "none";
   sec.classList.add("visible");
 
   const grid = document.getElementById("search-results-grid");
@@ -1011,10 +1058,18 @@ async function renderMenu() {
 
 // ── Helpers globais de menu ──────────────────────────────────
 
-/** Marca pill ativo e atualiza badge da barra hamburger */
+/** Marca pill ativo, atualiza badge e faz scroll automático até ela */
 function _setActivePill(key, label) {
   document.querySelectorAll(".cat-drawer-pill")
     .forEach(p => p.classList.toggle("active", p.dataset.catKey === key));
+
+  // Scroll automático na barra inline para centralizar a pill ativa
+  const activePill = document.querySelector(`.cat-drawer-pill[data-cat-key="${key}"]`);
+  if (activePill) {
+    activePill.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }
+
+  // Compat: badge antigo (removido, mas sem quebrar)
   const badge = document.getElementById("cat-ativa-pill");
   if (badge) badge.textContent = label;
 }
@@ -2852,6 +2907,18 @@ function verificarPagamento() {
   boxTroco.classList.add("hidden");
   if (boxMulti) boxMulti.style.display = "none";
 
+  // ── Toggle obrigatoriedade do WhatsApp ──────────────────────
+  // Pix / Transferencia / QrPy exigem WhatsApp para comprovante
+  const _requerTel = ["Pix", "Transferencia", "QrPy"].includes(pag);
+  const _zapBadgeObrig = document.getElementById("zap-obrig-badge");
+  const _zapBadgeOpt   = document.getElementById("zap-opt-badge");
+  const _telEl         = document.getElementById("cli-tel");
+  if (_zapBadgeObrig) _zapBadgeObrig.style.display = _requerTel ? "inline" : "none";
+  if (_zapBadgeOpt)   _zapBadgeOpt.style.display   = _requerTel ? "none"   : "inline";
+  if (_telEl)         _telEl.placeholder            = _requerTel
+    ? "99123-4567 (obrigatório para este pagamento)"
+    : "99123-4567 (opcional)";
+
   if (pag === "Efetivo") {
     boxTroco.classList.remove("hidden");
   } else if (pag === "CartaoBR") {
@@ -3337,18 +3404,35 @@ async function enviarZap() {
         : "Cartão BR - Crédito"
       : pag;
 
-  if (!nome || !tel || !pag)
+  // WhatsApp é OBRIGATÓRIO apenas para pagamentos que exigem confirmação remota
+  const _pagRequerTel = ["Pix", "Transferencia", "QrPy"].includes(pag);
+
+  if (!nome || !pag)
     return alert("Preencha todos os campos obrigatórios!");
+
+  if (_pagRequerTel && !tel) {
+    const telEl = document.getElementById("cli-tel");
+    if (telEl) {
+      telEl.style.borderColor = "#e74c3c";
+      telEl.focus();
+    }
+    return alert("📱 Para pagamento via Pix / Alias, o WhatsApp é obrigatório para envio do comprovante.");
+  }
+
+  // Restaura borda do tel caso válido
+  const _telEl = document.getElementById("cli-tel");
+  if (_telEl) _telEl.style.borderColor = "";
 
   // Troco obrigatório quando pagamento em Efetivo
   if (pag === "Efetivo") {
-    const trocoVal = document.getElementById("troco-valor").value.trim();
-    if (!trocoVal || parseFloat(trocoVal.replace(/[^\d]/g, "")) <= 0) {
-      document.getElementById("troco-valor").focus();
-      document.getElementById("troco-valor").style.borderColor = "#e74c3c";
+    const trocoEl  = document.getElementById("troco-valor");
+    const trocoNum = parsearGs(trocoEl);
+    if (!trocoEl.value.trim() || trocoNum <= 0) {
+      trocoEl.focus();
+      trocoEl.style.borderColor = "#e74c3c";
       return alert("⚠️ Informe o valor em dinheiro para cálculo do troco!");
     }
-    document.getElementById("troco-valor").style.borderColor = "";
+    trocoEl.style.borderColor = "";
   }
 
   // Promoções do dia: bloquear pagamento com Cartão
@@ -5615,33 +5699,20 @@ function vcFormatarPrecoCarrinho(precoGs) {
 
 const _CAT_DRAWER_BREAKPOINT = 600; // px — acima disso fica aberto sempre
 
+// catDrawerAbrir / catDrawerFechar mantidos para compatibilidade retroativa.
+// O drawer foi substituído pelo menu inline de pills (cat-inline-bar).
+// Essas funções são no-ops seguros — não quebram código legado que ainda as chame.
 function catDrawerAbrir() {
-  const drawer  = document.getElementById("cat-drawer");
-  const overlay = document.getElementById("cat-drawer-overlay");
-  const btn     = document.getElementById("cat-hamburger-btn");
-  const arrow   = document.getElementById("cat-hamburger-arrow");
-  if (!drawer) return;
-  drawer.classList.add("open");
-  if (overlay) overlay.classList.add("visible");
-  if (btn)    btn.setAttribute("aria-expanded", "true");
-  if (arrow)  arrow.style.transform = "rotate(90deg)";
-  document.body.style.overflow = "hidden";
+  // Menu agora é inline — não há gaveta para abrir.
+  // Mantido para não quebrar chamadas externas (botões legados, scripts de terceiros).
 }
 
 function catDrawerFechar() {
-  const drawer  = document.getElementById("cat-drawer");
-  const overlay = document.getElementById("cat-drawer-overlay");
-  const btn     = document.getElementById("cat-hamburger-btn");
-  const arrow   = document.getElementById("cat-hamburger-arrow");
-  if (!drawer) return;
-  drawer.classList.remove("open");
-  if (overlay) overlay.classList.remove("visible");
-  if (btn)    btn.setAttribute("aria-expanded", "false");
-  if (arrow)  arrow.style.transform = "";
-  document.body.style.overflow = "";
+  // Menu agora é inline — não há gaveta para fechar.
+  document.body.style.overflow = ""; // garante que o scroll nunca fique preso
 }
 
-// Fecha com ESC
+// Fecha com ESC (mantido por segurança)
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") catDrawerFechar();
 });
