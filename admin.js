@@ -849,7 +849,7 @@ async function carregarPedidos(silencioso = false) {
         linhaCor = "background-color: #fff3cd;";
         acoes = `
                     ${btnPrint}
-                    <button class="btn btn-success btn-sm" onclick="mudarStatus(${p.id}, 'em_preparo')"><i class="fas fa-fire"></i> Cozinha</button>
+                    <button class="btn btn-success btn-sm" onclick="mudarStatus(${p.id}, 'em_preparo')"><i class="fas fa-fire"></i> Separação</button>
                     ${
                       _podeCancel
                         ? `<button class="btn btn-danger btn-sm" onclick="mudarStatus(${p.id}, 'cancelado')"><i class="fas fa-times"></i></button>`
@@ -924,7 +924,7 @@ async function carregarPedidos(silencioso = false) {
           p.status === "pendente"
             ? "🔔 Novo"
             : p.status === "em_preparo"
-              ? "🔥 Na Cozinha"
+              ? "🔥 Em Separação"
               : p.status === "pronto_entrega"
                 ? "✅ Pronto"
                 : p.status.replace("_", " ");
@@ -951,7 +951,7 @@ async function carregarPedidos(silencioso = false) {
                         ${_btnCancelSaiuCard}`;
         } else if (p.status === "pendente") {
           cardAcoes = `
-                        <button class="btn btn-success btn-sm" onclick="mudarStatus(${p.id}, 'em_preparo')"><i class="fas fa-fire"></i> Cozinha</button>
+                        <button class="btn btn-success btn-sm" onclick="mudarStatus(${p.id}, 'em_preparo')"><i class="fas fa-fire"></i> Seáração</button>
                         <button class="btn btn-info btn-sm" onclick="imprimirPedido(${p.id})"><i class="fas fa-print"></i> Imprimir</button>
                         ${
                           _podeCancel
@@ -2355,7 +2355,7 @@ async function carregarRelatorio() {
           },
           {
             icon: "🔥",
-            label: "Cozinha",
+            label: "Separação",
             val: fmtHora(p.tempo_preparo_iniciado),
             diff: null,
           },
@@ -2387,7 +2387,7 @@ async function carregarRelatorio() {
           },
           {
             icon: "🔥",
-            label: "Cozinha",
+            label: "Separação",
             val: fmtHora(p.tempo_preparo_iniciado),
             diff: null,
           },
@@ -9010,7 +9010,7 @@ async function salvarPedidoBalcao() {
     atualizarCarrinhoPDV();
     atualizarBarraMesasAtivas();
     carregarMonitorMesas();
-    alert(`✅ ${novosItens.length} item(s) enviado(s) para a cozinha!`);
+    alert(`✅ ${novosItens.length} item(s) enviado(s) para separação!`);
     return;
   }
 
@@ -9185,7 +9185,7 @@ async function salvarPedidoBalcao() {
     ? "✅ Venda registrada!"
     : _todosBebidas(novosItens)
       ? "✅ Só bebidas — direto ao balcão."
-      : "✅ Enviado para a Cozinha!";
+      : "✅ Enviado para separação!";
   _pdvToast(_msgFinal);
 }
 
@@ -9319,9 +9319,9 @@ async function carregarMonitorMesas() {
     if (p.status === "em_preparo") {
       cardClass += " mesa-preparo";
       statusHtml =
-        '<span class="mesa-monitor-status-cozinha"><i class="fas fa-fire"></i> Na Cozinha</span>';
+        '<span class="mesa-monitor-status-cozinha"><i class="fas fa-fire"></i> Em Separação</span>';
       acaoHtml =
-        '<small class="mesa-monitor-status-cozinha">Aguardando cozinha...</small>';
+        '<small class="mesa-monitor-status-cozinha">Aguardando Separação...</small>';
     } else if (p.status === "pronto_entrega") {
       cardClass += " mesa-pronta";
       statusHtml =
@@ -11079,7 +11079,7 @@ if (typeof fecharModal !== "function") {
    ══════════════════════════════════════════════════════════════ */
 
 // Categorias/tipos que NÃO vão para a cozinha (servido imediatamente)
-const _TIPOS_SEM_COZINHA = ["bebida", "acai", "shake", "suco", "sorvete"];
+const _TIPOS_SEM_COZINHA = ["acai", "shake", "suco", "sorvete"];
 
 function _todosSemCozinha(itens) {
   if (!itens || !itens.length) return false;

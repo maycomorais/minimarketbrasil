@@ -507,39 +507,6 @@ async function verificarHorario() {
     }
   }
 
-  // ── Banners promocionais ─────────────────────────────────────────
-  // Banner 1
-  if (data.banner_imagem) {
-    const img1 = document.getElementById("banner1-img") || document.getElementById("banner-img-1");
-    if (img1) {
-      img1.src = data.banner_imagem;
-      img1.style.display = "block";
-      if (data.banner_produto_id) {
-        img1.style.cursor = "pointer";
-        img1.onclick = function () { clicarBanner(data.banner_produto_id); };
-      } else {
-        img1.style.cursor = "default";
-        img1.onclick = null;
-      }
-    }
-  }
-
-  // Banner 2
-  if (data.banner2_imagem) {
-    const img2 = document.getElementById("banner2-img") || document.getElementById("banner-img-2");
-    if (img2) {
-      img2.src = data.banner2_imagem;
-      img2.style.display = "block";
-      if (data.banner2_produto_id) {
-        img2.style.cursor = "pointer";
-        img2.onclick = function () { clicarBanner(data.banner2_produto_id); };
-      } else {
-        img2.style.cursor = "default";
-        img2.onclick = null;
-      }
-    }
-  }
-
   // ── Personalização visual da loja ────────────────────────────────
   const nomeLoja = data.nome_restaurante || data.nome_loja || "";
   if (nomeLoja) {
@@ -1009,7 +976,11 @@ async function renderMenu() {
     pillDest.onclick = () => {
       document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
       pillDest.classList.add("active");
-      document.getElementById("sec-destaques")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Mostra seção de destaques e oculta todas as categorias
+      const sd = document.getElementById("sec-destaques");
+      if (sd) sd.style.display = "";
+      document.querySelectorAll("#menu-content > section[data-cat]").forEach((s) => s.style.display = "none");
+      sd?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
     nav.appendChild(pillDest);
 
@@ -3387,15 +3358,18 @@ function _mostrarModalEnvio(msg, numeroPedido) {
       <div style="background:white;border-radius:20px;padding:30px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
         <div style="font-size:3.5rem;margin-bottom:10px">📱</div>
         <h3 style="margin:0 0 8px;font-size:1.2rem;color:#1a1a2e">Pedido registrado! ✅</h3>
-        <p style="margin:0 0 20px;font-size:0.93rem;color:#555;line-height:1.55">
-          Para <strong>confirmar seu pedido</strong>, toque no botão abaixo e envie a mensagem no WhatsApp.
-          <br><span style="color:#e74c3c;font-weight:700">Sem o envio, o pedido não será aceito.</span>
-        </p>
+        <div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:12px;padding:12px 14px;margin-bottom:18px;text-align:left;">
+          <div style="font-size:1rem;margin-bottom:4px;">📎 <strong>Pagamento via transferência / Pix</strong></div>
+          <div style="font-size:0.85rem;color:#555;line-height:1.5;">
+            Após realizar o pagamento, <strong>envie o comprovante</strong> pelo WhatsApp.<br>
+            <span style="color:#e74c3c;font-weight:700;">⚠️ O pedido só será preparado após confirmação do comprovante.</span>
+          </div>
+        </div>
         <button id="btn-abrir-zap"
-          style="width:100%;padding:18px;background:#25D366;color:white;border:none;border-radius:14px;font-size:1.1rem;font-weight:800;cursor:pointer;letter-spacing:0.3px;">
-          <i class="fab fa-whatsapp"></i> &nbsp;Enviar mensagem no WhatsApp
+          style="width:100%;padding:18px;background:#25D366;color:white;border:none;border-radius:14px;font-size:1.05rem;font-weight:800;cursor:pointer;letter-spacing:0.3px;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i class="fab fa-whatsapp" style="font-size:1.3rem;"></i> Enviar pedido + comprovante
         </button>
-        <p style="margin:14px 0 0;font-size:0.75rem;color:#aaa;">Este aviso não fecha sozinho. Envie a mensagem para continuar.</p>
+        <p style="margin:12px 0 0;font-size:0.75rem;color:#aaa;">Este aviso não fecha sozinho. Envie a mensagem para continuar.</p>
       </div>`;
     document.body.appendChild(modal);
 
