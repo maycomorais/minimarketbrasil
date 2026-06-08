@@ -610,7 +610,10 @@ async function renderMenu() {
     .select("*")
     .eq("ativo", true)
     .eq("pausado", false)
-    .or("somente_balcao.is.null,somente_balcao.eq.false");
+    .or("somente_balcao.is.null,somente_balcao.eq.false")
+    .order("categoria_slug", { ascending: true })
+    .order("ordem", { ascending: true })
+    .limit(2000);
 
   if (!produtos || !categsDb) {
     console.error("Erro ao carregar menu do banco");
