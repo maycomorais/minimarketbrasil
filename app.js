@@ -428,6 +428,38 @@ async function verificarHorario() {
     return horaAtual >= abre && horaAtual < fecha;
   }
 
+   // Atualiza Banners Promocionais (banner 1 e banner 2)
+  const bannerImgs = [
+    document.getElementById("banner1-img") ||
+      document.querySelectorAll(".banner-track img")[0],
+    document.getElementById("banner2-img") ||
+      document.querySelectorAll(".banner-track img")[1],
+  ];
+
+  // Banner 1
+  if (data.banner_imagem && data.banner_produto_id && bannerImgs[0]) {
+    bannerImgs[0].src = data.banner_imagem;
+    bannerImgs[0].style.display = "block";
+    bannerImgs[0].style.cursor = "pointer";
+    bannerImgs[0].onclick = function () {
+      clicarBanner(data.banner_produto_id);
+    };
+  } else if (bannerImgs[0] && !data.banner_imagem) {
+    bannerImgs[0].style.display = "none";
+  }
+
+  // Banner 2
+  if (data.banner2_imagem && data.banner2_produto_id && bannerImgs[1]) {
+    bannerImgs[1].src = data.banner2_imagem;
+    bannerImgs[1].style.display = "block";
+    bannerImgs[1].style.cursor = "pointer";
+    bannerImgs[1].onclick = function () {
+      clicarBanner(data.banner2_produto_id);
+    };
+  } else if (bannerImgs[1] && !data.banner2_imagem) {
+    bannerImgs[1].style.display = "none";
+  }
+
   // Lógica de Aberto/Fechado usando grade semanal
   let estaAberto = false;
   if (data.loja_aberta) {
@@ -475,17 +507,38 @@ async function verificarHorario() {
     }
   }
 
-  // Atualiza Banner Promocional — Fix #48: atribui onclick nos imgs, não no container
-  if (data.banner_imagem && data.banner_produto_id) {
-    const img1 = document.getElementById("banner-img-1");
+  // ── Banners promocionais ─────────────────────────────────────────
+  // Banner 1
+  if (data.banner_imagem) {
+    const img1 = document.getElementById("banner1-img") || document.getElementById("banner-img-1");
     if (img1) {
       img1.src = data.banner_imagem;
-      img1.onclick = function () {
-        clicarBanner(data.banner_produto_id);
-      };
+      img1.style.display = "block";
+      if (data.banner_produto_id) {
+        img1.style.cursor = "pointer";
+        img1.onclick = function () { clicarBanner(data.banner_produto_id); };
+      } else {
+        img1.style.cursor = "default";
+        img1.onclick = null;
+      }
     }
   }
-  // banner-img-2 mantém clique padrão desabilitado até ser configurado no admin
+
+  // Banner 2
+  if (data.banner2_imagem) {
+    const img2 = document.getElementById("banner2-img") || document.getElementById("banner-img-2");
+    if (img2) {
+      img2.src = data.banner2_imagem;
+      img2.style.display = "block";
+      if (data.banner2_produto_id) {
+        img2.style.cursor = "pointer";
+        img2.onclick = function () { clicarBanner(data.banner2_produto_id); };
+      } else {
+        img2.style.cursor = "default";
+        img2.onclick = null;
+      }
+    }
+  }
 
   // ── Personalização visual da loja ────────────────────────────────
   const nomeLoja = data.nome_restaurante || data.nome_loja || "";
@@ -3496,10 +3549,10 @@ const TRACKER_STEPS = {
     icon: "📥",
     msg: "Pedido recebido! Aguardando confirmação...",
   },
-  em_preparo: { step: 2, icon: "🔥", msg: "Seu pedido está sendo preparado!" },
+  em_preparo: { step: 2, icon: "🛍", msg: "Seu pedido está sendo separado!" },
   pronto_entrega: { step: 3, icon: "📦", msg: "Pronto! Aguardando motoboy..." },
   saiu_entrega: { step: 3, icon: "🛵", msg: "Seu pedido saiu para entrega!" },
-  entregue: { step: 4, icon: "✅", msg: "Pedido entregue! Bom apetite! 🍕" },
+  entregue: { step: 4, icon: "✅", msg: "Pedido entregue! Obrigado por sua compra 🛒!" },
   cancelado: {
     step: 0,
     icon: "❌",

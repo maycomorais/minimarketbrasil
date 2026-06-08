@@ -298,6 +298,44 @@ const ADMIN_LANGS = {
     'geral.nao':            'Não',
     'geral.todos':          'Todos',
     'geral.hoje':           'Hoje',
+
+    // ── Dias da semana ─────────────────────────────────────
+    'dia.seg':              'Segunda-feira',
+    'dia.ter':              'Terça-feira',
+    'dia.qua':              'Quarta-feira',
+    'dia.qui':              'Quinta-feira',
+    'dia.sex':              'Sexta-feira',
+    'dia.sab':              'Sábado',
+    'dia.dom':              'Domingo',
+    'dia.seg.abrev':        'Seg',
+    'dia.ter.abrev':        'Ter',
+    'dia.qua.abrev':        'Qua',
+    'dia.qui.abrev':        'Qui',
+    'dia.sex.abrev':        'Sex',
+    'dia.sab.abrev':        'Sáb',
+    'dia.dom.abrev':        'Dom',
+
+    // ── Grade semanal / Horários ────────────────────────────
+    'grade.aplicar_titulo':   '⚡ Aplicar horário a todos os dias:',
+    'grade.aplicar_btn':      'Aplicar a todos',
+    'grade.turno_1':          '🕐 Abertura',
+    'grade.turno_2':          '🕑 2º Turno',
+    'grade.das':              'Das',
+    'grade.ate':              'Até',
+    'grade.add_turno':        'Adicionar 2º turno',
+    'grade.max_turnos':       'Máximo de 2 turnos por dia.',
+    'grade.preencha_horario': 'Preencha os horários de abertura e fechamento.',
+    'grade.aplicado_ok':      '✅ Horário aplicado a todos os dias. Clique em Salvar para confirmar.',
+    'grade.aberto':           '🟢 Aberto',
+    'grade.fechado':          '🔴 Fechado',
+    'grade.dias_exibicao':    '📅 Dias de exibição',
+    'grade.dias_hint':        '(deixe todos desmarcados = todos os dias)',
+    'grade.dias_exemplo':     'Ex: almoço de Seg a Sex das 11:00 às 14:30. Fora desse horário/dia, a categoria fica oculta no cardápio.',
+
+    // ── Saudações ──────────────────────────────────────────
+    'saudacao.manha':       'Bom dia',
+    'saudacao.tarde':       'Boa tarde',
+    'saudacao.noite':       'Boa noite',
   },
 
   // ══════════════════════════════════════════════════════════
@@ -590,6 +628,44 @@ const ADMIN_LANGS = {
     'geral.nao':            'No',
     'geral.todos':          'Todos',
     'geral.hoje':           'Hoy',
+
+    // ── Días de la semana ──────────────────────────────────
+    'dia.seg':              'Lunes',
+    'dia.ter':              'Martes',
+    'dia.qua':              'Miércoles',
+    'dia.qui':              'Jueves',
+    'dia.sex':              'Viernes',
+    'dia.sab':              'Sábado',
+    'dia.dom':              'Domingo',
+    'dia.seg.abrev':        'Lun',
+    'dia.ter.abrev':        'Mar',
+    'dia.qua.abrev':        'Mié',
+    'dia.qui.abrev':        'Jue',
+    'dia.sex.abrev':        'Vie',
+    'dia.sab.abrev':        'Sáb',
+    'dia.dom.abrev':        'Dom',
+
+    // ── Grilla semanal / Horarios ──────────────────────────
+    'grade.aplicar_titulo':   '⚡ Aplicar horario a todos los días:',
+    'grade.aplicar_btn':      'Aplicar a todos',
+    'grade.turno_1':          '🕐 Apertura',
+    'grade.turno_2':          '🕑 2º Turno',
+    'grade.das':              'De',
+    'grade.ate':              'Hasta',
+    'grade.add_turno':        'Agregar 2º turno',
+    'grade.max_turnos':       'Máximo de 2 turnos por día.',
+    'grade.preencha_horario': 'Complete los horarios de apertura y cierre.',
+    'grade.aplicado_ok':      '✅ Horario aplicado a todos los días. Haga clic en Guardar para confirmar.',
+    'grade.aberto':           '🟢 Abierto',
+    'grade.fechado':          '🔴 Cerrado',
+    'grade.dias_exibicao':    '📅 Días de exhibición',
+    'grade.dias_hint':        '(dejar todos desmarcados = todos los días)',
+    'grade.dias_exemplo':     'Ej: almuerzo de Lun a Vie de 11:00 a 14:30. Fuera de ese horario/día, la categoría queda oculta en el menú.',
+
+    // ── Saludos ────────────────────────────────────────────
+    'saudacao.manha':       'Buenos días',
+    'saudacao.tarde':       'Buenas tardes',
+    'saudacao.noite':       'Buenas noches',
   }
 };
 
