@@ -44,71 +44,73 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
   <header class="app-header sticky">
-    <!-- Linha 1: Logo + nome + status + idioma -->
-    <div class="header-top">
-      <div class="logo-area">
-        <img id="logo-app" src="" alt="Logo" style="display:none;forced-color-adjust:none;filter:none">
-        <div class="store-details">
-          <h1 id="nome-loja-app">Restaurante</h1>
-          <span class="badge-status open" data-lang-key="header-aberto">Abierto</span>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div class="header-info">
-          <p><i class="fas fa-star" style="color:#fc0;font-size:0.7rem"></i> 4.8</p>
-          <p>30-45 min</p>
-        </div>
-        <!-- Seletor de idioma compacto -->
-        <div class="language-selector" style="position:relative;z-index:1000;">
-          <button id="btn-idioma" onclick="toggleLanguageMenu()" style="background:rgba(255,255,255,0.95);border:1.5px solid var(--primary);padding:5px 10px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:5px;font-weight:600;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            <span id="current-lang-flag">🇵🇾</span>
-            <span id="current-lang-code" style="font-size:0.8rem;">ES</span>
-            <i class="fas fa-chevron-down" style="font-size:0.6rem;"></i>
-          </button>
-          <div id="language-menu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:white;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:180px;overflow:hidden;z-index:1001;">
-            <button onclick="changeLanguage('es')" style="width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;">
-              <span style="font-size:1.3rem">🇵🇾</span>
-              <div><div style="font-weight:600;color:#333;font-size:0.88rem">Español</div><div style="font-size:0.7rem;color:#999">Paraguay</div></div>
-            </button>
-            <button onclick="changeLanguage('pt')" style="width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;">
-              <span style="font-size:1.3rem">🇧🇷</span>
-              <div><div style="font-weight:600;color:#333;font-size:0.88rem">Português</div><div style="font-size:0.7rem;color:#999">Brasil</div></div>
-            </button>
-            <button onclick="changeLanguage('en')" style="width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;">
-              <span style="font-size:1.3rem">🇺🇸</span>
-              <div><div style="font-weight:600;color:#333;font-size:0.88rem">English</div><div style="font-size:0.7rem;color:#999">United States</div></div>
-            </button>
-            <button onclick="changeLanguage('de')" style="width:100%;text-align:left;padding:10px 14px;border:none;background:none;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.2s;">
-              <span style="font-size:1.3rem">🇩🇪</span>
-              <div><div style="font-weight:600;color:#333;font-size:0.88rem">Deutsch</div><div style="font-size:0.7rem;color:#999">Deutschland</div></div>
-            </button>
-          </div>
-        </div>
-      </div>
+        <div class="header-content">
+            <div class="logo-area">
+                <img id="logo-app" src="" alt="Logo" style="display:none;forced-color-adjust:none;filter:none">
+                <div class="store-details">
+                    <h1 id="nome-loja-app">Restaurante</h1>
+                    <span class="badge-status open" data-lang-key="header-aberto">Abierto</span>
+                </div>
+            </div>
+            <div class="language-selector" style="position:absolute; top:15px; right:15px; z-index:1000;">
+    <button id="btn-idioma" onclick="toggleLanguageMenu()" style="background:rgba(255,255,255,0.95); border:2px solid var(--primary); padding:8px 15px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:8px; font-weight:600; color:#333; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+        <span id="current-lang-flag">🇵🇾</span>
+        <span id="current-lang-code" style="font-size:0.9rem;">ES</span>
+        <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+    </button>
+    
+    <div id="language-menu" style="display:none; position:absolute; top:calc(100% + 8px); right:0; background:white; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.15); min-width:200px; overflow:hidden; z-index:1001;">
+        <button onclick="changeLanguage('es')" style="width:100%; text-align:left; padding:12px 15px; border:none; background:none; cursor:pointer; display:flex; align-items:center; gap:12px; transition:all 0.2s;">
+            <span style="font-size:1.5rem">🇵🇾</span>
+            <div style="flex:1">
+                <div style="font-weight:600; color:#333">Español</div>
+                <div style="font-size:0.75rem; color:#999">Paraguay</div>
+            </div>
+        </button>
+        
+        <button onclick="changeLanguage('pt')" style="width:100%; text-align:left; padding:12px 15px; border:none; background:none; cursor:pointer; display:flex; align-items:center; gap:12px; transition:all 0.2s;">
+            <span style="font-size:1.5rem">🇧🇷</span>
+            <div style="flex:1">
+                <div style="font-weight:600; color:#333">Português</div>
+                <div style="font-size:0.75rem; color:#999">Brasil</div>
+            </div>
+        </button>
+        
+        <button onclick="changeLanguage('en')" style="width:100%; text-align:left; padding:12px 15px; border:none; background:none; cursor:pointer; display:flex; align-items:center; gap:12px; transition:all 0.2s;">
+            <span style="font-size:1.5rem">🇺🇸</span>
+            <div style="flex:1">
+                <div style="font-weight:600; color:#333">English</div>
+                <div style="font-size:0.75rem; color:#999">United States</div>
+            </div>
+        </button>
+        
+        <button onclick="changeLanguage('de')" style="width:100%; text-align:left; padding:12px 15px; border:none; background:none; cursor:pointer; display:flex; align-items:center; gap:12px; transition:all 0.2s;">
+            <span style="font-size:1.5rem">🇩🇪</span>
+            <div style="flex:1">
+                <div style="font-weight:600; color:#333">Deutsch</div>
+                <div style="font-size:0.75rem; color:#999">Deutschland</div>
+            </div>
+        </button>
     </div>
+</div>
 
-    <!-- Linha 2: Barra de Busca -->
-    <div class="header-search-bar">
-      <i class="fas fa-search header-search-icon"></i>
-      <input
-        type="search"
-        id="search-input"
-        class="header-search-input"
-        placeholder="Buscar productos..."
-        autocomplete="off"
-        oninput="filtrarProdutos(this.value)"
-      >
-      <button class="header-search-clear" id="search-clear-btn" onclick="limparBusca()" style="display:none" aria-label="Limpar">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
+<!-- CSS para o seletor de idioma -->
+<style>
+#language-menu button:hover {
+    background: #f8f9fa !important;
+}
 
-    <!-- CSS para o seletor de idioma -->
-    <style>
-      #language-menu button:hover { background: #f8f9fa !important; }
-    </style>
-  </header>
-
+@media (max-width: 768px) {
+    .language-selector {
+        top: 10px;
+        right: 10px;
+    }
+    #btn-idioma {
+        padding: 6px 10px !important;
+        font-size: 0.9rem;
+    }
+}
+</style>
 
 <!-- CSS para o botão de idioma -->
 <style>
@@ -459,6 +461,12 @@ window.addEventListener('DOMContentLoaded', () => {
     }, 100);
 });
 </script>
+            <div class="header-info">
+                <p><i class="fas fa-star" style="color:#fc0;"></i> 4.8</p>
+                <p>30-45 min</p>
+            </div>
+        </div>
+    </header>
 
     <!-- DESKTOP LAYOUT WRAPPER: 2 colunas (menu esquerda + carrinho direita) -->
     <div class="desktop-layout">
@@ -473,19 +481,13 @@ window.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
 
-    <!-- ── MENU INLINE DE CATEGORIAS (scroll horizontal) ──────── -->
-    <div class="cat-inline-bar" id="cat-inline-bar">
-      <!-- Pills injetados pelo JS via renderMenu() -->
-      <div class="cat-inline-list" id="category-nav"></div>
-    </div>
+    <nav class="category-nav" id="category-nav"></nav>
 
-    <!-- Overlay e drawer removidos — menu agora é inline -->
-    <!-- Mantemos os elementos ocultos para compatibilidade com catDrawerFechar() no JS -->
-    <div class="cat-drawer-overlay" id="cat-drawer-overlay" style="display:none!important"></div>
-    <nav class="cat-drawer" id="cat-drawer" style="display:none!important" aria-hidden="true">
-      <div class="cat-drawer-header" style="display:none"></div>
-      <div class="cat-drawer-list" id="_cat-drawer-list-compat"></div>
-    </nav>
+    <!-- BARRA DE BUSCA -->
+    <div class="search-bar-wrap" id="search-bar-wrap" style="margin-top:10px;">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" id="search-input" placeholder="Buscar productos..." oninput="filtrarProdutos(this.value)">
+    </div>
 
     <!-- ===== RASTREADOR DE PEDIDO (CARD FIXO) ===== -->
     <div id="track-order-card" style="display: none; margin: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 16px; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); color: white;">
@@ -543,6 +545,20 @@ window.addEventListener('DOMContentLoaded', () => {
                 Rastrear Otro Pedido
             </button>
         </div>
+    </div>
+
+    <div id="buy-again-container" style="display: none; margin: 20px 20px 0; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; font-size:1rem; color:#333;" data-lang-key="ultimo-pedido"><i class="fas fa-history" style="color:var(--primary)"></i> Último Pedido</h3>
+            <span style="font-size:0.8rem; color:#888;" data-lang-key="ultimo-pedido-sub">¿Te gustó? ¡Pide de nuevo!</span>
+        </div>
+        
+        <ul id="last-order-list" style="list-style:none; padding:0; margin:0 0 15px 0; font-size:0.9rem; color:#555; background:#f9f9f9; padding:10px; border-radius:8px;">
+            </ul>
+
+        <button onclick="repetirPedido()" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:8px;" data-lang-key="btn-repetir">
+            <i class="fas fa-redo"></i> Agregar Todo al Carrito
+        </button>
     </div>
 
     <main class="menu-container" id="menu-content"></main>
@@ -640,7 +656,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     <div id="cupom-msg"></div>
                 </div>
                 
-                <div class="upsell-area mt-10">
+                <div class="upsell-area mt-10" style="display:none;">
                     <h4 style="margin-bottom:10px; font-size:0.9rem; color:#666;" data-lang-key="turbine">Bebidas & Extras</h4>
                     <div id="lista-upsell" class="scroll-horizontal"></div>
                 </div>
@@ -656,15 +672,7 @@ window.addEventListener('DOMContentLoaded', () => {
                         <button id="btn-retirada" onclick="mudarModoEntrega('retirada')">
                             <i class="fas fa-store"></i> <span data-lang-key="retiro">Retiro</span>
                         </button>
-                        <button id="btn-local" onclick="mudarModoEntrega('local')">
-                            <i class="fas fa-utensils"></i> <span data-lang-key="btn-local">Comer aqui</span>
-                        </button>
                     </div>
-                </div>
-
-                <div class="upsell-section">
-                    <h4 data-lang-key="turbine">Turbine su pedido 🥤</h4>
-                    <div id="upsell-list" class="upsell-scroller"></div>
                 </div>
 
                 <div class="form-section">
@@ -673,7 +681,8 @@ window.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="cli-nome" placeholder="Ej: Juan Pérez" class="input-field">
                     <span id="erro-nome" class="msg-erro-texto">El nombre es obligatorio</span>
                     
-                    <label style="font-size: 0.8rem; color: #666;" data-lang-key="label-zap" id="label-whatsapp-field">WhatsApp <span id="zap-obrig-badge" style="display:none;color:#e74c3c;font-weight:700">*</span> <span id="zap-opt-badge" style="font-size:0.72rem;color:#888;font-weight:400">(Opcional)</span></label>
+                    <label id="label-whatsapp-field" style="font-size: 0.8rem; color: #666;" data-lang-key="label-zap">WhatsApp <span id="zap-req-badge" style="display:none;color:#e74c3c;font-size:0.75rem;font-weight:700">* obrigatório para Pix/Alias</span></label>
+                    <span id="zap-hint-field" style="display:none;font-size:0.72rem;color:#e67e22;margin-bottom:6px;display:none">📱 Informe seu WhatsApp para receber os dados de pagamento</span>
                     <div class="row">
                         <select id="cli-ddi" class="input-field small">
                             <option value="+595">🇵🇾 +595 (PY)</option>
@@ -733,7 +742,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                         <div id="box-troco" class="hidden mt-10">
                             <label style="font-size: 0.8rem;" data-lang-key="label-troco">💵 ¿Con cuánto vas a pagar? <span style="color:#e74c3c">*</span></label>
-                            <input type="text" id="troco-valor" placeholder="100.000" class="input-field" inputmode="numeric" data-mask="gs" oninput="mascaraGs(this)" autocomplete="off">
+                            <input type="text" id="troco-valor" placeholder="Ej: 100.000" class="input-field" inputmode="numeric" required>
                         </div>
 
                         <!-- ===== MULTIPAGAMENTO (cards como na image 3) ===== -->

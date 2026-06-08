@@ -5,129 +5,6 @@ if (typeof t === "undefined") {
   };
 }
 
-// Intercepta e traduz alert/confirm/prompt caso idioma seja 'es'
-(function() {
-  const origAlert = window.alert;
-  const origConfirm = window.confirm;
-  const origPrompt = window.prompt;
-
-  const translationDict = {
-    // Alerts
-    "Horário estendido em +": "¡Horario extendido en +",
-    "minutos hoje!": "minutos hoy!",
-    "Extensão removida.": "Extensión removida.",
-    "Erro ao salvar nova ordem. Tente novamente.": "Error al guardar el nuevo orden. Inténtelo de nuevo.",
-    "Preencha o slug e o nome!": "¡Complete el slug y el nombre!",
-    "Erro ao salvar:": "Error al guardar:",
-    "Erro ao deletar:": "Error al eliminar:",
-    "Erro inesperado:": "Error inesperado:",
-    "Produto reativado!": "¡Producto reactivado!",
-    "Produto pausado!": "¡Producto pausado!",
-    "Categoria deletada com sucesso!": "¡Categoría eliminada con éxito!",
-    "Motoboy deletado com sucesso!": "¡Repartidor eliminado con éxito!",
-    "Nome do motoboy é obrigatório!": "¡El nombre del repartidor es obligatorio!",
-    "Máximo de 2 turnos por dia.": "Máximo de 2 turnos por día.",
-    "Preencha os horários de abertura e fechamento.": "Complete los horarios de apertura y cierre.",
-    "Informe o ID do produto para o banner.": "Ingrese el ID del producto para el banner.",
-    "Falha no upload do banner:": "Fallo al subir el banner:",
-    "O banner não foi salvo.": "El banner no fue guardado.",
-    "Selecione uma foto ou informe a URL do banner.": "Seleccione una foto o ingrese la URL del banner.",
-    "Banner ": "Banner ",
-    "ativado!": "¡activado!",
-    "Maquininhas salvas!": "¡Terminales de tarjeta guardadas!",
-    "Falha no upload do ícone:": "Fallo al subir el ícono:",
-    "A personalização não foi salva.": "La personalización no fue guardada.",
-    "Erro ao enviar imagem:": "Error al enviar la imagen:",
-    "Erro ao sair:": "Error al salir:",
-    "Todas as variações estão pausadas.": "Todas las variaciones están pausadas.",
-    "sabores": "sabores",
-    "itens": "ítems",
-    "Escolha pelo menos 1 sabor.": "Elija al menos 1 sabor.",
-    "Adicione ao menos 1 novo item antes de lançar.": "Agregue al menos 1 nuevo ítem antes de lanzar.",
-    "Adicione ao menos 1 forma de pagamento!": "¡Agregue al menos 1 forma de pago!",
-    "Erro ao atualizar mesa:": "Error al actualizar mesa:",
-    "item(s) enviado(s) para a cozinha!": "¡ítem(s) enviado(s) a la cocina!",
-    "Erro ao buscar comanda.": "Error al buscar comanda.",
-    "Erro ao baixar item:": "Error al cerrar ítem:",
-    "Cargo alterado para ": "¡Cargo modificado a ",
-    "Usuário excluído com sucesso!": "¡Usuario eliminado con éxito!",
-    "Preencha email, nome e senha (mín. 6 caracteres).": "Complete correo, nombre y contraseña (mín. 6 caracteres).",
-    "Auth criado mas erro no perfil:": "Auth creado pero con error en el perfil:",
-    "Usuário excluído.": "Usuario eliminado.",
-    "Email e senha (mín. 6 caracteres) são obrigatórios": "Correo y contraseña (mín. 6 caracteres) son obligatorios",
-    "O nome de exibição é obrigatório": "El nombre de exhibición es obligatorio",
-    "Apenas o Admin Master pode criar usuários com cargo Dono.": "Solo el Admin Master puede crear usuarios con el cargo de Dueño.",
-    "Erro ao criar usuário:": "Error al crear usuario:",
-    "Usuário criado. Aguardando confirmação de email para ativar.": "Usuario creado. Esperando confirmación de correo para activar.",
-    "Digite um código para o cupom": "Ingrese un código para el cupón",
-    "Cupom salvo com sucesso!": "¡Cupón guardado con éxito!",
-    "Pedido não encontrado.": "Pedido no encontrado.",
-    "Este pedido não tem número de telefone registrado.": "Este pedido no tiene número de teléfono registrado.",
-    "Entrega confirmada com sucesso!": "¡Entrega confirmada con éxito!",
-    "Erro ao confirmar entrega": "Error al confirmar entrega",
-    "Nenhum pedido de Mesa/Retirada/Local em aberto.": "Ningún pedido de Mesa/Retiro/Local abierto.",
-    "pedido(s) baixado(s)!": "¡pedido(s) cobrado(s)/cerrado(s)!",
-    "Nenhum delivery para confirmar entrega.": "Ningún delivery para confirmar entrega.",
-    "delivery(s) confirmado(s)!": "¡delivery(s) confirmado(s)!",
-    "Erro ao carregar gráfico": "Error al cargar gráfico",
-    "Informe o nome do item.": "Ingrese el nombre del ítem.",
-    "Quantidade inválida.": "Cantidad inválida.",
-    "Configuração inicial salva com sucesso!": "¡Configuración inicial guardada con éxito!",
-    "Preencha o valor corretamente.": "Complete el valor correctamente.",
-    "Descreva o tipo da despesa.": "Describa el tipo de gasto.",
-    "Você precisa aceitar o contrato de serviços para continuar.": "Debe aceptar el contrato de servicios para continuar.",
-    "Preencha seu nome completo e RUC/C.I. para assinar.": "Complete su nombre completo y RUC/C.I. para firmar.",
-    "Erro ao registrar assinatura:": "Error al registrar la firma:",
-
-    // Confirms
-    "Remover a extensão de horário de hoje?": "¿Remover la extensión de horario de hoy?",
-    "Deseja pausar este produto?": "¿Desea pausar este producto?",
-    "Deseja reactivar este produto?": "¿Desea reactivar este producto?",
-    "Deseja reativar este produto?": "¿Desea reactivar este producto?",
-    "Remover esta etapa?": "¿Remover esta etapa?",
-    "Deletar este cupom?": "¿Eliminar este cupón?",
-    "Confirmar entrega e pagamento desta mesa?": "¿Confirmar entrega y pago de esta mesa?",
-    "Excluir este item?": "¿Eliminar este ítem?",
-    "Excluir esta despesa? Esta ação não pode ser desfeita.": "¿Eliminar este gasto? Esta acción no se puede deshacer.",
-    "Alterar cargo para": "¿Alterar cargo a",
-    "Confirmar que este pedido foi entregue ao cliente?": "¿Confirmar que este pedido fue entregado al cliente?",
-    "Confirmar entrega de ": "¿Confirmar entrega de ",
-    "Baixar ": "¿Cobrar/cerrar "
-  };
-
-  function translateText(str) {
-    if (!str || typeof str !== 'string') return str;
-    const lang = localStorage.getItem('admin_lang') || 'es';
-    if (lang !== 'es') return str;
-
-    // Check exact match
-    let trimmed = str.trim();
-    if (translationDict[trimmed]) {
-      return str.replace(trimmed, translationDict[trimmed]);
-    }
-
-    // Partial search / replacement for dynamic strings
-    let translated = str;
-    for (const [key, val] of Object.entries(translationDict)) {
-      if (translated.includes(key)) {
-        translated = translated.replaceAll(key, val);
-      }
-    }
-    return translated;
-  }
-
-  window.alert = function(msg) {
-    return origAlert(translateText(msg));
-  };
-  window.confirm = function(msg) {
-    return origConfirm(translateText(msg));
-  };
-  window.prompt = function(msg, defaultVal) {
-    return origPrompt(translateText(msg), defaultVal);
-  };
-})();
-
-
 // =========================================
 // 1. CONSTANTES E INICIALIZAÇÃO
 // =========================================
@@ -283,7 +160,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const optDono = document.getElementById("opt-cargo-dono");
       if (optDono) optDono.style.display = "";
     }
-    if (perfilUsuario === "dono" || perfilUsuario === "adminMaster") {
+    if (
+      perfilUsuario === "dono" ||
+      perfilUsuario === "adminMaster" ||
+      perfilUsuario === "gerente"
+    ) {
       const menuFin = document.getElementById("menu-financeiro");
       if (menuFin) menuFin.style.display = "flex";
     }
@@ -319,17 +200,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ── Controle de Assinatura (barra de aviso / bloqueio) ──
     if (typeof SubscriptionUI !== "undefined") {
       SubscriptionUI.inicializar({
-        supabaseUrl:  typeof _SUPABASE_URL !== "undefined" ? _SUPABASE_URL : "",
-        supabaseKey:  typeof _SUPABASE_KEY !== "undefined" ? _SUPABASE_KEY : "",
-        contatoFone:  "595976771714",
-        contatoNome:  "SuporteLinkPY",
-        perfil:       perfilUsuario,
+        supabaseUrl: typeof _SUPABASE_URL !== "undefined" ? _SUPABASE_URL : "",
+        supabaseKey: typeof _SUPABASE_KEY !== "undefined" ? _SUPABASE_KEY : "",
+        contatoFone: "595976771714",
+        contatoNome: "SuporteLinkPY",
       });
     }
 
     // Exibe menu Assinatura somente para adminMaster
     const menuAssin = document.getElementById("menu-assinatura");
-    if (menuAssin) menuAssin.style.display = perfilUsuario === "adminMaster" ? "flex" : "none";
+    if (menuAssin)
+      menuAssin.style.display =
+        perfilUsuario === "adminMaster" ? "flex" : "none";
   }
 
   let _lastWidth = window.innerWidth;
@@ -512,6 +394,9 @@ function showTab(tabId, event) {
   }
   if (realTabId === "mensalistas") {
     initMensalistas();
+  }
+  if (realTabId === "estoque") {
+    veRenderizarPainelEstoque();
   }
   if (realTabId === "configuracoes") {
     carregarConfiguracoes();
@@ -1379,129 +1264,513 @@ async function imprimirPedido(id) {
 // =========================================
 // 5. TELA COZINHA
 // =========================================
+// ══════════════════════════════════════════════════════════════
+//  LISTA DE SEPARAÇÃO — substitui o KDS de cozinha
+//  Exibe pedidos com checkboxes por item, impressão e resumo
+//  consolidado de todos os produtos a separar.
+// ══════════════════════════════════════════════════════════════
+
+let _sepPedidos = []; // pedidos carregados do banco
+let _sepChecks = {}; // { "pedidoId-itemIdx": true/false } — estado dos checks
+
+// ── carregarCozinha — mantém o nome para compatibilidade com showTab ──
 async function carregarCozinha() {
-  const { data: pedidos } = await supa
+  await sepRecarregar();
+}
+
+async function sepRecarregar() {
+  const sel = document.getElementById("sep-filtro-status");
+  const status = (sel?.value || "em_preparo,pronto_entrega").split(",");
+
+  const cont = document.getElementById("sep-lista-pedidos");
+  if (cont)
+    cont.innerHTML = `
+    <div style="text-align:center;padding:40px;color:#aaa">
+      <i class="fas fa-spinner fa-spin" style="font-size:2rem"></i>
+      <p style="margin-top:12px">Carregando pedidos…</p>
+    </div>`;
+
+  const { data, error } = await supa
     .from("pedidos")
-    .select("*")
-    .eq("status", "em_preparo")
+    .select(
+      "id, uid_temporal, cliente_nome, cliente_telefone, endereco_entrega, itens, status, created_at, forma_pagamento, obs_pagamento, total_geral",
+    )
+    .in("status", status)
     .order("id", { ascending: true });
 
-  const grid = document.getElementById("grid-cozinha");
-  if (!grid) return;
-
-  grid.innerHTML = "";
-
-  if (!pedidos || pedidos.length === 0) {
-    grid.innerHTML =
-      '<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#aaa; font-size:1.5rem;">👨‍🍳 Cozinha Livre!</div>';
+  if (error) {
+    if (cont)
+      cont.innerHTML = `<p style="color:#e74c3c;padding:20px">Erro: ${error.message}</p>`;
     return;
   }
 
-  pedidos.forEach((p) => {
-    const dataOriginal = p.created_at || p.data_pedido || new Date();
-    const horaPedido = new Date(dataOriginal).getTime();
-    const agora = new Date().getTime();
+  _sepPedidos = data || [];
+  _sepRenderizar();
+}
 
-    let minutos = 0;
-    if (!isNaN(horaPedido)) {
-      minutos = Math.floor((agora - horaPedido) / 60000);
-    } else {
-      console.warn(`Pedido ${p.id} com data inválida:`, dataOriginal);
-    }
+function _sepRenderizar() {
+  const cont = document.getElementById("sep-lista-pedidos");
+  const agrupar = document.getElementById("sep-agrupar")?.checked !== false;
+  if (!cont) return;
 
-    let corTempo = "#2ecc71";
-    if (minutos > 20) corTempo = "#f1c40f";
-    if (minutos > 40) corTempo = "#e74c3c";
+  if (!_sepPedidos.length) {
+    cont.innerHTML = `
+      <div style="text-align:center;padding:50px;color:#aaa">
+        <div style="font-size:3rem;margin-bottom:12px">✅</div>
+        <div style="font-size:1.1rem;font-weight:600">Nenhum pedido pendente de separação!</div>
+      </div>`;
+    _sepRenderizarResumo([]);
+    return;
+  }
 
-    // === Filtra apenas itens PENDENTES para a cozinha ===
-    // Itens sem status_item são tratados como pendente (retrocompatibilidade)
-    const itensPendentes = (p.itens || []).filter(
-      (item) => !item.status_item || item.status_item === "pendente",
-    );
+  if (agrupar) {
+    cont.innerHTML = _sepPedidos.map((p) => _sepHtmlPedido(p)).join("");
+  } else {
+    // Visão consolidada — todos os itens de todos os pedidos numa lista só
+    cont.innerHTML = _sepHtmlConsolidado(_sepPedidos);
+  }
 
-    // Se não há nenhum item pendente neste pedido, pula o card
-    if (itensPendentes.length === 0) return;
+  _sepRenderizarResumo(_sepPedidos);
+}
 
-    let itensHtml = "";
-    itensPendentes.forEach((item) => {
-      const quantidade = item.qtd || item.q || 1;
-      const nomeItem = item.nome || item.n || "Item";
-      const variacaoItem = item.variacao || item.t || ""; // variação separada do nome
-      const preparoItem = item.preparo || item.pr || ""; // preparo (cru/flambado etc)
-      const observacao = item.obs || item.o || "";
-      const montagemArray = item.montagem || item.m || [];
-
-      const obs = observacao
-        ? `<div style="color:#e74c3c; font-size:0.85rem">⚠️ ${observacao}</div>`
-        : "";
-      const listaMontagem = Array.isArray(montagemArray)
-        ? montagemArray
-            .map((linha) => {
-              const idx = linha.indexOf(":");
-              if (idx > 0) {
-                return `<strong>${linha.slice(0, idx)}:</strong> ${linha.slice(idx + 1).trim()}`;
-              }
-              return linha;
-            })
-            .join("<br>")
-        : "";
-      const montagem = listaMontagem
-        ? `<div style="font-size:0.8rem; color:#444; margin-left:10px; line-height:1.6;">${listaMontagem}</div>`
-        : "";
-      const variacaoHtml = variacaoItem
-        ? `<span style="color:#FF441F; font-size:0.85rem; font-weight:600;"> ▸ ${variacaoItem}</span>`
-        : "";
-      const preparoHtml = preparoItem
-        ? `<div style="color:#2980b9; font-size:0.82rem; margin-left:10px;">🍳 ${preparoItem}</div>`
-        : "";
-
-      itensHtml += `
-                    <li style="border-bottom:1px dashed #444; padding:5px 0;">
-                        <strong>${quantidade}x</strong> ${nomeItem}${variacaoHtml}
-                        ${preparoHtml}
-                        ${montagem}
-                        ${obs}
-                    </li>
-                `;
-    });
-
-    // Info de garçom e local de entrega para o KDS
-    const garcomHtml = p.garcom_nome
-      ? `<div style="font-size:0.78rem;color:#fff;opacity:.85;margin-top:2px">🍽️ ${p.garcom_nome}</div>`
-      : "";
-    const localEntrega = p.endereco_entrega || "";
-    const localHtml = localEntrega
-      ? `<div style="font-size:0.82rem;background:rgba(255,255,255,.18);border-radius:5px;padding:2px 7px;font-weight:700">${localEntrega}</div>`
-      : "";
-
-    grid.innerHTML += `
-            <div class="kds-card">
-                <div class="kds-header" style="background:${corTempo}; color:#fff; padding:10px; border-radius:5px 5px 0 0; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                      <span style="font-weight:bold; font-size:1.1rem">#${p.uid_temporal || p.id}</span>
-                      ${garcomHtml}
-                    </div>
-                    <div style="text-align:right">
-                      <span>⏱️ ${minutos} min</span>
-                      ${localHtml}
-                    </div>
-                </div>
-                <div style="padding:10px;">
-                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:10px; color:#2c3e50">
-                        ${p.cliente_nome || "Cliente"}
-                    </div>
-                    <ul style="list-style:none; padding:0; margin:0; color:#333;">
-                        ${itensHtml}
-                    </ul>
-                </div>
-                <div style="padding:10px; margin-top:auto;">
-                    <button class="btn btn-success" style="width:100%; padding:15px; font-size:1.1rem;" onclick="mudarStatus(${p.id}, 'pronto_entrega')">
-                        ✅ PRONTO — ${p.garcom_nome ? `avisa ${p.garcom_nome.split(" ")[0]}` : "entregar"}
-                    </button>
-                </div>
-            </div>
-        `;
+// ──────────────────────────────────────────────────────────────
+//  HTML de um card de pedido com checkboxes
+// ──────────────────────────────────────────────────────────────
+function _sepHtmlPedido(p) {
+  const num = p.uid_temporal || p.id;
+  const cliente = p.cliente_nome || "Cliente";
+  const hora = new Date(p.created_at).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
+  const itens = Array.isArray(p.itens) ? p.itens : [];
+  const statusCor =
+    {
+      em_preparo: "#f59e0b",
+      pronto_entrega: "#22c55e",
+      saiu_entrega: "#3b82f6",
+    }[p.status] || "#94a3b8";
+
+  const statusLabel =
+    {
+      em_preparo: "Em separação",
+      pronto_entrega: "Pronto p/ envio",
+      saiu_entrega: "Saiu p/ entrega",
+    }[p.status] || p.status;
+
+  // Verifica se todos os itens estão marcados
+  const todosChecked = itens.every((_, i) => _sepChecks[`${p.id}-${i}`]);
+
+  const itensHtml = itens
+    .map((item, idx) => {
+      const checkId = `sep-chk-${p.id}-${idx}`;
+      const checked = _sepChecks[`${p.id}-${idx}`] ? "checked" : "";
+      const qtd = item.qtd || item.q || 1;
+      const nome = item.nome || item.n || "Item";
+      const variacao = item.variacao || item.t || "";
+      const obs = item.obs || item.o || "";
+      const unidade = item.unidade_venda || "";
+
+      const varTag = variacao
+        ? `<span class="sep-variacao">▸ ${variacao}</span>`
+        : "";
+      const unidTag = unidade
+        ? `<span class="sep-unidade">${unidade}</span>`
+        : "";
+      const obsTag = obs ? `<div class="sep-obs">⚠️ ${obs}</div>` : "";
+
+      return `
+      <label class="sep-item-row ${checked ? "sep-item-checked" : ""}"
+        for="${checkId}" onclick="sepToggleItem('${p.id}', ${idx}, this)">
+        <input type="checkbox" id="${checkId}" class="sep-checkbox" ${checked}
+          onclick="event.stopPropagation(); sepToggleItem('${p.id}', ${idx}, this.closest('label'))">
+        <div class="sep-item-body">
+          <div class="sep-item-nome">
+            <strong>${qtd}×</strong> ${nome} ${varTag} ${unidTag}
+          </div>
+          ${obsTag}
+        </div>
+      </label>`;
+    })
+    .join("");
+
+  return `
+    <div class="sep-card" id="sep-card-${p.id}" data-pedido-id="${p.id}">
+
+      <!-- Cabeçalho do card -->
+      <div class="sep-card-header" style="border-left-color:${statusCor}">
+        <div class="sep-card-info">
+          <span class="sep-num">#${num}</span>
+          <span class="sep-cliente">${cliente}</span>
+          <span class="sep-hora">🕐 ${hora}</span>
+        </div>
+        <div class="sep-card-badges">
+          <span class="sep-status-badge" style="background:${statusCor}20;color:${statusCor};border:1px solid ${statusCor}40">
+            ${statusLabel}
+          </span>
+          ${
+            p.forma_pagamento
+              ? `<span class="sep-pgto-badge">${_sepIconePgto(p.forma_pagamento)} ${p.forma_pagamento}</span>`
+              : ""
+          }
+        </div>
+      </div>
+
+      <!-- Endereço se houver -->
+      ${
+        p.endereco_entrega
+          ? `
+        <div class="sep-endereco">
+          <i class="fas fa-location-dot"></i> ${p.endereco_entrega}
+        </div>`
+          : ""
+      }
+
+      <!-- Lista de itens com checkboxes -->
+      <div class="sep-itens-lista">
+        ${itensHtml}
+      </div>
+
+      <!-- Rodapé: ações -->
+      <div class="sep-card-footer">
+        <div class="sep-total">
+          Total: <strong>Gs ${Math.round(p.total_geral || 0).toLocaleString("es-PY")}</strong>
+        </div>
+        <div class="sep-acoes">
+          <button class="btn btn-sm sep-btn-print" onclick="sepImprimirPedido(${p.id})"
+            title="Imprimir este pedido">
+            <i class="fas fa-print"></i>
+          </button>
+          <button class="btn btn-sm sep-btn-limpar" onclick="sepLimparChecks(${p.id})"
+            title="Desmarcar tudo">
+            <i class="fas fa-rotate-left"></i>
+          </button>
+          ${
+            p.status === "em_preparo"
+              ? `
+          <button class="btn btn-sm sep-btn-pronto"
+            onclick="mudarStatus(${p.id}, 'pronto_entrega').then(()=>sepRecarregar())"
+            title="Marcar como pronto para envio">
+            <i class="fas fa-check"></i> Pronto p/ envio
+          </button>`
+              : ""
+          }
+          ${
+            p.status === "pronto_entrega"
+              ? `
+          <button class="btn btn-sm sep-btn-saiu"
+            onclick="mudarStatus(${p.id}, 'saiu_entrega').then(()=>sepRecarregar())"
+            title="Saiu para entrega">
+            <i class="fas fa-motorcycle"></i> Saiu p/ entrega
+          </button>`
+              : ""
+          }
+        </div>
+      </div>
+
+    </div>`;
+}
+
+// ──────────────────────────────────────────────────────────────
+//  HTML consolidado (sem agrupamento — lista única)
+// ──────────────────────────────────────────────────────────────
+function _sepHtmlConsolidado(pedidos) {
+  // Agrega todos os itens de todos os pedidos
+  const mapa = {}; // "nome|variacao" → { nome, variacao, qtd, pedidos[] }
+
+  pedidos.forEach((p) => {
+    (p.itens || []).forEach((item) => {
+      const nome = item.nome || item.n || "Item";
+      const variacao = item.variacao || item.t || "";
+      const qtd = item.qtd || item.q || 1;
+      const chave = `${nome}|||${variacao}`;
+      if (!mapa[chave]) mapa[chave] = { nome, variacao, qtd: 0, pedidos: [] };
+      mapa[chave].qtd += qtd;
+      mapa[chave].pedidos.push(`#${p.uid_temporal || p.id}`);
+    });
+  });
+
+  const linhas = Object.values(mapa)
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+    .map((it, idx) => {
+      const checkId = `sep-cons-${idx}`;
+      const varTag = it.variacao
+        ? `<span class="sep-variacao">▸ ${it.variacao}</span>`
+        : "";
+      return `
+        <label class="sep-item-row" for="${checkId}"
+          onclick="this.classList.toggle('sep-item-checked')">
+          <input type="checkbox" id="${checkId}" class="sep-checkbox"
+            onclick="event.stopPropagation();this.closest('label').classList.toggle('sep-item-checked')">
+          <div class="sep-item-body">
+            <div class="sep-item-nome">
+              <strong>${it.qtd}×</strong> ${it.nome} ${varTag}
+            </div>
+            <div style="font-size:0.72rem;color:#888;margin-top:2px">
+              Pedidos: ${it.pedidos.join(", ")}
+            </div>
+          </div>
+        </label>`;
+    })
+    .join("");
+
+  return `
+    <div class="sep-card">
+      <div class="sep-card-header" style="border-left-color:#8b5cf6">
+        <div class="sep-card-info">
+          <span class="sep-num">Lista Consolidada</span>
+          <span class="sep-cliente">${pedidos.length} pedidos — ${Object.keys(mapa).length} itens distintos</span>
+        </div>
+        <button class="btn btn-sm sep-btn-print" onclick="sepImprimirTudo()" style="margin-left:auto">
+          <i class="fas fa-print"></i> Imprimir
+        </button>
+      </div>
+      <div class="sep-itens-lista">${linhas}</div>
+    </div>`;
+}
+
+// ──────────────────────────────────────────────────────────────
+//  Resumo consolidado no topo da aba
+// ──────────────────────────────────────────────────────────────
+function _sepRenderizarResumo(pedidos) {
+  const wrap = document.getElementById("sep-resumo-global");
+  const listEl = document.getElementById("sep-resumo-lista");
+  if (!wrap || !listEl) return;
+
+  if (!pedidos.length) {
+    wrap.style.display = "none";
+    return;
+  }
+
+  // Contabiliza itens
+  const mapa = {};
+  pedidos.forEach((p) => {
+    (p.itens || []).forEach((item) => {
+      const nome = item.nome || item.n || "Item";
+      const v = item.variacao || item.t || "";
+      const k = `${nome}|||${v}`;
+      if (!mapa[k]) mapa[k] = { nome, variacao: v, qtd: 0 };
+      mapa[k].qtd += item.qtd || item.q || 1;
+    });
+  });
+
+  const sorted = Object.values(mapa).sort((a, b) =>
+    a.nome.localeCompare(b.nome),
+  );
+
+  listEl.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      ${sorted
+        .map(
+          (it) => `
+        <span style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;
+          padding:4px 10px;font-size:0.8rem;font-weight:600;color:#374151">
+          <strong style="color:#1a7a2e">${it.qtd}×</strong>
+          ${it.nome}${it.variacao ? ` <span style="color:#888;font-weight:400">▸ ${it.variacao}</span>` : ""}
+        </span>`,
+        )
+        .join("")}
+    </div>`;
+
+  wrap.style.display = "block";
+}
+
+// ──────────────────────────────────────────────────────────────
+//  Interação: check/uncheck de item
+// ──────────────────────────────────────────────────────────────
+function sepToggleItem(pedidoId, idx, labelEl) {
+  const key = `${pedidoId}-${idx}`;
+  _sepChecks[key] = !_sepChecks[key];
+  labelEl.classList.toggle("sep-item-checked", !!_sepChecks[key]);
+  const chk = labelEl.querySelector("input[type=checkbox]");
+  if (chk) chk.checked = !!_sepChecks[key];
+
+  // Atualiza progresso do card
+  _sepAtualizarProgresso(pedidoId);
+}
+
+function sepLimparChecks(pedidoId) {
+  const p = _sepPedidos.find((x) => x.id === pedidoId);
+  if (!p) return;
+  (p.itens || []).forEach((_, i) => {
+    _sepChecks[`${pedidoId}-${i}`] = false;
+  });
+  // Re-renderiza só o card afetado
+  const card = document.getElementById(`sep-card-${pedidoId}`);
+  if (card) card.outerHTML = _sepHtmlPedido(p);
+}
+
+function _sepAtualizarProgresso(pedidoId) {
+  const p = _sepPedidos.find((x) => x.id === pedidoId);
+  if (!p) return;
+  const total = (p.itens || []).length;
+  const marcados = (p.itens || []).filter(
+    (_, i) => _sepChecks[`${pedidoId}-${i}`],
+  ).length;
+  // Visual feedback: card fica esverdeado quando tudo marcado
+  const card = document.getElementById(`sep-card-${pedidoId}`);
+  if (!card) return;
+  if (marcados === total && total > 0) {
+    card.style.borderColor = "#22c55e";
+    card.style.background = "#f0fdf4";
+  } else {
+    card.style.borderColor = "";
+    card.style.background = "";
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  Busca inline (filtra cards sem ir ao banco)
+// ──────────────────────────────────────────────────────────────
+function sepFiltrarBusca(termo) {
+  const t = termo.toLowerCase().trim();
+  document.querySelectorAll(".sep-card[data-pedido-id]").forEach((card) => {
+    const pid = card.dataset.pedidoId;
+    const p = _sepPedidos.find((x) => String(x.id) === pid);
+    if (!p) return;
+    const texto = [
+      p.uid_temporal,
+      p.id,
+      p.cliente_nome,
+      p.cliente_telefone,
+      ...(p.itens || []).map((i) => i.nome || i.n || ""),
+    ]
+      .join(" ")
+      .toLowerCase();
+    card.style.display = !t || texto.includes(t) ? "" : "none";
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+//  Impressão
+// ──────────────────────────────────────────────────────────────
+function _sepGerarHtmlImpressao(pedidos) {
+  const data = new Date().toLocaleString("pt-BR");
+
+  const blocos = pedidos
+    .map((p) => {
+      const num = p.uid_temporal || p.id;
+      const itens = (p.itens || [])
+        .map((item, idx) => {
+          const qtd = item.qtd || item.q || 1;
+          const nome = item.nome || item.n || "Item";
+          const var_ = item.variacao || item.t || "";
+          const obs = item.obs || item.o || "";
+          const unid = item.unidade_venda || "";
+          return `
+        <tr>
+          <td style="width:28px;text-align:center">
+            <span style="display:inline-block;width:16px;height:16px;border:2px solid #333;border-radius:3px"></span>
+          </td>
+          <td style="padding:5px 8px;font-size:13px">
+            <strong>${qtd}×</strong> ${nome}
+            ${var_ ? `<em style="color:#555"> ▸ ${var_}</em>` : ""}
+            ${unid ? `<span style="background:#e0f2fe;color:#075985;border-radius:3px;padding:0 5px;font-size:11px;margin-left:4px">${unid}</span>` : ""}
+            ${obs ? `<div style="color:#dc2626;font-size:11px;margin-top:2px">⚠️ ${obs}</div>` : ""}
+          </td>
+        </tr>`;
+        })
+        .join("");
+
+      return `
+      <div style="page-break-inside:avoid;border:1.5px solid #ddd;border-radius:8px;
+        margin-bottom:16px;overflow:hidden">
+        <div style="background:#1a7a2e;color:#fff;padding:8px 14px;display:flex;
+          justify-content:space-between;align-items:center">
+          <div>
+            <strong style="font-size:16px">#${num}</strong>
+            <span style="margin-left:10px;font-size:13px">${p.cliente_nome || "Cliente"}</span>
+          </div>
+          <div style="font-size:12px;opacity:.85">
+            ${new Date(p.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        </div>
+        ${
+          p.endereco_entrega
+            ? `
+          <div style="background:#f9fafb;padding:5px 14px;font-size:12px;color:#555;
+            border-bottom:1px dashed #e5e7eb">
+            📍 ${p.endereco_entrega}
+          </div>`
+            : ""
+        }
+        <table style="width:100%;border-collapse:collapse;padding:6px">
+          <tbody>${itens}</tbody>
+        </table>
+        <div style="border-top:1px dashed #e5e7eb;padding:6px 14px;font-size:12px;
+          display:flex;justify-content:space-between;color:#555">
+          <span>${p.forma_pagamento || ""}</span>
+          <strong>Gs ${Math.round(p.total_geral || 0).toLocaleString("es-PY")}</strong>
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  return `
+    <!DOCTYPE html><html><head>
+    <meta charset="utf-8">
+    <title>Lista de Separação</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 16px; color: #111; }
+      @media print {
+        body { padding: 0; }
+        .no-print { display: none; }
+      }
+    </style>
+    </head><body>
+    <div class="no-print" style="margin-bottom:16px;display:flex;gap:10px">
+      <button onclick="window.print()"
+        style="padding:10px 20px;background:#1a7a2e;color:#fff;border:none;
+        border-radius:8px;font-size:1rem;cursor:pointer;font-weight:700">
+        🖨️ Imprimir
+      </button>
+      <button onclick="window.close()"
+        style="padding:10px 20px;background:#6b7280;color:#fff;border:none;
+        border-radius:8px;font-size:1rem;cursor:pointer">
+        ✕ Fechar
+      </button>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px;
+      border-bottom:2px solid #1a7a2e;padding-bottom:10px">
+      <h2 style="margin:0;color:#1a7a2e">📦 Lista de Separação</h2>
+      <div style="font-size:12px;color:#888;text-align:right">
+        Impresso em: ${data}<br>
+        ${pedidos.length} pedido(s)
+      </div>
+    </div>
+    ${blocos}
+    </body></html>`;
+}
+
+function sepImprimirPedido(pedidoId) {
+  const p = _sepPedidos.find((x) => x.id === pedidoId);
+  if (!p) return;
+  const win = window.open("", "_blank", "width=800,height=700");
+  win.document.write(_sepGerarHtmlImpressao([p]));
+  win.document.close();
+}
+
+function sepImprimirTudo() {
+  if (!_sepPedidos.length) {
+    alert("Nenhum pedido para imprimir.");
+    return;
+  }
+  const win = window.open("", "_blank", "width=800,height=700");
+  win.document.write(_sepGerarHtmlImpressao(_sepPedidos));
+  win.document.close();
+}
+
+// Ícone por forma de pagamento
+function _sepIconePgto(forma) {
+  const m = {
+    efectivo: "💵",
+    dinheiro: "💵",
+    cartao: "💳",
+    pix: "⚡",
+    transferencia: "🏦",
+    qr_py: "📱",
+  };
+  return m[(forma || "").toLowerCase().replace(/\s/g, "")] || "💰";
 }
 
 // =========================================
@@ -1534,13 +1803,13 @@ let _sessaoCaixaAtiva = null;
  * Funcionário vê apenas a sua própria.
  */
 async function _carregarSessaoCaixa() {
-  const ehGestor   = ["dono", "gerente", "adminMaster"].includes(perfilUsuario);
+  const ehGestor = ["dono", "gerente", "adminMaster"].includes(perfilUsuario);
   const emailAtual = document.getElementById("user-email")?.innerText || "";
 
   let q = supa
     .from("sessoes_caixa")
     .select("*")
-    .is("fechado_em", null)          // só sessões ABERTAS
+    .is("fechado_em", null) // só sessões ABERTAS
     .order("aberto_em", { ascending: false })
     .limit(1);
 
@@ -1553,7 +1822,15 @@ async function _carregarSessaoCaixa() {
   const elStatus = document.getElementById("status-sessao-caixa");
   if (elStatus) {
     if (_sessaoCaixaAtiva) {
-      const dAbr = new Date(_sessaoCaixaAtiva.aberto_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+      const dAbr = new Date(_sessaoCaixaAtiva.aberto_em).toLocaleString(
+        "pt-BR",
+        {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        },
+      );
       elStatus.innerHTML = `<span style="color:#27ae60">🟢 Caixa aberto desde ${dAbr}</span>`;
     } else {
       elStatus.innerHTML = `<span style="color:#e74c3c">🔴 Nenhum caixa aberto</span>`;
@@ -1581,17 +1858,20 @@ function _exibirAlertaAberturaCaixa() {
  */
 async function _abrirSessaoCaixa(valorAbertura, descricao) {
   const emailAtual = document.getElementById("user-email")?.innerText || "";
-  const nome       = document.getElementById("user-nome-display")?.innerText || emailAtual;
+  const nome =
+    document.getElementById("user-nome-display")?.innerText || emailAtual;
 
   const { data, error } = await supa
     .from("sessoes_caixa")
-    .insert([{
-      usuario_email:  emailAtual,
-      usuario_nome:   nome,
-      aberto_em:      new Date().toISOString(),
-      valor_abertura: valorAbertura || 0,
-      observacao:     descricao || null,
-    }])
+    .insert([
+      {
+        usuario_email: emailAtual,
+        usuario_nome: nome,
+        aberto_em: new Date().toISOString(),
+        valor_abertura: valorAbertura || 0,
+        observacao: descricao || null,
+      },
+    ])
     .select()
     .single();
 
@@ -1604,13 +1884,13 @@ async function calcularFinanceiro() {
   const abaFin = document.getElementById("financeiro");
   if (!abaFin || !abaFin.classList.contains("active")) return;
 
-  const elInicio  = document.getElementById("fin-inicio");
-  const elFim     = document.getElementById("fin-fim");
-  const elTipo    = document.getElementById("fin-tipo");
+  const elInicio = document.getElementById("fin-inicio");
+  const elFim = document.getElementById("fin-fim");
+  const elTipo = document.getElementById("fin-tipo");
   const elFactura = document.getElementById("fin-factura");
   if (!elInicio || !elFim || !elTipo) return;
 
-  const ehGestor   = ["dono", "gerente", "adminMaster"].includes(perfilUsuario);
+  const ehGestor = ["dono", "gerente", "adminMaster"].includes(perfilUsuario);
   const emailAtual = document.getElementById("user-email")?.innerText || "";
 
   // ── 1. Carrega/verifica sessão ativa ─────────────────────────────
@@ -1624,24 +1904,28 @@ async function calcularFinanceiro() {
 
   // ── 3. Define intervalo de tempo baseado na SESSÃO, não no calendário ─
   const sessaoInicio = _sessaoCaixaAtiva.aberto_em;
-  const sessaoFim    = _sessaoCaixaAtiva.fechado_em || new Date().toISOString();
+  const sessaoFim = _sessaoCaixaAtiva.fechado_em || new Date().toISOString();
 
   // Gestores podem sobrepor o intervalo com o filtro de datas da tela
   let utcI = sessaoInicio;
   let utcF = sessaoFim;
   if (ehGestor && elInicio.value && elFim.value) {
     const _tz = 4 * 60 * 60 * 1000; // UTC-4 PY
-    utcI = new Date(new Date(elInicio.value + "T00:00:00").getTime() + _tz).toISOString();
-    utcF = new Date(new Date(elFim.value   + "T23:59:59").getTime() + _tz).toISOString();
+    utcI = new Date(
+      new Date(elInicio.value + "T00:00:00").getTime() + _tz,
+    ).toISOString();
+    utcF = new Date(
+      new Date(elFim.value + "T23:59:59").getTime() + _tz,
+    ).toISOString();
   } else if (!elInicio.value || !elFim.value) {
     // Preenche os campos de data com os valores da sessão para exibição
     const dAbr = new Date(sessaoInicio);
     elInicio.value = dAbr.toISOString().split("T")[0];
     const dFch = new Date(sessaoFim);
-    elFim.value    = dFch.toISOString().split("T")[0];
+    elFim.value = dFch.toISOString().split("T")[0];
   }
 
-  const tipoFiltro    = elTipo.value;
+  const tipoFiltro = elTipo.value;
   const facturaFiltro = elFactura ? elFactura.value : "todos";
 
   // ── 4. Busca pedidos dentro da janela da sessão ───────────────────
@@ -1682,12 +1966,24 @@ async function calcularFinanceiro() {
   const safeNum = (v) => {
     if (!v) return 0;
     if (typeof v === "number") return v;
-    return parseFloat(v.toString().replace(/[^\d.,-]/g,"").replace(",",".")) || 0;
+    return (
+      parseFloat(
+        v
+          .toString()
+          .replace(/[^\d.,-]/g, "")
+          .replace(",", "."),
+      ) || 0
+    );
   };
   const fmt = (n) => "Gs " + n.toLocaleString("es-PY");
 
-  let faturamento = 0, totalPix = 0, totalTransf = 0, totalCartao = 0, totalEfetivo = 0;
-  let custoEntregas = 0, qtdPedidos = 0;
+  let faturamento = 0,
+    totalPix = 0,
+    totalTransf = 0,
+    totalCartao = 0,
+    totalEfetivo = 0;
+  let custoEntregas = 0,
+    qtdPedidos = 0;
   const motoMap = {};
 
   peds.forEach((p) => {
@@ -1695,10 +1991,12 @@ async function calcularFinanceiro() {
     faturamento += val;
     qtdPedidos++;
     const pag = (p.forma_pagamento || "").toLowerCase();
-    if (pag.includes("pix"))          totalPix    += val;
+    if (pag.includes("pix")) totalPix += val;
     else if (pag.includes("transfer")) totalTransf += val;
-    else if (pag.includes("cartao") || pag.includes("cartão")) totalCartao += val;
-    else if (pag.includes("efetivo") || pag.includes("dinheiro")) totalEfetivo += val;
+    else if (pag.includes("cartao") || pag.includes("cartão"))
+      totalCartao += val;
+    else if (pag.includes("efetivo") || pag.includes("dinheiro"))
+      totalEfetivo += val;
     if (p.tipo_entrega === "delivery") {
       const taxa = safeNum(p.frete_motoboy) || TAXA_MOTOBOY || 0;
       custoEntregas += taxa;
@@ -1709,39 +2007,69 @@ async function calcularFinanceiro() {
     }
   });
 
-  const qtdMotoboyUnicos = Object.keys(motoMap).filter(n => n !== "Sem Motoboy").length;
+  const qtdMotoboyUnicos = Object.keys(motoMap).filter(
+    (n) => n !== "Sem Motoboy",
+  ).length;
   custoEntregas += (AJUDA_COMBUSTIVEL || 0) * qtdMotoboyUnicos;
 
-  let totalSaidas = 0, totalEntradas = 0, totalSangria = 0;
+  let totalSaidas = 0,
+    totalEntradas = 0,
+    totalSangria = 0;
   (caixa || []).forEach((c) => {
     const v = safeNum(c.valor);
-    if (c.tipo === "despesa")  totalSaidas  += v;
-    if (c.tipo === "sangria")  { totalSaidas += v; totalSangria += v; }
+    if (c.tipo === "despesa") totalSaidas += v;
+    if (c.tipo === "sangria") {
+      totalSaidas += v;
+      totalSangria += v;
+    }
     if (c.tipo === "suprimento" || c.tipo === "abertura") totalEntradas += v;
   });
 
-  _caixaState = { faturamento, custoEntregas, totalSaidas, totalEntradas,
-                  totalPix, totalTransf, totalCartao, totalEfetivo, qtdPedidos, totalSangria };
+  _caixaState = {
+    faturamento,
+    custoEntregas,
+    totalSaidas,
+    totalEntradas,
+    totalPix,
+    totalTransf,
+    totalCartao,
+    totalEfetivo,
+    qtdPedidos,
+    totalSangria,
+  };
 
   const lucro = faturamento + totalEntradas - custoEntregas - totalSaidas;
-  const setV  = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+  const setV = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = v;
+  };
 
-  setV("card-faturamento",  fmt(faturamento));
-  setV("card-custo-moto",   fmt(custoEntregas));
-  setV("card-lucro",        fmt(lucro));
-  setV("total-pix",         fmt(totalPix));
-  setV("total-transf",      fmt(totalTransf));
-  setV("total-cartao",      fmt(totalCartao));
-  setV("total-efetivo",     fmt(totalEfetivo));
-  setV("card-qtd-pedidos",  qtdPedidos);
+  setV("card-faturamento", fmt(faturamento));
+  setV("card-custo-moto", fmt(custoEntregas));
+  setV("card-lucro", fmt(lucro));
+  setV("total-pix", fmt(totalPix));
+  setV("total-transf", fmt(totalTransf));
+  setV("total-cartao", fmt(totalCartao));
+  setV("total-efetivo", fmt(totalEfetivo));
+  setV("card-qtd-pedidos", qtdPedidos);
   setV("card-ticket-medio", fmt(qtdPedidos > 0 ? faturamento / qtdPedidos : 0));
 
   // Badge do operador / info da sessão
   const badgeCaixa = document.getElementById("badge-caixa-operador");
   if (badgeCaixa) {
-    const dAbr = new Date(_sessaoCaixaAtiva.aberto_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+    const dAbr = new Date(_sessaoCaixaAtiva.aberto_em).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     const dFch = _sessaoCaixaAtiva.fechado_em
-      ? new Date(_sessaoCaixaAtiva.fechado_em).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })
+      ? new Date(_sessaoCaixaAtiva.fechado_em).toLocaleString("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
       : "em aberto";
     badgeCaixa.textContent = ehGestor
       ? `📊 Visão geral — sessão ${_sessaoCaixaAtiva.id} (${_sessaoCaixaAtiva.usuario_email}) · ${dAbr} → ${dFch}`
@@ -1753,21 +2081,44 @@ async function calcularFinanceiro() {
   if (tbD) {
     const despesas = (caixa || []).filter((c) => c.tipo === "despesa");
     const _DLABELS = {
-      despesas_gerais:"📦 Despesas Gerais", contas_fixas:"🏠 Contas Fixas",
-      pagamento_fornecedor:"🤝 Fornecedor",  pagamento_funcionario:"👷 Funcionário",
-      pagamento_terceiros:"👥 Terceiros",    manutencao:"🔧 Manutenção",
-      retirada:"💵 Retirada", motoboy:"🛵 Motoboy", outro:"✏️ Outro",
+      despesas_gerais: "📦 Despesas Gerais",
+      contas_fixas: "🏠 Contas Fixas",
+      pagamento_fornecedor: "🤝 Fornecedor",
+      pagamento_funcionario: "👷 Funcionário",
+      pagamento_terceiros: "👥 Terceiros",
+      manutencao: "🔧 Manutenção",
+      retirada: "💵 Retirada",
+      motoboy: "🛵 Motoboy",
+      outro: "✏️ Outro",
     };
     if (!despesas.length) {
-      tbD.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;padding:16px">Nenhuma despesa nesta sessão</td></tr>';
+      tbD.innerHTML =
+        '<tr><td colspan="5" style="text-align:center;color:#999;padding:16px">Nenhuma despesa nesta sessão</td></tr>';
     } else {
-      tbD.innerHTML = despesas.map((d) => {
-        const dt = new Date(d.created_at).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
-        const tipoLabel = _DLABELS[d.tipo_despesa] || d.tipo_despesa || "—";
-        const descExtra = d.tipo_despesa === "outro" && d.descricao_outro ? ` (${d.descricao_outro})` : "";
-        const obs = d.descricao || "";
-        const enc = encodeURIComponent(JSON.stringify({ id:d.id, valor:d.valor, tipo_despesa:d.tipo_despesa||"despesas_gerais", descricao:d.descricao||"", descricao_outro:d.descricao_outro||"" }));
-        return `<tr>
+      tbD.innerHTML = despesas
+        .map((d) => {
+          const dt = new Date(d.created_at).toLocaleString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          const tipoLabel = _DLABELS[d.tipo_despesa] || d.tipo_despesa || "—";
+          const descExtra =
+            d.tipo_despesa === "outro" && d.descricao_outro
+              ? ` (${d.descricao_outro})`
+              : "";
+          const obs = d.descricao || "";
+          const enc = encodeURIComponent(
+            JSON.stringify({
+              id: d.id,
+              valor: d.valor,
+              tipo_despesa: d.tipo_despesa || "despesas_gerais",
+              descricao: d.descricao || "",
+              descricao_outro: d.descricao_outro || "",
+            }),
+          );
+          return `<tr>
           <td style="white-space:nowrap;color:#666;font-size:0.82rem">${dt}</td>
           <td><span style="background:#fdecea;color:#a93226;padding:2px 7px;border-radius:10px;font-size:0.78rem">${tipoLabel}${descExtra}</span></td>
           <td style="color:#555;font-size:0.85rem">${obs}</td>
@@ -1776,7 +2127,8 @@ async function calcularFinanceiro() {
             <button onclick="abrirEditarDespesa('${enc}')" style="background:#3498db;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.8rem;margin-right:4px">✏️</button>
             <button onclick="excluirDespesa(${d.id})" style="background:#e74c3c;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.8rem">🗑️</button>
           </td></tr>`;
-      }).join("");
+        })
+        .join("");
     }
   }
 
@@ -1784,12 +2136,13 @@ async function calcularFinanceiro() {
   if (tbM) {
     tbM.innerHTML = "";
     if (!Object.keys(motoMap).length) {
-      tbM.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#999">Nenhuma entrega nesta sessão</td></tr>';
+      tbM.innerHTML =
+        '<tr><td colspan="4" style="text-align:center;color:#999">Nenhuma entrega nesta sessão</td></tr>';
     } else {
       for (const [nome, d] of Object.entries(motoMap)) {
         const semNome = nome === "Sem Motoboy";
         const comb = semNome ? 0 : AJUDA_COMBUSTIVEL || 0;
-        const tot  = d.frete_total + comb;
+        const tot = d.frete_total + comb;
         const combLabel = semNome
           ? '<span style="color:#aaa;font-size:0.78rem">sem combustível</span>'
           : `+ comb. ${fmt(comb)}`;
@@ -2288,28 +2641,42 @@ function abrirModalCaixa(tipo) {
 }
 
 async function salvarMovimentacaoCaixa() {
-  const tipo  = document.getElementById("tipo-caixa").value;
+  const tipo = document.getElementById("tipo-caixa").value;
   const valor = parseFloat(document.getElementById("valor-caixa").value);
-  const desc  = document.getElementById("desc-caixa").value.trim();
+  const desc = document.getElementById("desc-caixa").value.trim();
 
-  if (!valor || valor <= 0) { alert("Digite um valor válido."); return; }
+  if (!valor || valor <= 0) {
+    alert("Digite um valor válido.");
+    return;
+  }
 
   const emailAtual = document.getElementById("user-email")?.innerText || "";
 
   // Bloquear se caixa bloqueado
-  const { data: cfg } = await supa.from("configuracoes").select("caixa_status").maybeSingle();
+  const { data: cfg } = await supa
+    .from("configuracoes")
+    .select("caixa_status")
+    .maybeSingle();
   const status = cfg?.caixa_status || {};
   if (status[emailAtual]?.bloqueado && tipo !== "sangria") {
-    alert("⛔ Caixa bloqueado por sangria. Solicite autorização de um gestor para reabrir.");
+    alert(
+      "⛔ Caixa bloqueado por sangria. Solicite autorização de um gestor para reabrir.",
+    );
     return;
   }
 
-  let tipoDespesa = null, descOutro = null;
+  let tipoDespesa = null,
+    descOutro = null;
   if (tipo === "despesa") {
-    tipoDespesa = document.getElementById("tipo-despesa-sel")?.value || "despesas_gerais";
+    tipoDespesa =
+      document.getElementById("tipo-despesa-sel")?.value || "despesas_gerais";
     if (tipoDespesa === "outro") {
-      descOutro = document.getElementById("desc-outro-despesa")?.value?.trim() || "";
-      if (!descOutro) { alert("Descreva o tipo da despesa."); return; }
+      descOutro =
+        document.getElementById("desc-outro-despesa")?.value?.trim() || "";
+      if (!descOutro) {
+        alert("Descreva o tipo da despesa.");
+        return;
+      }
     }
   }
 
@@ -2317,7 +2684,9 @@ async function salvarMovimentacaoCaixa() {
   if (tipo === "abertura") {
     try {
       await _abrirSessaoCaixa(valor, desc);
-      alert(`✅ Caixa aberto com fundo de Gs ${valor.toLocaleString("es-PY")}!`);
+      alert(
+        `✅ Caixa aberto com fundo de Gs ${valor.toLocaleString("es-PY")}!`,
+      );
       fecharModal("modal-caixa");
       calcularFinanceiro();
       return;
@@ -2329,22 +2698,27 @@ async function salvarMovimentacaoCaixa() {
 
   // ── Para outros tipos, verifica se há sessão aberta ───────────────
   if (!_sessaoCaixaAtiva) {
-    alert("⚠️ Nenhum caixa aberto. Abra o caixa antes de registrar movimentações.");
+    alert(
+      "⚠️ Nenhum caixa aberto. Abra o caixa antes de registrar movimentações.",
+    );
     return;
   }
 
   const insert = {
     tipo,
     valor,
-    descricao:      desc,
-    usuario_email:  emailAtual,
-    tipo_despesa:   tipoDespesa,
+    descricao: desc,
+    usuario_email: emailAtual,
+    tipo_despesa: tipoDespesa,
     descricao_outro: descOutro,
-    sessao_id:      _sessaoCaixaAtiva.id,  // ← vínculo com a sessão
+    sessao_id: _sessaoCaixaAtiva.id, // ← vínculo com a sessão
   };
 
   const { error } = await supa.from("movimentacoes_caixa").insert([insert]);
-  if (error) { alert("Erro: " + error.message); return; }
+  if (error) {
+    alert("Erro: " + error.message);
+    return;
+  }
 
   alert(t("alert.operacao_registrada"));
   fecharModal("modal-caixa");
@@ -2357,32 +2731,41 @@ async function fecharCaixaResumo() {
     return;
   }
 
-  if (!confirm("Fechar o caixa desta sessão?\nIsso encerra a sessão e registra o fechamento.")) return;
+  if (
+    !confirm(
+      "Fechar o caixa desta sessão?\nIsso encerra a sessão e registra o fechamento.",
+    )
+  )
+    return;
 
   await calcularFinanceiro(); // garante que _caixaState está atualizado
-  const s   = _caixaState;
+  const s = _caixaState;
   const fmt = (n) => "Gs " + n.toLocaleString("es-PY");
-  const lucro = s.faturamento + s.totalEntradas - s.custoEntregas - s.totalSaidas;
+  const lucro =
+    s.faturamento + s.totalEntradas - s.custoEntregas - s.totalSaidas;
 
   try {
     // 1. Marca a sessão como fechada
     await supa
       .from("sessoes_caixa")
       .update({
-        fechado_em:       new Date().toISOString(),
+        fechado_em: new Date().toISOString(),
         valor_fechamento: lucro,
-        observacao:       `Fat: ${fmt(s.faturamento)} | Res: ${fmt(lucro)}`,
+        observacao: `Fat: ${fmt(s.faturamento)} | Res: ${fmt(lucro)}`,
       })
       .eq("id", _sessaoCaixaAtiva.id);
 
     // 2. Registra movimentação de fechamento vinculada à sessão
-    await supa.from("movimentacoes_caixa").insert([{
-      tipo:          "fechamento",
-      valor:         lucro,
-      descricao:     `Fechamento ${new Date().toLocaleDateString("pt-BR")} | Fat: ${fmt(s.faturamento)} | Res: ${fmt(lucro)}`,
-      usuario_email: document.getElementById("user-email")?.innerText || "admin",
-      sessao_id:     _sessaoCaixaAtiva.id,
-    }]);
+    await supa.from("movimentacoes_caixa").insert([
+      {
+        tipo: "fechamento",
+        valor: lucro,
+        descricao: `Fechamento ${new Date().toLocaleDateString("pt-BR")} | Fat: ${fmt(s.faturamento)} | Res: ${fmt(lucro)}`,
+        usuario_email:
+          document.getElementById("user-email")?.innerText || "admin",
+        sessao_id: _sessaoCaixaAtiva.id,
+      },
+    ]);
   } catch (e) {
     console.warn("Aviso fechamento:", e.message);
   }
@@ -2409,15 +2792,32 @@ Sessão encerrada!`);
 
   // Limpa estado
   _sessaoCaixaAtiva = null;
-  ["card-faturamento","card-custo-moto","card-lucro","total-pix","total-transf",
-   "total-cartao","total-efetivo","card-ticket-medio"].forEach((id) => {
+  [
+    "card-faturamento",
+    "card-custo-moto",
+    "card-lucro",
+    "total-pix",
+    "total-transf",
+    "total-cartao",
+    "total-efetivo",
+    "card-ticket-medio",
+  ].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.innerText = "Gs 0";
   });
   const qEl = document.getElementById("card-qtd-pedidos");
   if (qEl) qEl.innerText = "0";
-  _caixaState = { faturamento:0, custoEntregas:0, totalSaidas:0, totalEntradas:0,
-                  totalPix:0, totalTransf:0, totalCartao:0, totalEfetivo:0, qtdPedidos:0 };
+  _caixaState = {
+    faturamento: 0,
+    custoEntregas: 0,
+    totalSaidas: 0,
+    totalEntradas: 0,
+    totalPix: 0,
+    totalTransf: 0,
+    totalCartao: 0,
+    totalEfetivo: 0,
+    qtdPedidos: 0,
+  };
 }
 
 // =========================================
@@ -2806,335 +3206,509 @@ function enviarRotaZap() {
 // =========================================
 // Cache dos produtos para filtro local
 let _todosProdutos = [];
-let _produtosMap = {}; // mapa id→produto para onclick seguro
+let _produtosMap = {}; // mapa id→produto para onclick seguro sem JSON inline
+
+// ══════════════════════════════════════════════════════════════
+//  CÓDIGO DE BARRAS — Scanner (câmera) + Busca PDV
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Abre o scanner de código de barras via câmera do dispositivo.
+ * Usa a Barcode Detection API (nativa em Android/Chrome) com fallback
+ * para input manual.
+ */
+async function abrirScannerBarcode() {
+  const campo = document.getElementById("prod-codigo-barras");
+  if (!campo) return;
+
+  // ── Barcode Detection API (Chrome Android / Edge) ──────────
+  if ("BarcodeDetector" in window) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+      });
+
+      // Cria overlay de câmera
+      const overlay = document.createElement("div");
+      overlay.id = "_barcode-overlay";
+      overlay.style.cssText = `
+        position:fixed; inset:0; z-index:99999; background:#000;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        font-family:'Rubik',sans-serif;
+      `;
+      overlay.innerHTML = `
+        <p style="color:#fff; font-size:0.9rem; margin-bottom:12px; opacity:0.8">
+          📷 Aponte para o código de barras
+        </p>
+        <video id="_barcode-video" autoplay playsinline
+          style="width:100%; max-width:420px; border-radius:12px; border:2px solid #22c55e"></video>
+        <div style="width:100%; max-width:420px; height:3px; background:transparent; position:relative; margin-top:-50%; pointer-events:none">
+          <div style="position:absolute; left:0; right:0; height:2px; background:#22c55e; opacity:0.8; animation:_scanLine 1.5s ease-in-out infinite alternate; top:0"></div>
+        </div>
+        <style>@keyframes _scanLine { from { top:0 } to { top:100px } }</style>
+        <button onclick="document.getElementById('_barcode-overlay').remove(); window._barcodeStream?.getTracks().forEach(t=>t.stop())"
+          style="margin-top:20px; padding:12px 28px; background:#ef4444; color:#fff; border:none;
+                 border-radius:8px; font-size:0.9rem; font-weight:700; cursor:pointer">
+          ✕ Cancelar
+        </button>
+      `;
+      document.body.appendChild(overlay);
+
+      const video = document.getElementById("_barcode-video");
+      video.srcObject = stream;
+      window._barcodeStream = stream;
+
+      const detector = new BarcodeDetector({
+        formats: [
+          "ean_13",
+          "ean_8",
+          "upc_a",
+          "upc_e",
+          "code_128",
+          "code_39",
+          "qr_code",
+        ],
+      });
+
+      const tick = async () => {
+        if (!document.getElementById("_barcode-overlay")) return; // foi fechado
+        try {
+          const barcodes = await detector.detect(video);
+          if (barcodes.length > 0) {
+            const code = barcodes[0].rawValue;
+            campo.value = code;
+            stream.getTracks().forEach((t) => t.stop());
+            overlay.remove();
+            // Feedback visual
+            campo.style.borderColor = "#22c55e";
+            setTimeout(() => (campo.style.borderColor = ""), 2000);
+            // Tenta buscar produto existente com esse barcode
+            await _verificarBarcodeExistente(code);
+            return;
+          }
+        } catch (_) {}
+        requestAnimationFrame(tick);
+      };
+      video.addEventListener("play", () => requestAnimationFrame(tick));
+      return;
+    } catch (err) {
+      console.warn("[Barcode] Câmera negada ou API falhou:", err.message);
+    }
+  }
+
+  // ── Fallback: prompt manual ────────────────────────────────
+  const manual = prompt(
+    "📷 Scanner não disponível.\nDigite ou cole o código de barras:",
+  );
+  if (manual?.trim()) {
+    campo.value = manual.trim();
+    await _verificarBarcodeExistente(manual.trim());
+  }
+}
+
+/**
+ * Avisa se o código já está cadastrado em outro produto.
+ */
+async function _verificarBarcodeExistente(codigo) {
+  if (!codigo) return;
+  const idAtual = document.getElementById("prod-id")?.value;
+  const { data } = await supa
+    .from("produtos")
+    .select("id, nome")
+    .eq("codigo_barras", codigo)
+    .maybeSingle();
+
+  if (data && String(data.id) !== String(idAtual)) {
+    alert(
+      `⚠️ Este código já pertence ao produto:\n"${data.nome}" (ID ${data.id})\n\nVerifique antes de salvar.`,
+    );
+  }
+}
+
+/**
+ * Busca um produto pelo código de barras.
+ * Usada pelo PDV quando um leitor USB/BT envia o código.
+ * @param {string} codigo
+ * @returns {Promise<object|null>}
+ */
+async function buscarProdutoPorBarcode(codigo) {
+  if (!codigo?.trim()) return null;
+  const { data, error } = await supa
+    .from("produtos")
+    .select("*")
+    .eq("codigo_barras", codigo.trim())
+    .eq("ativo", true)
+    .maybeSingle();
+  if (error) {
+    console.error("[Barcode PDV]", error.message);
+    return null;
+  }
+  return data;
+}
+
+// ── Listener global para leitor USB/Bluetooth no PDV ────────
+// Leitores HID digitam o código + Enter rapidamente.
+// Detectamos pela velocidade de entrada (< 50ms entre chars).
+(function _initBarcodeListener() {
+  let _buf = "",
+    _last = 0;
+  const PDV_TABS = ["pdv"]; // abas onde o listener é ativo
+
+  document.addEventListener("keydown", async (e) => {
+    // Só ativa se o foco não estiver em input/textarea comum
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+    // Só na aba PDV
+    const abaAtiva = document.querySelector(".tab-btn.active")?.dataset?.tab;
+    if (!PDV_TABS.includes(abaAtiva)) return;
+
+    const now = Date.now();
+    if (now - _last > 80) _buf = ""; // reset se demorou muito
+    _last = now;
+
+    if (e.key === "Enter" && _buf.length >= 6) {
+      e.preventDefault();
+      const produto = await buscarProdutoPorBarcode(_buf);
+      if (produto) {
+        // Adiciona ao carrinho do PDV se a função existir
+        if (typeof pdvAdicionarItem === "function") {
+          pdvAdicionarItem(produto);
+        } else {
+          console.log("[Barcode PDV] Produto encontrado:", produto.nome);
+        }
+      } else {
+        // Feedback de não encontrado
+        const toast = document.createElement("div");
+        toast.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+          background:#ef4444;color:#fff;padding:10px 20px;border-radius:8px;
+          font-weight:600;z-index:9999;font-size:0.9rem`;
+        toast.textContent = `❌ Código ${_buf} não encontrado`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+      }
+      _buf = "";
+    } else if (e.key.length === 1) {
+      _buf += e.key;
+    }
+  });
+})();
 
 async function carregarProdutos() {
   const { data } = await supa.from("produtos").select("*").order("nome");
   _todosProdutos = data || [];
   _produtosMap = {};
-  _todosProdutos.forEach(p => { _produtosMap[p.id] = p; });
-  // Popula select de categorias no painel de filtros
-  ptPopularCategorias();
-  // Renderiza aplicando filtros ativos
-  ptAplicarFiltros();
-  const modalAberto = document.getElementById("modal-produto")?.style.display === "flex";
+  _todosProdutos.forEach((p) => {
+    _produtosMap[p.id] = p;
+  });
+  renderizarCardsProdutos(_todosProdutos);
+  atualizarStatsProdutos(_todosProdutos);
+  // Só recarrega o select de categorias se o modal de produto estiver fechado
+  const modalAberto =
+    document.getElementById("modal-produto")?.style.display === "flex";
   if (!modalAberto) carregarSelectCategorias();
+
+  // ── Alerta de estoque baixo (varejo) ──────────────────────
+  veVerificarEstoqueBaixo(5);
+  // ── Alerta de validade próxima (produtos) ─────────────────
+  ptVerificarValidadeProdutos(7);
+  // ── Fim alertas ────────────────────────────────────────────
 }
 
-/** Sincroniza busca do cabeçalho com o painel de filtros */
-function filtrarProdutos(termo) {
-  const buscaRapidaEl = document.getElementById("pt-filtro-busca-rapida");
-  if (buscaRapidaEl) buscaRapidaEl.value = termo;
-  ptAplicarFiltros();
-}
-
-/** Popula o select de categorias com valores únicos */
-function ptPopularCategorias() {
-  const sel = document.getElementById("pt-filtro-cat");
-  if (!sel || !_todosProdutos.length) return;
-  const cats = [...new Set(_todosProdutos.map(p => p.categoria_slug).filter(Boolean))].sort();
-  const atual = sel.value;
-  sel.innerHTML = '<option value="">Todas as categorias</option>';
-  cats.forEach(c => {
-    const opt = document.createElement("option");
-    opt.value = c; opt.textContent = c;
-    if (c === atual) opt.selected = true;
-    sel.appendChild(opt);
-  });
-}
-
-function ptToggleApenasEstoque(el) {
-  el.classList.toggle("pt-toggle--on");
-  ptAplicarFiltros();
-}
-
-function ptLimparFiltros() {
-  ["pt-filtro-cat","pt-filtro-estoque","pt-filtro-validade","pt-filtro-destaque","pt-filtro-ordem"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.selectedIndex = 0;
-  });
-  const bEl = document.getElementById("pt-filtro-busca-rapida");
-  if (bEl) bEl.value = "";
-  const bEl2 = document.getElementById("busca-produto");
-  if (bEl2) bEl2.value = "";
-  const tog = document.getElementById("pt-toggle-estoque");
-  if (tog) tog.classList.remove("pt-toggle--on");
-  ptAplicarFiltros();
+function atualizarStatsProdutos(lista) {
+  const total = lista.length;
+  const estoqueTotal = lista.reduce((s, p) => s + (p.estoque_qtd || 0), 0);
+  const zerados = lista.filter(
+    (p) =>
+      p.estoque_qtd !== null &&
+      p.estoque_qtd !== undefined &&
+      p.estoque_qtd <= 0,
+  ).length;
+  const destaques = lista.filter((p) => p.destaque).length;
+  const el = (id) => document.getElementById(id);
+  if (el("pt-stat-total")) el("pt-stat-total").textContent = total;
+  if (el("pt-stat-estoque"))
+    el("pt-stat-estoque").textContent =
+      estoqueTotal.toLocaleString("es-PY") + " un";
+  if (el("pt-stat-zerado")) el("pt-stat-zerado").textContent = zerados;
+  if (el("pt-stat-destaque")) el("pt-stat-destaque").textContent = destaques;
 }
 
 function ptAplicarFiltros() {
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const fCat      = (document.getElementById("pt-filtro-cat")?.value      || "").toLowerCase();
-  const fEstoque  =  document.getElementById("pt-filtro-estoque")?.value  || "";
-  const fValidade =  document.getElementById("pt-filtro-validade")?.value || "";
-  const fDestaque =  document.getElementById("pt-filtro-destaque")?.value || "";
-  const fOrdem    =  document.getElementById("pt-filtro-ordem")?.value    || "nome_az";
-  const fBusca    = (document.getElementById("pt-filtro-busca-rapida")?.value ||
-                     document.getElementById("busca-produto")?.value || "").toLowerCase().trim();
-  const apenasEst = document.getElementById("pt-toggle-estoque")?.classList.contains("pt-toggle--on") || false;
-
   let lista = [..._todosProdutos];
-
-  if (fCat)    lista = lista.filter(p => (p.categoria_slug||"").toLowerCase() === fCat);
-  if (fBusca)  lista = lista.filter(p =>
-    p.nome.toLowerCase().includes(fBusca) ||
-    (p.categoria_slug||"").toLowerCase().includes(fBusca) ||
-    (p.codigo_barras||"").toLowerCase().includes(fBusca));
-
-  if (fEstoque || apenasEst) {
-    lista = lista.filter(p => {
-      const qtd = p.estoque_qtd;
-      const min = p.estoque_minimo != null ? p.estoque_minimo : 5;
-      if (apenasEst && (qtd == null || qtd <= 0)) return false;
-      if (!fEstoque) return true;
-      if (fEstoque === "sem_controle") return qtd == null;
-      if (qtd == null) return false;
-      if (fEstoque === "zerado")     return qtd <= 0;
-      if (fEstoque === "baixo")      return qtd > 0 && qtd <= min;
-      if (fEstoque === "em_estoque") return qtd > min;
+  const cat = document.getElementById("pt-filtro-cat")?.value || "";
+  const estoque = document.getElementById("pt-filtro-estoque")?.value || "";
+  const validade = document.getElementById("pt-filtro-validade")?.value || "";
+  const destaque = document.getElementById("pt-filtro-destaque")?.value || "";
+  const ordem = document.getElementById("pt-filtro-ordem")?.value || "nome_az";
+  const busca = (
+    document.getElementById("pt-filtro-busca-rapida")?.value || ""
+  ).toLowerCase();
+  const apenasEstoque = document
+    .getElementById("pt-toggle-estoque")
+    ?.classList.contains("on");
+  if (cat) lista = lista.filter((p) => p.categoria_slug === cat);
+  if (estoque === "em_estoque") lista = lista.filter((p) => p.estoque_qtd > 0);
+  if (estoque === "zerado")
+    lista = lista.filter((p) => p.estoque_qtd !== null && p.estoque_qtd <= 0);
+  if (estoque === "sem_controle")
+    lista = lista.filter(
+      (p) => p.estoque_qtd === null || p.estoque_qtd === undefined,
+    );
+  if (destaque === "sim") lista = lista.filter((p) => p.destaque);
+  if (destaque === "nao") lista = lista.filter((p) => !p.destaque);
+  if (validade) {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    lista = lista.filter((p) => {
+      if (!p.validade) return false;
+      const d = new Date(p.validade + "T00:00:00");
+      const diff = Math.round((d - hoje) / 86400000);
+      if (validade === "vencido") return diff < 0;
+      if (validade === "proximo") return diff >= 0 && diff <= 3;
+      if (validade === "ok") return diff > 3;
       return true;
     });
   }
-
-  if (fValidade) {
-    lista = lista.filter(p => {
-      if (!p.perecivel || !p.data_validade) return false;
-      const val = new Date(p.data_validade); val.setHours(0,0,0,0);
-      const diff = Math.round((val - hoje) / 86400000);
-      if (fValidade === "vencido")  return diff < 0;
-      if (fValidade === "proximo")  return diff >= 0 && diff <= 3;
-      if (fValidade === "ok")       return diff > 3;
-      return true;
-    });
+  if (busca) {
+    lista = lista.filter(
+      (p) =>
+        p.nome.toLowerCase().includes(busca) ||
+        (p.categoria_slug || "").toLowerCase().includes(busca) ||
+        String(p.id).includes(busca) ||
+        (p.codigo_barras || "").toLowerCase().includes(busca),
+    );
   }
-
-  if (fDestaque === "sim") lista = lista.filter(p => p.destaque);
-  if (fDestaque === "nao") lista = lista.filter(p => !p.destaque);
-
+  if (apenasEstoque) lista = lista.filter((p) => p.estoque_qtd > 0);
   lista.sort((a, b) => {
-    if (fOrdem === "nome_az")      return (a.nome||"").localeCompare(b.nome||"");
-    if (fOrdem === "nome_za")      return (b.nome||"").localeCompare(a.nome||"");
-    if (fOrdem === "preco_asc")    return (a.preco||0) - (b.preco||0);
-    if (fOrdem === "preco_desc")   return (b.preco||0) - (a.preco||0);
-    if (fOrdem === "estoque_asc")  return (a.estoque_qtd??-1) - (b.estoque_qtd??-1);
-    if (fOrdem === "estoque_desc") return (b.estoque_qtd??-1) - (a.estoque_qtd??-1);
+    if (ordem === "nome_az") return a.nome.localeCompare(b.nome);
+    if (ordem === "nome_za") return b.nome.localeCompare(a.nome);
+    if (ordem === "preco_asc") return (a.preco || 0) - (b.preco || 0);
+    if (ordem === "preco_desc") return (b.preco || 0) - (a.preco || 0);
+    if (ordem === "estoque_asc")
+      return (a.estoque_qtd || 0) - (b.estoque_qtd || 0);
+    if (ordem === "estoque_desc")
+      return (b.estoque_qtd || 0) - (a.estoque_qtd || 0);
     return 0;
   });
-
   renderizarCardsProdutos(lista);
+}
+
+function ptLimparFiltros() {
+  [
+    "pt-filtro-cat",
+    "pt-filtro-estoque",
+    "pt-filtro-validade",
+    "pt-filtro-destaque",
+    "pt-filtro-busca-rapida",
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  const ordem = document.getElementById("pt-filtro-ordem");
+  if (ordem) ordem.value = "nome_az";
+  const toggle = document.getElementById("pt-toggle-estoque");
+  if (toggle) toggle.classList.remove("on");
+  renderizarCardsProdutos(_todosProdutos);
+}
+
+function ptToggleApenasEstoque(btn) {
+  btn.classList.toggle("on");
+  ptAplicarFiltros();
+}
+
+function filtrarProdutos(termo) {
+  if (!termo.trim()) {
+    renderizarCardsProdutos(_todosProdutos);
+    return;
+  }
+  const t = termo.toLowerCase();
+  const filtrados = _todosProdutos.filter(
+    (p) =>
+      p.nome.toLowerCase().includes(t) ||
+      (p.categoria_slug || "").toLowerCase().includes(t),
+  );
+  renderizarCardsProdutos(filtrados);
 }
 
 function renderizarCardsProdutos(lista) {
   const grid = document.getElementById("lista-produtos-grid");
   if (!grid) return;
+
+  // ── Manage table header visibility ─────────────────────────
+  const header = document.getElementById("produtos-table-header");
+
   grid.innerHTML = "";
 
-  // ── Atualiza cards de stats ─────────────────────────────────
-  const todos = _todosProdutos || lista;
-  const totalEstoque = todos.reduce((s, p) => s + (p.estoque_qtd || 0), 0);
-  const zerados      = todos.filter(p => p.estoque_qtd != null && p.estoque_qtd <= 0).length;
-  const emDestaque   = todos.filter(p => p.destaque).length;
-  const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  _s("pt-stat-total",    todos.length.toLocaleString("es-PY"));
-  _s("pt-stat-estoque",  totalEstoque.toLocaleString("es-PY") + " un");
-  _s("pt-stat-zerado",   zerados.toLocaleString("es-PY"));
-  _s("pt-stat-destaque", emDestaque.toLocaleString("es-PY"));
-
-  // Paginação info
-  const pagInfo = document.getElementById("pt-pag-info");
-  if (pagInfo) {
-    pagInfo.textContent = `Mostrando ${lista.length} de ${todos.length} produtos`;
-    const pagDiv = document.getElementById("pt-paginacao");
-    if (pagDiv) pagDiv.style.display = lista.length > 0 ? "flex" : "none";
-  }
-
   if (!lista || lista.length === 0) {
-    grid.innerHTML = '<p style="color:#94a3b8;font-size:0.9rem;padding:20px 4px">Nenhum produto encontrado para os filtros selecionados.</p>';
+    if (header) header.style.display = "none";
+    grid.innerHTML =
+      '<p style="color:#bbb;font-size:0.9rem;padding:20px 0">Nenhum produto encontrado.</p>';
     return;
   }
-
-  // ── Helpers ─────────────────────────────────────────────────
-  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-
-  function _alertaEst(p) {
-    if (p.estoque_qtd == null) return null;
-    const min = p.estoque_minimo != null ? p.estoque_minimo : 5;
-    if (p.estoque_qtd <= 0)   return "zerado";
-    if (p.estoque_qtd <= min) return "baixo";
-    return null;
-  }
-  function _alertaVal(p) {
-    if (!p.perecivel || !p.data_validade) return null;
-    const val = new Date(p.data_validade); val.setHours(0, 0, 0, 0);
-    const d = Math.round((val - hoje) / 86400000);
-    return d < 0 ? "vencido" : d <= 3 ? "proximo" : null;
-  }
+  if (header) header.style.display = "";
 
   const _TIPO_ICONS = {
-    padrao:"📦", bebida:"🥤", lanche:"🍔", pizza:"🍕",
-    acai:"🍇", shake:"🥤", suco:"🍊", sorvete:"🍦",
-    montavel:"🥗", almoco:"🍽️", combo:"⭐",
+    padrao: "📦",
+    bebida: "🥤",
+    lanche: "🍔",
+    pizza: "🍕",
+    acai: "🍇",
+    shake: "🥤",
+    suco: "🍊",
+    sorvete: "🍦",
+    montavel: "🥗",
+    almoco: "🍽️",
+    combo: "⭐",
   };
-
-  // ── Tabela ──────────────────────────────────────────────────
-  const tabela = document.createElement("table");
-  tabela.className = "pt-tabela";
-  tabela.innerHTML = `
-    <thead>
-      <tr class="pt-thead-row">
-        <th class="pt-th" style="width:56px"></th>
-        <th class="pt-th">Produto</th>
-        <th class="pt-th" style="width:120px">Preço</th>
-        <th class="pt-th" style="width:160px">Estoque</th>
-        <th class="pt-th" style="width:110px">Validade</th>
-        <th class="pt-th" style="width:80px;text-align:center">Destaque</th>
-        <th class="pt-th" style="width:150px">Ações</th>
-      </tr>
-    </thead>
-    <tbody id="pt-tabela-body"></tbody>`;
-  grid.appendChild(tabela);
-  const tbody = document.getElementById("pt-tabela-body");
 
   lista.forEach((p) => {
     const cfg = p.montagem_config;
     let tipoKey = "padrao";
     if (cfg && !Array.isArray(cfg) && cfg.__tipo) tipoKey = cfg.__tipo;
-    else if (p.e_montavel || (cfg && Array.isArray(cfg) && cfg.length > 0)) tipoKey = "montavel";
+    else if (p.e_montavel || (cfg && Array.isArray(cfg) && cfg.length > 0))
+      tipoKey = "montavel";
+
     const tipoIcon = _TIPO_ICONS[tipoKey] || "📦";
 
-    // Miniatura
-    const thumbHtml = p.imagem_url
-      ? `<img src="${p.imagem_url}" class="pt-thumb" loading="lazy" alt="">`
-      : `<div class="pt-thumb-placeholder">${tipoIcon}</div>`;
+    // ── Image ────────────────────────────────────────────────
+    const imgHtml = p.imagem_url
+      ? `<img src="${p.imagem_url}" alt="${p.nome}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`
+      : `<div class="produto-card-img-placeholder">${tipoIcon}</div>`;
 
-    // Badges
-    let badges = "";
-    if (!p.ativo)         badges += `<span class="ptag ptag-pausado"><i class="fas fa-pause" style="font-size:.6rem"></i> Pausado</span>`;
-    if (p.somente_balcao) badges += `<span class="ptag ptag-balcao">🏪 Balcão</span>`;
-    if (p.promo_ativo && p.promo_valor) {
-      const lbl = p.promo_tipo === "percent" ? `-${p.promo_valor}%` : `-Gs ${p.promo_valor.toLocaleString("es-PY")}`;
-      badges += `<span class="ptag ptag-promo">🏷️ ${lbl}</span>`;
+    // ── Estoque ──────────────────────────────────────────────
+    const semCtrl = p.estoque_qtd === null || p.estoque_qtd === undefined;
+    const qtd = semCtrl ? "—" : p.estoque_qtd;
+    const estoqueStatusClass = semCtrl
+      ? ""
+      : p.estoque_qtd > 0
+        ? "estoque-ok"
+        : "estoque-zero";
+    const estoqueStatusLabel = semCtrl
+      ? ""
+      : p.estoque_qtd > 0
+        ? "Em estoque"
+        : "Sem estoque";
+    const estoqueBadge = semCtrl
+      ? `<span class="produto-card-estoque-qty">—</span>`
+      : `<span class="produto-card-estoque-qty">${qtd} un</span>
+         <span class="produto-card-estoque-status ${estoqueStatusClass}">${estoqueStatusLabel}</span>`;
+
+    // ── Validade ─────────────────────────────────────────────
+    let validadeHtml = `<span style="color:#cbd5e1">—</span>`;
+    if (p.validade) {
+      const d = new Date(p.validade + "T00:00:00");
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const diff = Math.round((d - hoje) / 86400000);
+      const fmt = d.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      });
+      const cor = diff < 0 ? "#dc2626" : diff <= 3 ? "#f59e0b" : "#94a3b8";
+      validadeHtml = `<span style="color:${cor};font-size:0.75rem">${fmt}</span>`;
     }
 
-    // Estoque
-    const ae = _alertaEst(p);
-    let estoqueHtml = `<span class="pt-sem-controle">—</span>`;
-    if (p.estoque_qtd != null) {
-      const badgeClass = ae === "zerado" ? "pt-est-badge--zero" : ae === "baixo" ? "pt-est-badge--baixo" : "pt-est-badge--ok";
-      const badgeLabel = ae === "zerado" ? "Sem estoque" : ae === "baixo" ? "Estoque baixo" : "Em estoque";
-      estoqueHtml = `
-        <div class="pt-est-wrap">
-          <div class="pt-est-input-row">
-            <input type="number" class="pt-est-input" value="${p.estoque_qtd}" min="0"
-              onblur="salvarEstoqueRapido(${p.id}, this)" title="Editar estoque">
-            <span class="pt-est-unid">${p.unidade_venda || "un"}</span>
+    // ── Badge pausado ────────────────────────────────────────
+    const badgePausado = !p.ativo
+      ? `<span class="badge-pausado" style="font-size:0.6rem">⏸ Pausado</span>`
+      : "";
+
+    // ── Produto info (meta) ──────────────────────────────────
+    const slugLabel = (p.categoria_slug || "").substring(0, 22);
+    const eanHtml = p.codigo_barras
+      ? `<span style="font-size:0.65rem;color:#94a3b8;font-family:monospace">${p.codigo_barras}</span>`
+      : "";
+
+    const card = document.createElement("div");
+    card.className = `produto-card${!p.ativo ? " pausado" : ""}`;
+    card.innerHTML = `
+      <!-- Col 1: Produto -->
+      <div class="produto-card-info">
+        <div class="produto-card-img-wrap">${imgHtml}</div>
+        <div class="produto-card-meta-wrap" style="min-width:0">
+          <div class="produto-card-nome">${p.nome}</div>
+          <div class="produto-card-meta" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:2px">
+            <span class="produto-card-cat" style="color:#94a3b8;font-size:0.7rem">${slugLabel}</span>
+            <span class="produto-card-id" style="color:#cbd5e1;font-size:0.68rem">#${p.id}</span>
+            ${eanHtml}
+            ${badgePausado}
           </div>
-          <span class="pt-est-badge ${badgeClass}">${badgeLabel}</span>
-        </div>`;
-    }
-
-    // Validade
-    const av = _alertaVal(p);
-    let validadeHtml = `<span class="pt-sem-controle">—</span>`;
-    if (p.perecivel && p.data_validade) {
-      const dStr   = new Date(p.data_validade).toLocaleDateString("pt-BR");
-      const vClass = av === "vencido" ? "val-vencido" : av === "proximo" ? "val-proximo" : "val-ok";
-      const vDot   = av === "vencido" ? "🔴" : av === "proximo" ? "🟡" : "🟢";
-      validadeHtml = `<span class="val-badge ${vClass}">${vDot} ${dStr}</span>`;
-    } else if (p.perecivel) {
-      validadeHtml = `<span class="val-badge val-sem">⚪ Não definida</span>`;
-    }
-
-    // Estrela destaque
-    const starOn = !!p.destaque;
-    const destaqueHtml = `
-      <button class="pt-star${starOn ? " pt-star--on" : ""}"
-        onclick="toggleDestaqueRapido(${p.id}, ${starOn}, this)"
-        title="${starOn ? "Remover destaque" : "Marcar como destaque"}"
-        aria-label="${starOn ? "Remover destaque" : "Marcar como destaque"}">
-        <i class="${starOn ? "fas" : "far"} fa-star"></i>
-      </button>`;
-
-    // Linha
-    const tr = document.createElement("tr");
-    tr.className = `pt-row${!p.ativo ? " pt-row--pausado" : ""}`;
-    if (ae === "zerado" || av === "vencido") tr.classList.add("pt-row--alerta");
-
-    tr.innerHTML = `
-      <td class="pt-td" style="padding:8px 10px">${thumbHtml}</td>
-      <td class="pt-td">
-        <div class="pt-nome">${p.nome}</div>
-        <div class="pt-meta">
-          <span class="pt-cat">${p.categoria_slug || "—"}</span>
-          <span class="pt-id">#${p.id}</span>
-          ${p.codigo_barras ? `<span class="pt-barcode"><i class="fas fa-barcode" style="font-size:.65rem;opacity:.5"></i> ${p.codigo_barras}</span>` : ""}
         </div>
-        ${badges ? `<div class="pt-badges">${badges}</div>` : ""}
-      </td>
-      <td class="pt-td"><span class="pt-preco">Gs ${(p.preco || 0).toLocaleString("es-PY")}</span></td>
-      <td class="pt-td">${estoqueHtml}</td>
-      <td class="pt-td">${validadeHtml}</td>
-      <td class="pt-td" style="text-align:center">${destaqueHtml}</td>
-      <td class="pt-td">
-        <div class="pt-acoes-wrap">
-          <button class="pact-btn pact-edit"  onclick="editarProdutoById(${p.id})"         title="Editar"><i class="fas fa-edit"></i></button>
-          <button class="pact-btn pact-copy"  onclick="duplicarProduto(${p.id})"           title="Duplicar"><i class="fas fa-copy"></i></button>
-          <button class="pact-btn ${p.ativo ? "pact-pause" : "pact-play"}"
-            onclick="pausarProduto(${p.id}, ${p.ativo})"
-            title="${p.ativo ? "Pausar" : "Reativar"}">
-            <i class="fas fa-${p.ativo ? "pause" : "play"}"></i></button>
-          <button class="pact-btn pact-del"   onclick="deletarProduto(${p.id})"            title="Excluir"><i class="fas fa-trash"></i></button>
-        </div>
-      </td>`;
-    tbody.appendChild(tr);
+      </div>
+      <!-- Col 2: Preço -->
+      <div class="produto-card-preco">Gs ${(p.preco || 0).toLocaleString("es-PY")}</div>
+      <!-- Col 3: Estoque -->
+      <div class="produto-card-estoque">${estoqueBadge}</div>
+      <!-- Col 4: Validade -->
+      <div class="produto-card-validade">${validadeHtml}</div>
+      <!-- Col 5: Destaque -->
+      <div class="produto-card-destaque">
+        <button class="btn-destaque${p.destaque ? " ativo" : ""}"
+          onclick="toggleDestaqueProduto(${p.id}, ${!!p.destaque})"
+          title="${p.destaque ? "Remover destaque" : "Marcar como destaque"}">
+          ${p.destaque ? "★" : "☆"}
+        </button>
+      </div>
+      <!-- Col 6: Ações -->
+      <div class="produto-card-actions">
+        <button class="btn btn-sm btn-primary" onclick="editarProdutoById(${p.id})" title="Editar">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-sm btn-info" onclick="duplicarProduto(${p.id})" title="Duplicar">
+          <i class="fas fa-copy"></i>
+        </button>
+        <button class="btn btn-sm ${p.ativo ? "btn-warning" : "btn-success"}"
+          onclick="pausarProduto(${p.id}, ${p.ativo})"
+          title="${p.ativo ? "Pausar" : "Reativar"}" style="background:${p.ativo ? "#f97316" : "#22c55e"}">
+          <i class="fas fa-${p.ativo ? "pause" : "play"}"></i>
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deletarProduto(${p.id})" title="Excluir">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+    grid.appendChild(card);
   });
 }
 
-/** Toggle destaque pela estrela — visual imediato + persistência */
-async function toggleDestaqueRapido(prodId, destaqueAtual, btnEl) {
-  const novo = !destaqueAtual;
-  const icone = btnEl.querySelector("i");
-  btnEl.classList.toggle("pt-star--on", novo);
-  if (icone) icone.className = (novo ? "fas" : "far") + " fa-star";
-  btnEl.title = novo ? "Remover destaque" : "Marcar como destaque";
-
-  const { error } = await supa.from("produtos").update({ destaque: novo }).eq("id", prodId);
-  if (error) {
-    btnEl.classList.toggle("pt-star--on", destaqueAtual);
-    if (icone) icone.className = (destaqueAtual ? "fas" : "far") + " fa-star";
-    _toastAdminRapido("❌ Erro ao salvar destaque", "#e74c3c");
-    return;
+// Toggle destaque inline without opening modal
+async function toggleDestaqueProduto(id, atualDestaque) {
+  try {
+    await supa
+      .from("produtos")
+      .update({ destaque: !atualDestaque })
+      .eq("id", id);
+    const p = _produtosMap[id];
+    if (p) {
+      p.destaque = !atualDestaque;
+      // Update button in place
+      const btn = document.querySelector(
+        `.btn-destaque[onclick*="toggleDestaqueProduto(${id},"]`,
+      );
+      if (btn) {
+        btn.className = `btn-destaque${!atualDestaque ? " ativo" : ""}`;
+        btn.innerHTML = !atualDestaque ? "★" : "☆";
+        btn.setAttribute(
+          "onclick",
+          `toggleDestaqueProduto(${id}, ${!atualDestaque})`,
+        );
+        btn.title = !atualDestaque
+          ? "Remover destaque"
+          : "Marcar como destaque";
+      }
+      // Update stat counter
+      const statDest = document.getElementById("pt-stat-destaque");
+      if (statDest) {
+        const cnt = _todosProdutos.filter((x) => x.destaque).length;
+        statDest.textContent = cnt;
+      }
+    }
+  } catch (e) {
+    console.error("Erro ao alternar destaque:", e);
   }
-  const p = _produtosMap[prodId];
-  if (p) p.destaque = novo;
-  const cnt = Object.values(_produtosMap).filter(x => x.destaque).length;
-  const el = document.getElementById("pt-stat-destaque");
-  if (el) el.textContent = cnt.toLocaleString("es-PY");
-  _toastAdminRapido(novo ? "⭐ Produto em destaque!" : "☆ Destaque removido", novo ? "#ca8a04" : "#64748b");
 }
-
-/** Toast leve para ações rápidas */
-function _toastAdminRapido(msg, bgColor = "#1a7a2e") {
-  const id = "_toast-admin-rapido";
-  let el = document.getElementById(id);
-  if (!el) {
-    el = document.createElement("div");
-    el.id = id;
-    el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(0);
-      padding:10px 20px;border-radius:10px;font-size:0.86rem;font-weight:600;
-      z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.2);white-space:nowrap;
-      transition:opacity .25s,transform .25s;pointer-events:none;`;
-    document.body.appendChild(el);
-  }
-  el.textContent = msg; el.style.background = bgColor; el.style.color = "#fff";
-  el.style.opacity = "1"; el.style.transform = "translateX(-50%) translateY(0)";
-  clearTimeout(el._timer);
-  el._timer = setTimeout(() => {
-    el.style.opacity = "0"; el.style.transform = "translateX(-50%) translateY(8px)";
-  }, 2200);
-}
-
-
 
 function editarProdutoById(id) {
   const p = _produtosMap[id];
@@ -3158,63 +3732,27 @@ function previewUpload(input) {
   }
 }
 
-/**
- * Mostra preview em tempo real ao colar/digitar uma URL no campo de imagem.
- * Usa um Image() de teste para validar antes de exibir.
- * O onpaste usa setTimeout para aguardar o browser colar o conteúdo no campo.
- */
-function previewUrlImagem(url) {
-  const preview  = document.getElementById("img-preview");
-  const boxPrev  = document.getElementById("box-preview");
-  const urlInput = document.getElementById("prod-img");
-  const raw = (url || "").trim();
-
-  if (!raw) {
-    boxPrev.style.display = "none";
-    preview.src = "";
-    if (urlInput) { urlInput.style.borderColor = ""; urlInput.title = ""; }
-    return;
-  }
-
-  const testImg = new Image();
-  testImg.onload = () => {
-    preview.src = raw;
-    boxPrev.style.display = "block";
-    if (urlInput) { urlInput.style.borderColor = "#22c55e"; urlInput.title = "✅ Imagem carregada com sucesso"; }
-  };
-  testImg.onerror = () => {
-    boxPrev.style.display = "none";
-    if (urlInput) { urlInput.style.borderColor = "#f59e0b"; urlInput.title = "⚠️ URL inválida ou imagem não acessível"; }
-  };
-  testImg.src = raw;
-}
-
 async function salvarProduto() {
   const btn = event.target;
   btn.disabled = true;
   try {
     const id = document.getElementById("prod-id").value;
     const fileInput = document.getElementById("prod-img-file");
-    const urlDigitada = (document.getElementById("prod-img").value || "").trim();
+    let urlFinal = document.getElementById("prod-img").value;
 
-    // ── Resolve URL final da imagem ───────────────────────────
-    // Prioridade: arquivo enviado > URL digitada > URL já salva no banco
-    let urlFinal = urlDigitada;
-
+    // ── Upload para o Cloudinary (substitui Supabase Storage) ──
     if (fileInput.files.length > 0) {
       btn.innerText = "Enviando imagem...";
       try {
         urlFinal = await uploadImageToCloudinary(fileInput.files[0]);
       } catch (uploadErr) {
-        alert("❌ Falha no upload da imagem: " + uploadErr.message + "\nO produto não foi salvo.");
+        alert(
+          "❌ Falha no upload da imagem: " +
+            uploadErr.message +
+            "\nO produto não foi salvo.",
+        );
         return;
       }
-    }
-
-    // Se nenhum arquivo selecionado e nenhuma URL digitada → preserva a URL existente no cache
-    if (!fileInput.files.length && !urlDigitada && id) {
-      const prodCache = _produtosMap[parseInt(id)];
-      if (prodCache?.imagem_url) urlFinal = prodCache.imagem_url;
     }
 
     btn.innerText = "Salvando...";
@@ -3233,364 +3771,13 @@ async function salvarProduto() {
       return;
     }
 
-    // Monta o config completo
-    let configFinal = { __tipo: tipo };
-
-    // ── MONTÁVEL GENÉRICO ─────────────────────────────────────────
-    if (tipo === "montavel") {
-      const etapas = [];
-      document
-        .querySelectorAll("#builder-montavel .etapa-item")
-        .forEach((div) => {
-          etapas.push({
-            titulo: div.querySelector(".step-titulo").value,
-            max: parseInt(div.querySelector(".step-max").value),
-            itens: div
-              .querySelector(".step-itens")
-              .value.split(",")
-              .map((s) => s.trim())
-              .filter((s) => s),
-          });
-        });
-      configFinal.etapas = etapas;
-    }
-
-    // ── SHAKE ─────────────────────────────────────────────────────
-    if (tipo === "shake") {
-      const tamanhos = [];
-      document.querySelectorAll(".shake-tamanho-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="snome"]').value.trim();
-        const ml = parseInt(row.querySelector('[data-f="sml"]').value) || 0;
-        const preco =
-          parseFloat(row.querySelector('[data-f="spreco"]').value) || 0;
-        if (nome) tamanhos.push({ nome, ml, preco });
-      });
-      const sabores = [];
-      document.querySelectorAll(".shake-sabor-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="snome"]').value.trim();
-        const preco =
-          parseFloat(row.querySelector('[data-f="spreco"]').value) || 0;
-        const img = row.querySelector('[data-f="simg"]')?.value?.trim() || "";
-        if (nome) sabores.push({ nome, preco, img });
-      });
-      configFinal.shake = { tamanhos, sabores };
-      const precos = tamanhos.map((t) => t.preco).filter((p) => p > 0);
-      if (precos.length > 0)
-        document.getElementById("prod-preco").value = Math.min(...precos);
-    }
-
-    // ── PIZZA (NOVO: tipos dinâmicos) ─────────────────────────────
-    if (tipo === "pizza") {
-      // Tipos de pizza criados pelo usuário
-      const tipos_pizza = [];
-      document.querySelectorAll(".pizza-tipo-row").forEach((row) => {
-        const nome = row.querySelector(".pizza-tipo-nome").value.trim();
-        if (nome) tipos_pizza.push({ nome });
-      });
-
-      // Bordas (nome + preço único)
-      const bordas = [];
-      document.querySelectorAll(".pizza-borda-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="bnome"]').value.trim();
-        const preco =
-          parseFloat(row.querySelector('[data-f="bpreco"]')?.value) || 0;
-        if (nome) bordas.push({ nome, preco });
-      });
-
-      // Tamanhos com preço dinâmico por tipo
-      const tamanhos = [];
-      document.querySelectorAll(".pizza-tamanho-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="nome"]').value.trim();
-        if (!nome) return;
-        const fatias =
-          parseInt(row.querySelector('[data-f="fatias"]').value) || 0;
-        const cm = parseInt(row.querySelector('[data-f="cm"]').value) || 0;
-        const maxSab =
-          parseInt(row.querySelector('[data-f="max_sabores"]').value) || 2;
-        const precos = {};
-        row.querySelectorAll('[data-f="preco_tipo"]').forEach((inp) => {
-          if (inp.dataset.tipo)
-            precos[inp.dataset.tipo] = parseFloat(inp.value) || 0;
-        });
-        const precoMin =
-          Math.min(...Object.values(precos).filter((v) => v > 0)) || 0;
-        tamanhos.push({
-          nome,
-          fatias,
-          cm,
-          max_sabores: maxSab,
-          precos,
-          preco: precoMin,
-        });
-      });
-
-      // Sabores
-      const sabores = [];
-      document.querySelectorAll(".pizza-sabor-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="snome"]').value.trim();
-        if (!nome) return;
-        const toggleBtn = row.querySelector(".pizza-sabor-toggle-ativo");
-        const ativo = !toggleBtn || toggleBtn.dataset.ativo !== "false";
-        sabores.push({
-          nome,
-          desc:  row.querySelector('[data-f="sdesc"]')?.value?.trim() || "",
-          tipo:  row.querySelector('[data-f="stipo"]').value,
-          img:   row.querySelector('[data-f="simg"]')?.value || "",
-          preco: 0,
-          ativo,
-        });
-      });
-
-      configFinal = {
-        __tipo: "pizza",
-        tipos_pizza,
-        tamanhos,
-        sabores,
-        bordas,
-        tem_borda: bordas.length > 0,
-      };
-      const todosPrecos = tamanhos
-        .flatMap((t) => Object.values(t.precos))
-        .filter((v) => v > 0);
-      if (todosPrecos.length > 0)
-        document.getElementById("prod-preco").value = Math.min(...todosPrecos);
-    }
-
-    // ── AÇAÍ ──────────────────────────────────────────────────────
-    if (tipo === "acai") {
-      const tamanhos = [];
-      document.querySelectorAll(".acai-tamanho-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="nome"]').value.trim();
-        const preco =
-          parseFloat(row.querySelector('[data-f="preco"]').value) || 0;
-        const img = row.querySelector('[data-f="img"]')?.value?.trim() || "";
-        if (nome) tamanhos.push({ nome, preco, img });
-      });
-      const acompanhamentos = [];
-      document.querySelectorAll(".acai-acomp-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="nome"]').value.trim();
-        const preco =
-          parseFloat(row.querySelector('[data-f="preco"]').value) || 0;
-        const img = row.querySelector('[data-f="img"]')?.value?.trim() || "";
-        if (nome) acompanhamentos.push({ nome, preco, img });
-      });
-      const etapas = [];
-      document
-        .querySelectorAll("#acai-etapas-container .etapa-item")
-        .forEach((div) => {
-          etapas.push({
-            titulo: div.querySelector(".step-titulo").value,
-            max: parseInt(div.querySelector(".step-max").value),
-            itens: div
-              .querySelector(".step-itens")
-              .value.split(",")
-              .map((s) => s.trim())
-              .filter((s) => s),
-          });
-        });
-      const variacoes = [];
-      document
-        .querySelectorAll("#acai-variacoes-lista .variacao-acai-row")
-        .forEach((row) => {
-          const nome = row.querySelector('[data-f="vnome"]').value.trim();
-          const preco =
-            parseFloat(row.querySelector('[data-f="vpreco"]').value) || 0;
-          if (nome) variacoes.push({ nome, preco });
-        });
-      configFinal = {
-        __tipo: "acai",
-        tamanhos,
-        acompanhamentos,
-        etapas,
-        variacoes,
-      };
-      const precoMin = tamanhos.map((t) => t.preco).filter((p) => p > 0);
-      if (precoMin.length > 0)
-        document.getElementById("prod-preco").value = Math.min(...precoMin);
-    }
-
-    // ── SUCO ──────────────────────────────────────────────────────
-    if (tipo === "suco") {
-      const tamanhos = [];
-      document.querySelectorAll(".suco-tamanho-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="nome"]').value.trim();
-        const preco =
-          parseFloat(row.querySelector('[data-f="preco"]').value) || 0;
-        if (nome) tamanhos.push({ nome, preco });
-      });
-      const etapas = [];
-      document
-        .querySelectorAll("#suco-etapas-container .etapa-item")
-        .forEach((div) => {
-          etapas.push({
-            titulo: div.querySelector(".step-titulo").value,
-            max: parseInt(div.querySelector(".step-max").value),
-            itens: div
-              .querySelector(".step-itens")
-              .value.split(",")
-              .map((s) => s.trim())
-              .filter((s) => s),
-          });
-        });
-      configFinal = { __tipo: "suco", tamanhos, etapas };
-      const precoMin = tamanhos.map((t) => t.preco).filter((p) => p > 0);
-      if (precoMin.length > 0)
-        document.getElementById("prod-preco").value = Math.min(...precoMin);
-    }
-
-    // ── SORVETE ───────────────────────────────────────────────────
-    if (tipo === "sorvete") {
-      const tamanhos = [];
-      document.querySelectorAll(".sorvete-tamanho-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="nome"]').value.trim();
-        const qtd_bolas =
-          parseInt(row.querySelector('[data-f="qtd_bolas"]')?.value) || null;
-        const preco =
-          parseFloat(row.querySelector('[data-f="preco"]').value) || 0;
-        if (nome) tamanhos.push({ nome, qtd_bolas, preco });
-      });
-      const sabores = [];
-      document.querySelectorAll(".sorvete-sabor-row").forEach((row) => {
-        const nome = row.querySelector('[data-f="nome"]').value.trim();
-        const img = row.querySelector('[data-f="img"]')?.value?.trim() || "";
-        const preco =
-          parseFloat(row.querySelector('[data-f="preco"]')?.value) || 0;
-        if (nome) sabores.push({ nome, img, preco });
-      });
-      const etapas = [];
-      document
-        .querySelectorAll("#sorvete-etapas-container .etapa-item")
-        .forEach((div) => {
-          etapas.push({
-            titulo: div.querySelector(".step-titulo").value,
-            max: parseInt(div.querySelector(".step-max").value),
-            itens: div
-              .querySelector(".step-itens")
-              .value.split(",")
-              .map((s) => s.trim())
-              .filter((s) => s),
-          });
-        });
-      const variacoes = [];
-      document
-        .querySelectorAll("#sorvete-variacoes-lista .variacao-acai-row")
-        .forEach((row) => {
-          const nome = row.querySelector('[data-f="vnome"]').value.trim();
-          const preco =
-            parseFloat(row.querySelector('[data-f="vpreco"]').value) || 0;
-          if (nome) variacoes.push({ nome, preco });
-        });
-      configFinal = { __tipo: "sorvete", tamanhos, sabores, etapas, variacoes };
-      const precoMin = tamanhos.map((t) => t.preco).filter((p) => p > 0);
-      if (precoMin.length > 0)
-        document.getElementById("prod-preco").value = Math.min(...precoMin);
-    }
-
-    // ── COMBO ─────────────────────────────────────────────────────
-    if (tipo === "combo") {
-      const descricao_livre =
-        document.getElementById("combo-descricao")?.value?.trim() || "";
-      const itens_combo = [
-        ...document.querySelectorAll(
-          '#combo-produtos-selecionados input[type="checkbox"]:checked',
-        ),
-      ]
-        .map((el) => parseInt(el.value))
-        .filter(Boolean);
-      configFinal = { __tipo: "combo", descricao_livre, itens_combo };
-    }
-
-    if (tipo === "combo_fechado") {
-      const cfg = cfLerConfigBuilder();
-      if (!cfg.limite_total || cfg.limite_total < 1) {
-        alert("⚠️ Informe o limite total de itens do combo.");
-        return;
-      }
-      if (cfg.sabores.length === 0) {
-        alert("⚠️ Adicione ao menos 1 sabor ao Combo Fechado.");
-        return;
-      }
-      configFinal = cfg;
-    }
-
-    // Extras por produto
-    const temExtras = document.getElementById("prod-tem-extras").checked;
-    if (temExtras) {
-      const extras = [];
-      document.querySelectorAll(".extra-row").forEach((row) => {
-        const n = row.querySelector('[data-f="enome"]')?.value;
-        const p =
-          parseFloat(row.querySelector('[data-f="epreco"]')?.value) || 0;
-        if (n) extras.push({ nome: n, preco: p });
-      });
-      configFinal.extras = extras;
-    }
-
-    // Opções de Preparo
-    const temPreparo = document.getElementById("prod-tem-preparo")?.checked;
-    if (temPreparo) {
-      const preparoOpcoes = [];
-      document.querySelectorAll(".preparo-opcao-input").forEach((inp) => {
-        const v = inp.value.trim();
-        if (v) preparoOpcoes.push(v);
-      });
-      if (preparoOpcoes.length > 0) configFinal.preparo_opcoes = preparoOpcoes;
-    }
-
-    // Variações de sabor (tipo variacoes puro)
-    if (tipo === "variacoes") {
-      const variacoes = [];
-      document
-        .querySelectorAll("#variacoes-lista .variacao-row")
-        .forEach((row) => {
-          const nome = row.querySelector('[data-f="vnome"]').value.trim();
-          const preco =
-            parseFloat(row.querySelector('[data-f="vpreco"]').value) || 0;
-          const img = row.querySelector('[data-f="vimg"]').value.trim() || "";
-          const ativoEl = row.querySelector('[data-f="vativo"]');
-          const ativo = ativoEl ? ativoEl.checked : true;
-          if (nome) variacoes.push({ nome, preco, img, ativo });
-        });
-      configFinal.variacoes = variacoes;
-    }
-
-    // Kg: apenas preco_kg, sem prod-preco
-    if (tipo === "kg") {
-      const precoKg =
+    // Preço base — lê o campo principal; sobrescreve se for Venda por Kg
+    let precoBase = parseInt(document.getElementById("prod-preco")?.value) || 0;
+    if (document.getElementById("prod-venda-kg")?.checked) {
+      const pkgVal =
         parseFloat(document.getElementById("prod-preco-kg")?.value) || 0;
-      if (!precoKg) {
-        alert("⚠️ Informe o preço por kg!");
-        return;
-      }
-      configFinal = { __tipo: "kg", preco_kg: precoKg };
+      if (pkgVal > 0) precoBase = pkgVal;
     }
-
-    // Preço base calculado
-    let precoBase =
-      parseFloat(document.getElementById("prod-preco").value) || 0;
-    if (
-      tipo === "variacoes" &&
-      configFinal.variacoes &&
-      configFinal.variacoes.length > 0
-    ) {
-      const precos = configFinal.variacoes
-        .map((v) => v.preco)
-        .filter((p) => p > 0);
-      if (precos.length > 0) precoBase = Math.min(...precos);
-    }
-    if (tipo === "kg")
-      precoBase =
-        parseFloat(document.getElementById("prod-preco-kg")?.value) || 0;
-
-    // e_montavel: sinaliza que o produto tem etapas de montagem
-    const tiposComMontagem = ["montavel", "acai", "suco", "sorvete"];
-    const isM = tiposComMontagem.includes(tipo) || tipo === "shake";
-
-    const temEstoque =
-      document.getElementById("prod-tem-estoque")?.checked || false;
-    const inventarioId = temEstoque
-      ? parseInt(document.getElementById("prod-inventario-id")?.value) || null
-      : null;
     const dados = {
       nome: document.getElementById("prod-nome").value,
       descricao: document.getElementById("prod-desc").value,
@@ -3598,17 +3785,55 @@ async function salvarProduto() {
       categoria_slug: document.getElementById("prod-cat").value || null,
       subcategoria_slug: document.getElementById("prod-subcat")?.value || null,
       imagem_url: urlFinal,
-      e_montavel: isM,
-      montagem_config: configFinal,
+      e_montavel: false,
+      montagem_config: null,
       ativo: true,
       somente_balcao:
         document.getElementById("prod-somente-balcao")?.checked || false,
-      es_bebida: document.getElementById("prod-es-bebida")?.checked || false,
-      inventario_id: inventarioId,
+      // ── Código de barras ──────────────────────────────────
+      codigo_barras:
+        document.getElementById("prod-codigo-barras")?.value?.trim() || null,
+      // ── Varejo ────────────────────────────────────────────
+      unidade_venda:
+        document.getElementById("prod-unidade-venda")?.value || null,
+      destaque: document.getElementById("prod-destaque")?.checked || false,
+      promo_ativo:
+        document.getElementById("prod-promo-ativo")?.checked || false,
+      promo_tipo: document.getElementById("prod-promo-tipo")?.value || null,
+      promo_valor:
+        parseFloat(document.getElementById("prod-promo-valor")?.value) || null,
+      // Estoque direto (sem vínculo com inventário)
+      estoque_qtd: document.getElementById("prod-tem-estoque")?.checked
+        ? parseInt(document.getElementById("prod-estoque-qtd")?.value) || 0
+        : null,
+      // ── Perecível ─────────────────────────────────────────
+      perecivel: document.getElementById("prod-perecivel")?.checked || false,
+      data_validade:
+        document.getElementById("prod-perecivel")?.checked &&
+        document.getElementById("prod-data-validade")?.value
+          ? document.getElementById("prod-data-validade").value
+          : null,
     };
 
-    if (id) await supa.from("produtos").update(dados).eq("id", id);
-    else await supa.from("produtos").insert([dados]);
+    let prodIdSalvo = id ? parseInt(id) : null;
+
+    if (id) {
+      await supa.from("produtos").update(dados).eq("id", id);
+    } else {
+      const { data: novoProd, error: errInsert } = await supa
+        .from("produtos")
+        .insert([dados])
+        .select("id")
+        .single();
+      if (errInsert) throw errInsert;
+      prodIdSalvo = novoProd.id;
+    }
+
+    // ── Salva variações de estoque (varejo) ───────────────────
+    if (prodIdSalvo && document.getElementById("secao-variacoes-estoque")) {
+      await veSalvarVariacoes(prodIdSalvo);
+    }
+    // ── Fim variações ─────────────────────────────────────────
 
     fecharModal("modal-produto");
     carregarProdutos();
@@ -3624,7 +3849,8 @@ async function abrirModalProduto(produto = null, tipoInicial = null) {
   const modal = document.getElementById("modal-produto");
 
   // Reset completo
-  document.getElementById("builder-steps").innerHTML = "";
+  const _bSteps = document.getElementById("builder-steps");
+  if (_bSteps) _bSteps.innerHTML = "";
   document.getElementById("prod-id").value = "";
   document.getElementById("prod-nome").value = "";
   document.getElementById("prod-desc").value = "";
@@ -3632,67 +3858,52 @@ async function abrirModalProduto(produto = null, tipoInicial = null) {
   document.getElementById("prod-img").value = "";
   document.getElementById("box-preview").style.display = "none";
   document.getElementById("prod-somente-balcao").checked = false;
-  const _esBebidaEl = document.getElementById("prod-es-bebida");
-  if (_esBebidaEl) _esBebidaEl.checked = false;
-  document.getElementById("prod-tem-extras").checked = false;
-  const _pkgEl = document.getElementById("prod-preco-kg");
-  if (_pkgEl) _pkgEl.value = "";
-  document.getElementById("extras-area").style.display = "none";
-  const _te = document.getElementById("prod-tem-estoque");
-  const _ea = document.getElementById("estoque-area");
-  if (_te) _te.checked = false;
-  if (_ea) _ea.style.display = "none";
-  document.getElementById("extras-lista").innerHTML = "";
-  document.getElementById("shake-tamanhos-lista") &&
-    (document.getElementById("shake-tamanhos-lista").innerHTML = "");
-  document.getElementById("shake-sabores-lista") &&
-    (document.getElementById("shake-sabores-lista").innerHTML = "");
-  document.getElementById("pizza-tamanhos-lista").innerHTML = "";
-  document.getElementById("pizza-bordas-lista").innerHTML = "";
-  document.getElementById("pizza-tipos-lista") &&
-    (document.getElementById("pizza-tipos-lista").innerHTML = "");
-  document.getElementById("pizza-borda-preco-box").style.display = "none";
-  document.getElementById("pizza-tem-borda").checked = false;
-  document.getElementById("pizza-sabores-lista").innerHTML =
-    '<p style="color:#aaa;font-size:0.82rem;text-align:center;margin:10px 0">Clique em "+ Sabor" para adicionar</p>';
-  // Reset açaí
-  const _acaiT = document.getElementById("acai-tamanhos-lista");
-  if (_acaiT) _acaiT.innerHTML = "";
-  const _acaiA = document.getElementById("acai-acomp-lista");
-  if (_acaiA) _acaiA.innerHTML = "";
-  const _acaiE = document.getElementById("acai-etapas-container");
-  if (_acaiE) _acaiE.innerHTML = "";
-  const _acaiV = document.getElementById("acai-variacoes-lista");
-  if (_acaiV) _acaiV.innerHTML = "";
-  // Reset suco
-  const _sucoT = document.getElementById("suco-tamanhos-lista");
-  if (_sucoT) _sucoT.innerHTML = "";
-  const _sucoE = document.getElementById("suco-etapas-container");
-  if (_sucoE) _sucoE.innerHTML = "";
-  // Reset sorvete
-  const _sorvT = document.getElementById("sorvete-tamanhos-lista");
-  if (_sorvT) _sorvT.innerHTML = "";
-  const _sorvS = document.getElementById("sorvete-sabores-lista");
-  if (_sorvS) _sorvS.innerHTML = "";
-  const _sorvE = document.getElementById("sorvete-etapas-container");
-  if (_sorvE) _sorvE.innerHTML = "";
-  const _sorvV = document.getElementById("sorvete-variacoes-lista");
-  if (_sorvV) _sorvV.innerHTML = "";
-  // Reset combo
-  const _combDesc = document.getElementById("combo-descricao");
-  if (_combDesc) _combDesc.value = "";
-  window._comboItensPresel = [];
-  const variacoesLista = document.getElementById("variacoes-lista");
-  if (variacoesLista) variacoesLista.innerHTML = "";
-  // CORREÇÃO: Limpa o file input para não reutilizar imagem anterior
+  // ── Código de barras reset ────────────────────────────────
+  const _cbResetEl = document.getElementById("prod-codigo-barras");
+  if (_cbResetEl) _cbResetEl.value = "";
+  // ── Varejo reset ──────────────────────────────────────────
+  const _unidEl = document.getElementById("prod-unidade-venda");
+  if (_unidEl) _unidEl.value = "";
+  const _destEl = document.getElementById("prod-destaque");
+  if (_destEl) _destEl.checked = false;
+  const _paEl = document.getElementById("prod-promo-ativo");
+  if (_paEl) {
+    _paEl.checked = false;
+    togglePromoFields(false);
+  }
+  const _pvEl = document.getElementById("prod-promo-valor");
+  if (_pvEl) _pvEl.value = "";
+  const _ppEl = document.getElementById("prod-promo-preview");
+  if (_ppEl) _ppEl.textContent = "";
+  // Estoque direto
+  const _teResetEl = document.getElementById("prod-tem-estoque");
+  if (_teResetEl) {
+    _teResetEl.checked = false;
+    toggleEstoqueDireto(false);
+  }
+  const _eqResetEl = document.getElementById("prod-estoque-qtd");
+  if (_eqResetEl) _eqResetEl.value = "";
+  // Venda por kg
+  const _vkResetEl = document.getElementById("prod-venda-kg");
+  if (_vkResetEl) {
+    _vkResetEl.checked = false;
+    toggleVendaKg(false);
+  }
+  const _pkResetEl = document.getElementById("prod-preco-kg");
+  if (_pkResetEl) _pkResetEl.value = "";
+  // ── Perecível reset ───────────────────────────────────────
+  const _perResetEl = document.getElementById("prod-perecivel");
+  if (_perResetEl) {
+    _perResetEl.checked = false;
+    togglePerecivelFields(false);
+  }
+  const _dvResetEl = document.getElementById("prod-data-validade");
+  if (_dvResetEl) _dvResetEl.value = "";
+  // ── Fim Varejo reset ──────────────────────────────────────
+
+  // Limpa file input para não reutilizar imagem anterior
   const fileInputReset = document.getElementById("prod-img-file");
   if (fileInputReset) fileInputReset.value = "";
-  const cfLista = document.getElementById("cf-sabores-lista");
-  if (cfLista) cfLista.innerHTML = "";
-  const cfLimite = document.getElementById("cf-limite");
-  if (cfLimite) cfLimite.value = "";
-
-  let tipo = "padrao";
 
   if (produto) {
     document.getElementById("prod-id").value = produto.id;
@@ -3702,168 +3913,76 @@ async function abrirModalProduto(produto = null, tipoInicial = null) {
     document.getElementById("prod-img").value = produto.imagem_url || "";
     document.getElementById("prod-somente-balcao").checked =
       produto.somente_balcao || false;
-    const _esBebidaLoad = document.getElementById("prod-es-bebida");
-    if (_esBebidaLoad) _esBebidaLoad.checked = produto.es_bebida || false;
-    if (produto.inventario_id) {
-      const _te = document.getElementById("prod-tem-estoque");
-      const _ea = document.getElementById("estoque-area");
-      if (_te) _te.checked = true;
-      if (_ea) _ea.style.display = "block";
-      _carregarSelectInventario(produto.inventario_id);
+
+    // ── Código de barras ───────────────────────────────────
+    const _cbEl = document.getElementById("prod-codigo-barras");
+    if (_cbEl) _cbEl.value = produto.codigo_barras || "";
+
+    // ── Varejo: unidade, destaque, promoção, estoque direto ─
+    const _unid = document.getElementById("prod-unidade-venda");
+    if (_unid) _unid.value = produto.unidade_venda || "";
+
+    const _dest = document.getElementById("prod-destaque");
+    if (_dest) _dest.checked = produto.destaque || false;
+
+    const _promoAtivo = document.getElementById("prod-promo-ativo");
+    if (_promoAtivo) {
+      _promoAtivo.checked = produto.promo_ativo || false;
+      togglePromoFields(produto.promo_ativo || false);
     }
+    const _promoTipo = document.getElementById("prod-promo-tipo");
+    if (_promoTipo && produto.promo_tipo) _promoTipo.value = produto.promo_tipo;
+    const _promoValor = document.getElementById("prod-promo-valor");
+    if (_promoValor && produto.promo_valor)
+      _promoValor.value = produto.promo_valor;
+    promoAtualizarPreview();
+
+    // Estoque direto
+    const temEst = produto.estoque_qtd != null;
+    const _teEl = document.getElementById("prod-tem-estoque");
+    if (_teEl) {
+      _teEl.checked = temEst;
+      toggleEstoqueDireto(temEst);
+    }
+    const _eqEl = document.getElementById("prod-estoque-qtd");
+    if (_eqEl && temEst) _eqEl.value = produto.estoque_qtd;
+
+    // Venda por Kg
+    const eKg = produto.unidade_venda === "kg" && produto.preco_kg > 0;
+    const _vkEl = document.getElementById("prod-venda-kg");
+    if (_vkEl) {
+      _vkEl.checked = eKg;
+      toggleVendaKg(eKg);
+    }
+    const _pkEl = document.getElementById("prod-preco-kg");
+    if (_pkEl && produto.preco_kg) _pkEl.value = produto.preco_kg;
+    // ── Perecível ──────────────────────────────────────────
+    const _perEl = document.getElementById("prod-perecivel");
+    if (_perEl) {
+      const isPerecivel = produto.perecivel || false;
+      _perEl.checked = isPerecivel;
+      togglePerecivelFields(isPerecivel);
+    }
+    const _dvEl = document.getElementById("prod-data-validade");
+    if (_dvEl && produto.data_validade)
+      _dvEl.value = produto.data_validade.split("T")[0];
+    // ── Fim Varejo ──────────────────────────────────────────
+    // Inventário vinculado removido — estoque agora é direto no produto
     if (produto.imagem_url) {
       document.getElementById("img-preview").src = produto.imagem_url;
       document.getElementById("box-preview").style.display = "block";
     }
-
-    const cfg = produto.montagem_config;
-
-    // Detecta tipo
-    if (cfg && !Array.isArray(cfg) && cfg.__tipo) {
-      tipo = cfg.__tipo;
-
-      if (tipo === "montavel" && cfg.etapas) {
-        cfg.etapas.forEach((e) => addBuilderStep(e.titulo, e.max, e.itens));
-      }
-      // ── PIZZA: novo formato (tipos_pizza dinâmico) ──
-      if (tipo === "pizza") {
-        const pizzaCfg = cfg.pizza || cfg; // suporta formato antigo (cfg.pizza) e novo (cfg direto)
-        // Tipos
-        const tiposPizza =
-          cfg.tipos_pizza ||
-          (cfg.pizza?.tipos || []).map((n) => ({ nome: n })) ||
-          [];
-        document.getElementById("pizza-tipos-lista").innerHTML = "";
-        tiposPizza.forEach((t) => addPizzaTipo(t.nome));
-        if (tiposPizza.length === 0) {
-          // retrocompat: sem tipos definidos → cria Tradicional
-          addPizzaTipo("Tradicional");
-        }
-        // Bordas (novo: nome+preco; antigo: nome+tipo)
-        const bordas = (pizzaCfg.bordas || []).map((b) => ({
-          nome: b.nome,
-          preco: b.preco ?? pizzaCfg.borda_preco ?? 0,
-        }));
-        document.getElementById("pizza-tem-borda").checked = bordas.length > 0;
-        document.getElementById("pizza-bordas-lista").innerHTML = "";
-        toggleBordaPreco();
-        bordas.forEach((b) => addPizzaBorda(b));
-        // Tamanhos
-        (pizzaCfg.tamanhos || []).forEach((t) => addPizzaTamanho(t));
-        // Sabores
-        if (pizzaCfg.sabores && pizzaCfg.sabores.length > 0) {
-          document.getElementById("pizza-sabores-lista").innerHTML = "";
-          pizzaCfg.sabores.forEach((s) => addPizzaSabor(s));
-          // Drag já é vinculado dentro de addPizzaSabor
-        }
-      }
-      // ── SHAKE ──
-      if (tipo === "shake" && cfg.shake) {
-        _popularShakeBuilder(cfg.shake);
-      }
-      // ── AÇAÍ ──
-      if (tipo === "acai") {
-        document.getElementById("acai-tamanhos-lista").innerHTML = "";
-        document.getElementById("acai-acomp-lista").innerHTML = "";
-        document.getElementById("acai-etapas-container").innerHTML = "";
-        document.getElementById("acai-variacoes-lista").innerHTML = "";
-        (cfg.tamanhos || []).forEach((t) => addAcaiTamanho(t));
-        (cfg.acompanhamentos || []).forEach((a) => addAcaiAcompanhamento(a));
-        (cfg.etapas || []).forEach((e) =>
-          addAcaiEtapa(e.titulo, e.max, e.itens),
-        );
-        (cfg.variacoes || []).forEach((v) =>
-          addVariacaoSimples(v, "acai-variacoes-lista"),
-        );
-      }
-      // ── SUCO ──
-      if (tipo === "suco") {
-        document.getElementById("suco-tamanhos-lista").innerHTML = "";
-        document.getElementById("suco-etapas-container").innerHTML = "";
-        (cfg.tamanhos || []).forEach((t) => addSucoTamanho(t));
-        (cfg.etapas || []).forEach((e) => {
-          addSucoEtapa(e.titulo, e.max, e.itens);
-        });
-      }
-      // ── SORVETE ──
-      if (tipo === "sorvete") {
-        document.getElementById("sorvete-tamanhos-lista").innerHTML = "";
-        document.getElementById("sorvete-sabores-lista").innerHTML = "";
-        document.getElementById("sorvete-etapas-container").innerHTML = "";
-        document.getElementById("sorvete-variacoes-lista").innerHTML = "";
-        (cfg.tamanhos || []).forEach((t) => addSorveteTamanho(t));
-        (cfg.sabores || []).forEach((s) => addSorveteSabor(s));
-        (cfg.etapas || []).forEach((e) =>
-          addSorveteEtapa(e.titulo, e.max, e.itens),
-        );
-        (cfg.variacoes || []).forEach((v) =>
-          addVariacaoSimples(v, "sorvete-variacoes-lista"),
-        );
-      }
-      // ── COMBO ──
-      if (tipo === "combo") {
-        const comboDesc = document.getElementById("combo-descricao");
-        if (comboDesc) comboDesc.value = cfg.descricao_livre || "";
-        // os checkboxes de produtos são carregados async pelo _carregarComboSelect
-        window._comboItensPresel = cfg.itens_combo || [];
-      }
-      if (tipo === "combo_fechado") {
-        cfCarregarNoBuilder(cfg);
-      }
-      // Variações de sabor
-      if (tipo === "variacoes" && cfg.variacoes) {
-        document.getElementById("variacoes-lista").innerHTML = "";
-        cfg.variacoes.forEach((v) => addVariacao(v));
-      }
-      // Venda por Kg
-      if (tipo === "kg" && cfg.preco_kg) {
-        const pkgEl = document.getElementById("prod-preco-kg");
-        if (pkgEl) pkgEl.value = cfg.preco_kg;
-      }
-      // Extras
-      if (cfg.extras && cfg.extras.length > 0) {
-        document.getElementById("prod-tem-extras").checked = true;
-        document.getElementById("extras-area").style.display = "block";
-        cfg.extras.forEach((ex) => addExtra(ex));
-      }
-      // Opções de Preparo
-      const prepEl = document.getElementById("prod-tem-preparo");
-      const preparoArea = document.getElementById("preparo-area");
-      const preparoLista = document.getElementById("preparo-lista");
-      if (prepEl && cfg.preparo_opcoes && cfg.preparo_opcoes.length > 0) {
-        prepEl.checked = true;
-        if (preparoArea) preparoArea.style.display = "block";
-        if (preparoLista) preparoLista.innerHTML = "";
-        cfg.preparo_opcoes.forEach((op) => addOpcaoPreparo(op));
-      }
-    } else if (cfg && Array.isArray(cfg)) {
-      // Compatibilidade: array antigo = montavel
-      tipo = "montavel";
-      cfg.forEach((e) => addBuilderStep(e.titulo, e.max, e.itens));
-    } else if (produto.e_montavel) {
-      tipo = "montavel";
-    }
   }
-
-  // Aplica tipo inicial (vindo do seletor externo ao modal)
-  if (!produto && tipoInicial) {
-    tipo = tipoInicial;
-  }
-
-  // Mostra botão "Alterar tipo" apenas ao editar produto existente
-  const btnAlterar = document.getElementById("btn-alterar-tipo");
-  if (btnAlterar) btnAlterar.style.display = produto ? "inline-flex" : "none";
-  // Fecha o grid de tipos se estava aberto
-  const gridWrapper = document.getElementById("builder-type-grid-wrapper");
-  if (gridWrapper) gridWrapper.style.display = "none";
-
-  selecionarTipoBuilder(tipo);
 
   // CORREÇÃO: Carrega categorias com a categoria atual do produto já selecionada
   const catAtual = produto ? produto.categoria_slug || "" : "";
   const subcatAtual = produto ? produto.subcategoria_slug || "" : "";
   await carregarSelectCategorias(catAtual);
   await carregarSelectSubcategorias(catAtual, subcatAtual);
+
+  // ── Seção de variações de estoque (varejo) ────────────────
+  veIniciarSecao(produto ? produto.id : null);
+  // ── Fim variações ─────────────────────────────────────────
 
   modal.style.display = "flex";
 }
@@ -3882,7 +4001,12 @@ const BUILDER_MAP = {
   suco: "builder-suco",
   variacoes: "builder-variacoes",
   kg: "builder-kg",
-  combo_fechado: "builder-combo-fechado",
+  // ── Varejo ──────────────────────────────────────────────
+  roupa: "", // usa seção de variações de estoque (veIniciarSecao)
+  eletronico: "",
+  suplemento: "",
+  pod: "",
+  mercado: "", // usa unidade_venda + destaque + promo
 };
 const BUILDER_HINTS = {
   shake: "🥤 Defina tamanhos (P/M/G) e sabores disponíveis.",
@@ -3900,9 +4024,14 @@ const _TIPO_BADGE_LABELS = {
   montavel: "🥗 Montável",
   almoco: "🍽️ Prato",
   combo: "⭐ Combo",
-  variacoes: "🎨 Variações",
+  variacoes: "🎨 Multi-variação",
   kg: "⚖️ Venda por Kg",
-  combo_fechado: "📦 Combo Fechado",
+  // ── Varejo ──────────────────────────────────────────────
+  roupa: "👕 Roupa",
+  eletronico: "🔌 Eletrônico",
+  suplemento: "💪 Suplemento",
+  pod: "☁️ Pod / Tabacaria",
+  mercado: "🛒 Mercado",
 };
 
 function selecionarTipoBuilder(tipo) {
@@ -3949,38 +4078,50 @@ function selecionarTipoBuilder(tipo) {
 
   // Para açaí/suco/sorvete: carrega lista de produtos no combo se necessário
   if (tipo === "combo") _carregarComboSelect();
+
+  // ── Varejo: tipos que sempre usam seção de variações ────
+  const tiposVarejo = ["roupa", "eletronico", "suplemento", "pod", "variacoes"];
+  const secaoVe = document.getElementById("secao-variacoes-estoque");
+  if (secaoVe && tiposVarejo.includes(tipo)) {
+    // Garante que a seção esteja visível e com dica contextual
+    secaoVe.style.display = "";
+    const prodId = document.getElementById("prod-id")?.value || null;
+    veIniciarSecao(prodId ? parseInt(prodId) : null);
+    // Sugestão de variações padrão por tipo
+    const sugestoes = {
+      roupa: [
+        "Branco - P",
+        "Branco - M",
+        "Branco - G",
+        "Preto - P",
+        "Preto - M",
+        "Preto - G",
+      ],
+      eletronico: ["110v", "220v", "Bivolt"],
+      suplemento: ["Baunilha - 900g", "Chocolate - 900g", "Morango - 900g"],
+      pod: ["Melancia", "Menta", "Morango Gelado", "Uva", "Ice"],
+    };
+    if (sugestoes[tipo] && _ve_variacoes.length === 0) {
+      _veMostrarSugestoes(sugestoes[tipo]);
+    }
+  }
 }
 
 // Abre modal com tipo pré-selecionado (vindo do seletor externo)
+// Abre o modal de produto em branco (único formulário para todos os tipos)
 function criarNovoProduto(tipo) {
-  // Esconde o seletor de tipos
-  const panel = document.getElementById("novo-produto-tipos");
-  if (panel) panel.style.display = "none";
-  // O botão "alterar tipo" só é visível ao editar
-  const btnAlterar = document.getElementById("btn-alterar-tipo");
-  if (btnAlterar) btnAlterar.style.display = "none";
-  abrirModalProduto(null, tipo);
+  abrirModalProduto(null);
 }
 
-// Toggle do painel de seleção de tipo (botão "+ Novo Produto")
+// Mantido por compatibilidade — abre o modal diretamente
 function toggleNovosProdutosTipos() {
-  const panel = document.getElementById("novo-produto-tipos");
-  if (!panel) return;
-  panel.style.display = panel.style.display === "none" ? "block" : "none";
+  abrirModalProduto(null);
 }
 
-// Toggle do grid de tipos DENTRO do modal (ao editar)
-function toggleAlterarTipo() {
-  const wrapper = document.getElementById("builder-type-grid-wrapper");
-  if (!wrapper) return;
-  wrapper.style.display = wrapper.style.display === "none" ? "block" : "none";
-}
+// Removido: toggleAlterarTipo — sem seletor de tipo no modal
 
 // Compatibilidade retroativa
-function toggleBuilder() {
-  const isM = document.getElementById("prod-montavel")?.checked;
-  if (isM) selecionarTipoBuilder("montavel");
-}
+function toggleBuilder() {}
 
 function addBuilderStep(t = "", m = 1, i = []) {
   const div = document.createElement("div");
@@ -4150,8 +4291,8 @@ function addPizzaSabor(dados = {}) {
   const row = document.createElement("div");
   row.className = "pizza-sabor-row";
   row.draggable = true;
-  const imgSrc   = dados.img || "";
-  const isAtivo  = dados.ativo !== false; // default true
+  const imgSrc = dados.img || "";
+  const isAtivo = dados.ativo !== false; // default true
   row.innerHTML = `
     <div class="pizza-sabor-main" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
       <span class="drag-handle" title="Arrastar para reordenar"
@@ -4160,9 +4301,12 @@ function addPizzaSabor(dados = {}) {
       <select data-f="stipo" class="form-control pizza-sabor-tipo" style="flex:1;min-width:100px">
         ${
           tipos.length
-            ? tipos.map(t =>
-                `<option value="${t}" ${dados.tipo === t ? "selected" : ""}>${t}</option>`
-              ).join("")
+            ? tipos
+                .map(
+                  (t) =>
+                    `<option value="${t}" ${dados.tipo === t ? "selected" : ""}>${t}</option>`,
+                )
+                .join("")
             : `<option value="${dados.tipo || ""}">${dados.tipo || "—"}</option>`
         }
       </select>
@@ -4190,7 +4334,7 @@ function addPizzaSabor(dados = {}) {
 
 function pizzaSaborToggleAtivo(btn) {
   const atual = btn.dataset.ativo === "true";
-  const novo  = !atual;
+  const novo = !atual;
   btn.dataset.ativo = String(novo);
   btn.style.background = novo ? "#27ae60" : "#e74c3c";
   btn.textContent = novo ? "✅ Ativo" : "⏸ Pausado";
@@ -4200,7 +4344,7 @@ function pizzaSaborToggleAtivo(btn) {
 let _dragSaborRow = null;
 
 function _pizzaSaborDragBind(row) {
-  row.addEventListener("dragstart", e => {
+  row.addEventListener("dragstart", (e) => {
     _dragSaborRow = row;
     row.style.opacity = "0.4";
     e.dataTransfer.effectAllowed = "move";
@@ -4209,9 +4353,11 @@ function _pizzaSaborDragBind(row) {
     row.style.opacity = "";
     _dragSaborRow = null;
     // Remove indicadores visuais
-    document.querySelectorAll(".pizza-sabor-row").forEach(r => r.classList.remove("drag-over"));
+    document
+      .querySelectorAll(".pizza-sabor-row")
+      .forEach((r) => r.classList.remove("drag-over"));
   });
-  row.addEventListener("dragover", e => {
+  row.addEventListener("dragover", (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     if (_dragSaborRow && _dragSaborRow !== row) {
@@ -4219,14 +4365,14 @@ function _pizzaSaborDragBind(row) {
     }
   });
   row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
-  row.addEventListener("drop", e => {
+  row.addEventListener("drop", (e) => {
     e.preventDefault();
     row.classList.remove("drag-over");
     if (!_dragSaborRow || _dragSaborRow === row) return;
     const lista = document.getElementById("pizza-sabores-lista");
-    const rows  = [...lista.querySelectorAll(".pizza-sabor-row")];
+    const rows = [...lista.querySelectorAll(".pizza-sabor-row")];
     const fromIdx = rows.indexOf(_dragSaborRow);
-    const toIdx   = rows.indexOf(row);
+    const toIdx = rows.indexOf(row);
     if (fromIdx < toIdx) {
       lista.insertBefore(_dragSaborRow, row.nextSibling);
     } else {
@@ -4237,7 +4383,9 @@ function _pizzaSaborDragBind(row) {
 
 // Inicializa drag em sabores existentes (chamado ao abrir modal de edição)
 function _pizzaSaboresDragInit() {
-  document.querySelectorAll("#pizza-sabores-lista .pizza-sabor-row").forEach(_pizzaSaborDragBind);
+  document
+    .querySelectorAll("#pizza-sabores-lista .pizza-sabor-row")
+    .forEach(_pizzaSaborDragBind);
 }
 
 async function uploadSaborImagem(fileInput, row) {
@@ -4468,73 +4616,6 @@ async function _carregarComboSelect() {
     </label>`,
     )
     .join("");
-}
-
-function cfAdicionarSabor(nome = "") {
-  const lista = document.getElementById("cf-sabores-lista");
-  if (!lista) return;
- 
-  const id = "cf-s-" + Date.now() + Math.random().toString(36).slice(2, 6);
-  const row = document.createElement("div");
-  row.className = "cf-sabor-row";
-  row.dataset.cfId = id;
-  row.innerHTML = `
-    <input type="text" placeholder="Ex: Frango, Queijo, Carne…"
-           value="${nome.replace(/"/g, "&quot;")}"
-           oninput="cfAtualizarPreview()"
-           style="flex:1;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:0.88rem;outline:none">
-    <button type="button" class="cf-remove-sabor" title="Remover sabor"
-            onclick="cfRemoverSabor('${id}')">×</button>
-  `;
-  lista.appendChild(row);
-  row.querySelector("input").focus();
-  cfAtualizarPreview();
-}
- 
-/** Remove uma linha de sabor */
-function cfRemoverSabor(id) {
-  const el = document.querySelector(`[data-cf-id="${id}"]`);
-  if (el) el.remove();
-  cfAtualizarPreview();
-}
- 
-/** Lê o estado atual do builder e atualiza o preview JSON */
-function cfAtualizarPreview() {
-  const preview = document.getElementById("cf-json-preview");
-  if (!preview) return;
-  const cfg = cfLerConfigBuilder();
-  preview.textContent = JSON.stringify(cfg, null, 2);
-}
- 
-/** Lê o formulário do builder e retorna o objeto de config */
-function cfLerConfigBuilder() {
-  const limite = parseInt(document.getElementById("cf-limite")?.value) || 0;
-  const sabores = [];
- 
-  document.querySelectorAll("#cf-sabores-lista .cf-sabor-row").forEach((row) => {
-    const nome = row.querySelector("input")?.value?.trim();
-    if (nome) sabores.push({ id: row.dataset.cfId, nome });
-  });
- 
-  return {
-    __tipo: "combo_fechado",
-    limite_total: limite,
-    sabores,
-  };
-}
- 
-/** Popula o builder com uma config existente (modo edição) */
-function cfCarregarNoBuilder(cfg) {
-  if (!cfg || cfg.__tipo !== "combo_fechado") return;
- 
-  const limiteEl = document.getElementById("cf-limite");
-  if (limiteEl) limiteEl.value = cfg.limite_total || "";
- 
-  const lista = document.getElementById("cf-sabores-lista");
-  if (lista) lista.innerHTML = "";
- 
-  (cfg.sabores || []).forEach((s) => cfAdicionarSabor(s.nome));
-  cfAtualizarPreview();
 }
 
 // ─── DUPLICAR PRODUTO ────────────────────────────────────────────
@@ -6444,12 +6525,17 @@ async function salvarBanner(num = 1) {
 
     if (fileInput?.files?.length) {
       const file = fileInput.files[0];
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando imagem...';
+      btn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Enviando imagem...';
       // ── Upload para o Cloudinary (substitui Supabase Storage) ──
       try {
         urlFinal = await uploadImageToCloudinary(file);
       } catch (uploadErr) {
-        alert("❌ Falha no upload do banner: " + uploadErr.message + "\nO banner não foi salvo.");
+        alert(
+          "❌ Falha no upload do banner: " +
+            uploadErr.message +
+            "\nO banner não foi salvo.",
+        );
         return;
       }
     }
@@ -6746,13 +6832,18 @@ async function salvarPersonalizacao() {
     // Upload do ícone se houver arquivo selecionado
     const iconeFile = document.getElementById("cfg-icone-file")?.files?.[0];
     if (iconeFile) {
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando ícone...';
+      btn.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Enviando ícone...';
       // ── Upload para o Cloudinary (substitui Supabase Storage) ──
       let iconeUrl;
       try {
         iconeUrl = await uploadImageToCloudinary(iconeFile);
       } catch (uploadErr) {
-        alert("❌ Falha no upload do ícone: " + uploadErr.message + "\nA personalização não foi salva.");
+        alert(
+          "❌ Falha no upload do ícone: " +
+            uploadErr.message +
+            "\nA personalização não foi salva.",
+        );
         return;
       }
       dados.icone_url = iconeUrl;
@@ -7216,18 +7307,28 @@ function abrirModalAlterarSenha() {
 
 function _wlToggleSenha(inputId, spanId) {
   const inp = document.getElementById(inputId);
-  const sp  = document.getElementById(spanId);
+  const sp = document.getElementById(spanId);
   if (!inp) return;
   inp.type = inp.type === "password" ? "text" : "password";
   if (sp) sp.textContent = inp.type === "password" ? "👁" : "🙈";
 }
 
 function _wlAvaliarSenha(v) {
-  const checks = [v.length >= 8, /\d/.test(v), /[A-Z]/.test(v), /[^A-Za-z0-9]/.test(v)];
-  const txts   = ["Mín. 8 caracteres","Número","Maiúscula","Caractere especial"];
-  const cores  = ["#e2e8f0","#ef4444","#f97316","#eab308","#22c55e"];
-  const labels = ["","Fraca 😬","Razoável 😐","Boa 👍","Forte 💪"];
-  const score  = checks.filter(Boolean).length;
+  const checks = [
+    v.length >= 8,
+    /\d/.test(v),
+    /[A-Z]/.test(v),
+    /[^A-Za-z0-9]/.test(v),
+  ];
+  const txts = [
+    "Mín. 8 caracteres",
+    "Número",
+    "Maiúscula",
+    "Caractere especial",
+  ];
+  const cores = ["#e2e8f0", "#ef4444", "#f97316", "#eab308", "#22c55e"];
+  const labels = ["", "Fraca 😬", "Razoável 😐", "Boa 👍", "Forte 💪"];
+  const score = checks.filter(Boolean).length;
 
   checks.forEach((ok, i) => {
     const el = document.getElementById("wl-c" + (i + 1));
@@ -7240,38 +7341,55 @@ function _wlAvaliarSenha(v) {
     if (b) b.style.background = i <= score ? cores[score] : "#e2e8f0";
   }
   const fl = document.getElementById("wl-forca-lbl");
-  if (fl) { fl.textContent = labels[score]; fl.style.color = cores[score]; }
+  if (fl) {
+    fl.textContent = labels[score];
+    fl.style.color = cores[score];
+  }
   _wlVerificarMatch();
 }
 
 function _wlVerificarMatch() {
-  const a   = document.getElementById("wl-nova-senha")?.value || "";
-  const b   = document.getElementById("wl-conf-senha")?.value || "";
+  const a = document.getElementById("wl-nova-senha")?.value || "";
+  const b = document.getElementById("wl-conf-senha")?.value || "";
   const lbl = document.getElementById("wl-match-lbl");
   const inp = document.getElementById("wl-conf-senha");
   if (!lbl || !b) return;
   const ok = a === b && b.length > 0;
   lbl.textContent = ok ? "✓ Senhas coincidem" : "✗ Senhas não coincidem";
   lbl.style.color = ok ? "#22c55e" : "#ef4444";
-  if (inp) inp.style.borderColor = b.length > 0 ? (ok ? "#22c55e" : "#ef4444") : "#e2e8f0";
+  if (inp)
+    inp.style.borderColor =
+      b.length > 0 ? (ok ? "#22c55e" : "#ef4444") : "#e2e8f0";
 }
 
 async function wlSalvarNovaSenha() {
-  const nova   = document.getElementById("wl-nova-senha")?.value || "";
-  const conf   = document.getElementById("wl-conf-senha")?.value || "";
-  const msgEl  = document.getElementById("wl-msg-senha");
-  const showErr = (t) => { msgEl.textContent = t; msgEl.style.display = "block"; };
+  const nova = document.getElementById("wl-nova-senha")?.value || "";
+  const conf = document.getElementById("wl-conf-senha")?.value || "";
+  const msgEl = document.getElementById("wl-msg-senha");
+  const showErr = (t) => {
+    msgEl.textContent = t;
+    msgEl.style.display = "block";
+  };
   msgEl.style.display = "none";
 
-  if (nova.length < 6)  return showErr("A senha deve ter pelo menos 6 caracteres.");
-  if (nova !== conf)    return showErr("As senhas não coincidem.");
+  if (nova.length < 6)
+    return showErr("A senha deve ter pelo menos 6 caracteres.");
+  if (nova !== conf) return showErr("As senhas não coincidem.");
 
   const btn = document.getElementById("wl-btn-salvar-senha");
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ Salvando..."; btn.style.opacity = ".7"; }
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳ Salvando...";
+    btn.style.opacity = ".7";
+  }
 
   const { error } = await supa.auth.updateUser({ password: nova });
 
-  if (btn) { btn.disabled = false; btn.textContent = "🔒 Salvar Nova Senha"; btn.style.opacity = "1"; }
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = "🔒 Salvar Nova Senha";
+    btn.style.opacity = "1";
+  }
 
   if (error) {
     showErr("Erro: " + error.message);
@@ -7279,7 +7397,8 @@ async function wlSalvarNovaSenha() {
     document.getElementById("modal-alterar-senha").remove();
     const toast = document.createElement("div");
     toast.textContent = "✅ Senha alterada com sucesso!";
-    toast.style.cssText = "position:fixed;bottom:28px;left:50%;transform:translateX(-50%);" +
+    toast.style.cssText =
+      "position:fixed;bottom:28px;left:50%;transform:translateX(-50%);" +
       "background:#1a7a2e;color:#fff;padding:12px 24px;border-radius:12px;font-weight:600;" +
       "font-size:0.9rem;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,0.2)";
     document.body.appendChild(toast);
@@ -7494,6 +7613,105 @@ function _criarCardPDV(p) {
   return card;
 }
 
+// ── PDV — FUNÇÕES AUXILIARES ───────────────────────────────────────
+
+// Estado F2 (consultar preço sem adicionar ao carrinho)
+let _pdvF2Mode = false;
+
+function togglePdvF2Mode() {
+  _pdvF2Mode = !_pdvF2Mode;
+  const btn = document.getElementById("pdv-f2-btn");
+  const badge = document.getElementById("pdv-f2-badge");
+  if (btn) btn.classList.toggle("active", _pdvF2Mode);
+  if (badge) badge.style.display = _pdvF2Mode ? "inline-flex" : "none";
+  const busca = document.getElementById("pdv-busca");
+  if (busca) {
+    busca.focus();
+    busca.select();
+  }
+}
+
+function pdvBuscaKeydown(e) {
+  if (e.key === "F2") {
+    e.preventDefault();
+    togglePdvF2Mode();
+    return;
+  }
+  if (e.key === "Escape" && _pdvF2Mode) {
+    e.preventDefault();
+    togglePdvF2Mode();
+    return;
+  }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const busca = (e.target.value || "").trim().toLowerCase();
+    if (!busca) return;
+    // Encontra o primeiro produto visível
+    const cards = document.querySelectorAll(".pdv-card");
+    if (!cards.length) return;
+    const primeiro =
+      Array.from(cards).find(
+        (c) =>
+          c.dataset.nome?.toLowerCase().includes(busca) ||
+          c.dataset.codigo?.toLowerCase().includes(busca),
+      ) || cards[0];
+    primeiro?.click();
+  }
+}
+
+// Estado cashback
+let _pdvCashbackDisponivel = 0;
+let _pdvCashbackUsando = false;
+
+function pdvGetCashbackDesconto(total) {
+  if (!_pdvCashbackUsando || _pdvCashbackDisponivel <= 0) return 0;
+  return Math.min(_pdvCashbackDisponivel, total);
+}
+
+function pdvToggleCashback() {
+  _pdvCashbackUsando = !_pdvCashbackUsando;
+  const btn = document.getElementById("pdv-btn-usar-cash");
+  if (btn) {
+    btn.textContent = _pdvCashbackUsando
+      ? "❌ Remover Cashback"
+      : "💰 Usar Cashback";
+    btn.style.background = _pdvCashbackUsando ? "#e74c3c" : "#ff9800";
+  }
+  atualizarCarrinhoPDV();
+}
+
+async function pdvTelefoneInput(tel) {
+  tel = (tel || "").trim();
+  const box = document.getElementById("pdv-cashback-box");
+  if (!box) return;
+  // Reseta estado ao mudar telefone
+  _pdvCashbackDisponivel = 0;
+  _pdvCashbackUsando = false;
+  box.style.display = "none";
+  if (tel.length < 7) return;
+  try {
+    const { data } = await supa
+      .from("clientes")
+      .select("nome, cashback_saldo")
+      .eq("telefone", tel)
+      .maybeSingle();
+    if (data && data.cashback_saldo > 0) {
+      _pdvCashbackDisponivel = data.cashback_saldo;
+      const nomeEl = document.getElementById("pdv-cash-nome");
+      const saldoEl = document.getElementById("pdv-cash-saldo");
+      if (nomeEl) nomeEl.textContent = data.nome || "Cliente";
+      if (saldoEl)
+        saldoEl.textContent =
+          "Gs " + data.cashback_saldo.toLocaleString("es-PY");
+      box.style.display = "block";
+    }
+  } catch (_) {
+    /* silencioso */
+  }
+}
+
+// ── Fim funções auxiliares PDV ─────────────────────────────────────
+
 function filtrarPDV(valor) {
   renderizarGridPDV(valor);
 }
@@ -7683,7 +7901,9 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
       const precos = tam.precos || {};
       if (tipo && precos[tipo] > 0) return precos[tipo];
       if (tipo) {
-        const k = Object.keys(precos).find(k2 => k2.toLowerCase() === (tipo || "").toLowerCase());
+        const k = Object.keys(precos).find(
+          (k2) => k2.toLowerCase() === (tipo || "").toLowerCase(),
+        );
         if (k && precos[k] > 0) return precos[k];
       }
       return tam.preco || 0;
@@ -7691,8 +7911,8 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
     // Retorna o menor preço disponível no tamanho (preço base)
     const _pdvPrecoMin = (tam) => {
       if (!tam) return 0;
-      const vals = Object.values(tam.precos || {}).filter(v => v > 0);
-      return vals.length ? Math.min(...vals) : (tam.preco || 0);
+      const vals = Object.values(tam.precos || {}).filter((v) => v > 0);
+      return vals.length ? Math.min(...vals) : tam.preco || 0;
     };
 
     let html = "";
@@ -7702,7 +7922,9 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
       html += `<div style="margin-bottom:14px">
         <p style="font-size:0.82rem;font-weight:700;color:#e74c3c;margin-bottom:8px">📐 Tamanho:</p>
         <div style="display:flex;flex-wrap:wrap;gap:8px" id="_pdv_pizza_tam_grid">
-          ${tamanhos.map((t, i) => `
+          ${tamanhos
+            .map(
+              (t, i) => `
             <label style="border:2px solid ${i === 0 ? "#e74c3c" : "#e5e7eb"};background:${i === 0 ? "#fff5f5" : ""};border-radius:10px;padding:10px 12px;cursor:pointer;text-align:center;min-width:80px;transition:all .15s"
               onclick="this.closest('#_pdv_pizza_tam_grid').querySelectorAll('label').forEach(l=>{l.style.borderColor='#e5e7eb';l.style.background=''});this.style.borderColor='#e74c3c';this.style.background='#fff5f5';_pdvPizzaAtualizarPreco()">
               <input type="radio" name="_pdv_pizza_tam" value="${i}" style="display:none" ${i === 0 ? "checked" : ""}>
@@ -7710,7 +7932,9 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
               ${t.fatias ? `<div style="font-size:0.7rem;color:#888">${t.fatias} fatias</div>` : ""}
               ${t.cm ? `<div style="font-size:0.7rem;color:#888">⌀${t.cm}cm</div>` : ""}
               <div style="font-size:0.82rem;font-weight:800;color:#e74c3c;margin-top:3px">Gs ${(t.preco || 0).toLocaleString("es-PY")}</div>
-            </label>`).join("")}
+            </label>`,
+            )
+            .join("")}
         </div>
       </div>`;
     }
@@ -7722,16 +7946,18 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
     html += `<div style="margin-bottom:14px">
       <p style="font-size:0.82rem;font-weight:700;color:#e74c3c;margin-bottom:8px">🍽️ Sabores <span id="_pdv_pizza_maxlabel" style="font-weight:400;color:#888">(até ${maxSabDefault})</span>:</p>
       <div id="_pdv_sabores_lista" style="display:flex;flex-direction:column;gap:6px">
-        ${sabores.map(s => {
-          const precoEste0 = _pdvPrecoTipo(tam0, s.tipo);
-          const diff0 = precoEste0 - precoMin0;
-          const precoLbl = diff0 > 0
-            ? `<span id="_pdv_sp_${s.nome.replace(/[^a-zA-Z0-9]/g,'_')}" style="font-size:0.78rem;font-weight:700;color:#e74c3c;white-space:nowrap">+Gs ${diff0.toLocaleString("es-PY")}</span>`
-            : `<span id="_pdv_sp_${s.nome.replace(/[^a-zA-Z0-9]/g,'_')}" style="font-size:0.78rem;font-weight:700;color:#e74c3c;white-space:nowrap"></span>`;
-          const tipoBadge = s.tipo
-            ? `<span style="font-size:0.68rem;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;margin-left:4px;font-weight:600">${s.tipo}</span>`
-            : "";
-          return `
+        ${sabores
+          .map((s) => {
+            const precoEste0 = _pdvPrecoTipo(tam0, s.tipo);
+            const diff0 = precoEste0 - precoMin0;
+            const precoLbl =
+              diff0 > 0
+                ? `<span id="_pdv_sp_${s.nome.replace(/[^a-zA-Z0-9]/g, "_")}" style="font-size:0.78rem;font-weight:700;color:#e74c3c;white-space:nowrap">+Gs ${diff0.toLocaleString("es-PY")}</span>`
+                : `<span id="_pdv_sp_${s.nome.replace(/[^a-zA-Z0-9]/g, "_")}" style="font-size:0.78rem;font-weight:700;color:#e74c3c;white-space:nowrap"></span>`;
+            const tipoBadge = s.tipo
+              ? `<span style="font-size:0.68rem;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;margin-left:4px;font-weight:600">${s.tipo}</span>`
+              : "";
+            return `
             <label style="display:flex;align-items:center;gap:10px;border:1.5px solid #e5e7eb;border-radius:8px;padding:8px 10px;cursor:pointer;transition:all .15s"
               data-tipo-sabor="${s.tipo || ""}"
               onclick="(function(el){var cb=el.querySelector('input[type=checkbox]');if(!cb.checked){var t=parseInt(document.getElementById('_pdv_pizza_maxlabel').textContent.match(/\\d+/)?.[0]||2);var chk=document.querySelectorAll('#_pdv_sabores_lista input[type=checkbox]:checked').length;if(chk>=t){alert('Máx. '+t+' sabores');return;}cb.checked=true;el.style.borderColor='#e74c3c';el.style.background='#fff5f5';}else{cb.checked=false;el.style.borderColor='#e5e7eb';el.style.background='';}if(typeof _pdvPizzaAtualizarPreco==='function')_pdvPizzaAtualizarPreco();})(this)">
@@ -7743,7 +7969,8 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
               </div>
               ${precoLbl}
             </label>`;
-        }).join("")}
+          })
+          .join("")}
       </div>
     </div>`;
 
@@ -7756,12 +7983,16 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
             onclick="this.closest('#_pdv_pizza_borda_grid').querySelectorAll('label').forEach(l=>{l.style.borderColor='#e5e7eb';l.style.background=''});this.style.borderColor='#27ae60';this.style.background='#f0fff4';if(typeof _pdvPizzaAtualizarPreco==='function')_pdvPizzaAtualizarPreco()">
             <input type="radio" name="_pdv_pizza_borda" value="" style="display:none" checked> Sem borda
           </label>
-          ${bordas.map(b => `
+          ${bordas
+            .map(
+              (b) => `
             <label style="border:2px solid #e5e7eb;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:0.85rem;font-weight:600;transition:all .15s"
               onclick="this.closest('#_pdv_pizza_borda_grid').querySelectorAll('label').forEach(l=>{l.style.borderColor='#e5e7eb';l.style.background=''});this.style.borderColor='#27ae60';this.style.background='#f0fff4';if(typeof _pdvPizzaAtualizarPreco==='function')_pdvPizzaAtualizarPreco()">
               <input type="radio" name="_pdv_pizza_borda" value="${b.nome}" style="display:none">
               ${b.nome}${b.preco ? ` <span style="color:#e74c3c">+Gs ${b.preco.toLocaleString("es-PY")}</span>` : ""}
-            </label>`).join("")}
+            </label>`,
+            )
+            .join("")}
         </div>
       </div>`;
     }
@@ -7792,33 +8023,46 @@ function _mostrarModalOpcoesPDV(produto, tipo) {
 
       // Atualiza preço diferencial em cada card de sabor
       const precoMin = _pdvPrecoMin(tam);
-      modal.querySelectorAll("#_pdv_sabores_lista label").forEach(lbl => {
+      modal.querySelectorAll("#_pdv_sabores_lista label").forEach((lbl) => {
         const tipo = lbl.dataset.tipoSabor || "";
         const precoEste = _pdvPrecoTipo(tam, tipo);
         const diff = precoEste - precoMin;
-        const nomeSabor = (lbl.querySelector("input[type=checkbox]")?.value || "").replace(/[^a-zA-Z0-9]/g, "_");
+        const nomeSabor = (
+          lbl.querySelector("input[type=checkbox]")?.value || ""
+        ).replace(/[^a-zA-Z0-9]/g, "_");
         const el = modal.querySelector(`#_pdv_sp_${nomeSabor}`);
-        if (el) el.textContent = diff > 0 ? `+Gs ${diff.toLocaleString("es-PY")}` : "";
+        if (el)
+          el.textContent =
+            diff > 0 ? `+Gs ${diff.toLocaleString("es-PY")}` : "";
       });
 
       // Calcula preço: max dos tipos dos sabores selecionados (REGRA DE OURO — igual app.js)
-      const saboresSel = [...modal.querySelectorAll("#_pdv_sabores_lista input[type=checkbox]:checked")]
-        .map(c => c.closest("label")?.dataset.tipoSabor || "");
+      const saboresSel = [
+        ...modal.querySelectorAll(
+          "#_pdv_sabores_lista input[type=checkbox]:checked",
+        ),
+      ].map((c) => c.closest("label")?.dataset.tipoSabor || "");
 
       let precoBase;
       if (saboresSel.length > 0) {
-        precoBase = Math.max(...saboresSel.map(tipo => _pdvPrecoTipo(tam, tipo)));
+        precoBase = Math.max(
+          ...saboresSel.map((tipo) => _pdvPrecoTipo(tam, tipo)),
+        );
       } else {
         precoBase = tam.preco || 0;
       }
 
-      const bordaVal = modal.querySelector('input[name="_pdv_pizza_borda"]:checked')?.value || "";
+      const bordaVal =
+        modal.querySelector('input[name="_pdv_pizza_borda"]:checked')?.value ||
+        "";
       const bordaPreco = bordaVal
-        ? cfg.bordas?.find(b => b.nome === bordaVal)?.preco || 0
+        ? cfg.bordas?.find((b) => b.nome === bordaVal)?.preco || 0
         : 0;
 
       const el = modal.querySelector("#_pdv_pizza_preco_val");
-      if (el) el.textContent = "Gs " + (precoBase + bordaPreco).toLocaleString("es-PY");
+      if (el)
+        el.textContent =
+          "Gs " + (precoBase + bordaPreco).toLocaleString("es-PY");
     };
 
     // Compatibilidade — mantém função de filtro mas delegando para update de preço
@@ -8083,8 +8327,10 @@ function _pdvModalConfirmar(cacheKey) {
       "";
     // Coleta sabores com seus tipos (igual ao app.js)
     const saboresSel = [
-      ...modal.querySelectorAll("#_pdv_sabores_lista input[type=checkbox]:checked"),
-    ].map(c => ({
+      ...modal.querySelectorAll(
+        "#_pdv_sabores_lista input[type=checkbox]:checked",
+      ),
+    ].map((c) => ({
       nome: c.value,
       tipo: c.closest("label")?.dataset.tipoSabor || "",
     }));
@@ -8100,13 +8346,16 @@ function _pdvModalConfirmar(cacheKey) {
       const precos = tamObj.precos || {};
       if (tipo && precos[tipo] > 0) return precos[tipo];
       if (tipo) {
-        const k = Object.keys(precos).find(k2 => k2.toLowerCase() === (tipo || "").toLowerCase());
+        const k = Object.keys(precos).find(
+          (k2) => k2.toLowerCase() === (tipo || "").toLowerCase(),
+        );
         if (k && precos[k] > 0) return precos[k];
       }
       return tamObj.preco || 0;
     };
-    const precostipos = saboresSel.map(s => _pdvPrecoPorTipo(tam, s.tipo));
-    preco = precostipos.length > 0 ? Math.max(...precostipos) : (tam?.preco || preco);
+    const precostipos = saboresSel.map((s) => _pdvPrecoPorTipo(tam, s.tipo));
+    preco =
+      precostipos.length > 0 ? Math.max(...precostipos) : tam?.preco || preco;
 
     const bordaPreco = borda
       ? cfg.bordas?.find((b) => b.nome === borda)?.preco || 0
@@ -8114,7 +8363,7 @@ function _pdvModalConfirmar(cacheKey) {
     preco += bordaPreco;
 
     variacaoLabel = tam?.nome || "";
-    montagem.push("Sabores: " + saboresSel.map(s => s.nome).join(" / "));
+    montagem.push("Sabores: " + saboresSel.map((s) => s.nome).join(" / "));
     if (borda) montagem.push("Borda: " + borda);
   } else if (tipo === "shake") {
     const sk = cfg.shake || {};
@@ -8202,224 +8451,7 @@ function _pdvModalConfirmar(cacheKey) {
     });
   }
 }
-let _toledoPort = null;          // Web Serial: porta da balança Toledo
-let _toledoReader = null;        // Reader ativo (necessário para cancel() no fechamento)
-let _toledoLeituraAtiva = false; // Flag: evita readers simultâneos na mesma porta
-
-// ── GAVETA AUTOMÁTICA — DC-335 via Ethernet ──────────────────────────────────
-const _GAVETA_BRIDGE_URL = "http://127.0.0.1:9091/abrir";
-
-function _gavetaDeveAbrir(formaPagamento, obsPagamento = "") {
-  if (!formaPagamento) return false;
-  const fp = formaPagamento.toLowerCase();
-
-  // Multipagamento: abre gaveta SOMENTE se ao menos um componente
-  // for Efetivo/Dinheiro ou Cartão — ignora divisões só com PIX, etc.
-  if (fp === "multipagamento") {
-    try {
-      const partes = JSON.parse(obsPagamento || "[]");
-      return Array.isArray(partes) && partes.some((p) =>
-        _gavetaDeveAbrir(p.metodo || "")
-      );
-    } catch (_) {
-      return false;
-    }
-  }
-
-  return (
-    fp.includes("efetivo")  ||
-    fp.includes("dinheiro") ||
-    fp.includes("cart")     ||
-    fp.includes("debito")   ||
-    fp.includes("credito")  ||
-    fp.includes("crédito")  ||
-    fp.includes("débito")
-  );
-}
-
-async function _abrirGavetaDC335(contexto = "") {
-  try {
-    const res = await fetch(_GAVETA_BRIDGE_URL, { method: "POST" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    console.log(`[Gaveta] ✅ Aberta${contexto ? " — " + contexto : ""}`);
-  } catch (err) {
-    console.warn(`[Gaveta] ⚠️ Bridge offline ou gaveta inacessível${contexto ? " (" + contexto + ")" : ""}: ${err.message}`);
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
-//  LEITURA CONTÍNUA — Toledo Prix 3 Fit (Prt1/Prt2)
-//  Protocolo: stream contínuo a 4800 baud, sem disparo manual.
-//  Formato de saída da balança: 5 dígitos ASCII = peso em gramas (ex: "01490" = 1490g).
-//  A função é separada de _kgConectarBalanca para poder ser chamada tanto na
-//  reconexão automática (modal já aberto + porta já conectada) quanto no fluxo
-//  normal de conexão nova.
-// ──────────────────────────────────────────────────────────────────────────────
-async function _kgIniciarLeituraBalanca() {
-  if (!_toledoPort) {
-    console.warn("[Balança] _kgIniciarLeituraBalanca: _toledoPort é null");
-    return;
-  }
-  if (_toledoLeituraAtiva) {
-    console.log("[Balança] Leitura já ativa — ignorando chamada duplicada");
-    return;
-  }
-
-  _toledoLeituraAtiva = true;
-  console.log("[Balança] Iniciando leitura contínua...");
-
-  const txtBal = document.getElementById("_kg-balanca-txt");
-  const btnBal = document.getElementById("_kg-btn-balanca");
-
-  // Adquire reader; se a readable stream já estiver locada (reader anterior não liberado),
-  // aguarda 200ms e tenta uma vez mais antes de desistir
-  try {
-    _toledoReader = _toledoPort.readable.getReader();
-  } catch (e) {
-    console.warn("[Balança] Readable locked — aguardando 200ms e tentando novamente:", e.message);
-    await new Promise(r => setTimeout(r, 200));
-    try {
-      _toledoReader = _toledoPort.readable.getReader();
-    } catch (e2) {
-      console.error("[Balança] Falha ao obter reader (porta em uso?):", e2.message);
-      _toledoLeituraAtiva = false;
-      if (txtBal) txtBal.textContent = "⚠️ Porta ocupada — reconecte a balança";
-      return;
-    }
-  }
-
-  // latin1 evita exceções com bytes > 127 que a Toledo pode enviar como delimitadores de frame
-  const decoder = new TextDecoder("latin1");
-
-  let buffer        = "";
-  let ultimoGramas  = -1;
-  let contEstavel   = 0;
-  // Quantos chunks consecutivos com o mesmo valor são necessários para confirmar a leitura.
-  // Valor 2 é suficiente para stream contínuo ~5 Hz; aumente se houver ruído.
-  const ESTAVEL_MIN = 2;
-
-  // ── Parser multi-formato Toledo Prix 3 Fit ──────────────────────────────────
-  // Formato 1 (Prt1 contínuo): "01490\r\n" → 1490g
-  // Formato 2 (com unidade):   "  1.490 kg\r\n" ou "1,490kg\r\n"
-  // Formato 3 (prefixo ST):    "ST,GS,+  1.490kg\r\n"
-  // Formato 4 (raw stream):    bytes consecutivos sem \r\n — ex: "014900149001490"
-  // ────────────────────────────────────────────────────────────────────────────
-  function _parsearGramas(texto) {
-    // Formato 1 — "kg" explícito: "1.490 kg", "1,490kg", "ST,GS,+ 1.490kg"
-    const mKg = texto.match(/([0-9]+[.,][0-9]{1,3})\s*kg/i);
-    if (mKg) {
-      const v = parseFloat(mKg[1].replace(",", "."));
-      if (!isNaN(v) && v >= 0) return Math.round(v * 1000);
-    }
-
-    // Formato 2 — Toledo Prix 3 Fit Prt1 (stream contínuo sem unidade):
-    // Frame: STX(0x02) + "NN.NNN" + CR(0x0D)
-    // Exemplos reais: "00.124" = 124g | "01.490" = 1490g | "00.000" = 0g
-    const mToledo = texto.match(/(\d{1,2}[.,]\d{3})/);
-    if (mToledo) {
-      const v = parseFloat(mToledo[1].replace(",", "."));
-      if (!isNaN(v) && v >= 0) return Math.round(v * 1000);
-    }
-
-    // Formato 3 — inteiro 5-6 dígitos = gramas direto: "01490" = 1490g
-    const mInt = texto.match(/(\d{5,6})/);
-    if (mInt) {
-      const v = parseInt(mInt[1], 10);
-      if (!isNaN(v) && v >= 0) return v;
-    }
-    return null;
-  }
-
-  try {
-    while (true) {
-      const { value, done } = await _toledoReader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      buffer += chunk;
-
-      // Log bruto nos primeiros 10 chunks para diagnóstico (desativa após)
-      if (contEstavel === 0 && buffer.length <= 200) {
-        const hex = Array.from(value).map(b => b.toString(16).padStart(2,"0")).join(" ");
-        console.log(`[Balança] RAW HEX: ${hex}  |  TEXT: ${JSON.stringify(chunk)}`);
-      }
-
-      // Descarta dados antigos — janela deslizante de 128 chars
-      if (buffer.length > 128) buffer = buffer.slice(-128);
-
-      // Tenta extrair linhas completas primeiro (formato com \r\n)
-      const linhas = buffer.split(/[\r\n]+/);
-      // O último elemento pode ser fragmento incompleto — preserva
-      buffer = linhas.pop() ?? "";
-
-      let grama = null;
-
-      // Processa linhas completas se houver
-      for (const linha of linhas) {
-        const candidato = _parsearGramas(linha.trim());
-        if (candidato !== null) { grama = candidato; break; }
-      }
-
-      // Fallback: tenta extrair do buffer acumulado (stream sem \r\n)
-      if (grama === null) {
-        const candidato = _parsearGramas(buffer);
-        if (candidato !== null) grama = candidato;
-      }
-
-      if (grama === null) continue;
-
-      // Estabilidade: mesmo valor por ESTAVEL_MIN ciclos → confirma
-      if (grama === ultimoGramas) {
-        contEstavel++;
-      } else {
-        ultimoGramas = grama;
-        contEstavel  = 1;
-      }
-
-      // Atualiza label em tempo real (antes de confirmar estabilidade)
-      if (txtBal) {
-        const kgFmt = (grama / 1000).toFixed(3).replace(".", ",");
-        txtBal.textContent = grama > 0
-          ? `🟢 Lendo: ${kgFmt} kg (${grama}g)${contEstavel < ESTAVEL_MIN ? " ⏳" : " ✔"}`
-          : "🟢 Balança zerada — aguardando objeto...";
-      }
-
-      if (contEstavel < ESTAVEL_MIN) continue;
-
-      // ── Peso estável → injeta no input ──────────────────────────────────────
-      const inp = document.getElementById("_kg-input-g");
-      if (inp && parseInt(inp.value || "0") !== grama) {
-        console.log(`[Balança] Peso confirmado: ${grama}g`);
-        inp.value = grama > 0 ? grama : "";
-        window._kgAtualizarPreview?.();
-        inp.style.borderColor = "#16a34a";
-        inp.style.background  = "#f0fdf4";
-        setTimeout(() => {
-          if (inp) { inp.style.borderColor = "#0891b2"; inp.style.background = ""; }
-        }, 800);
-      }
-    }
-  } catch (e) {
-    if (e.name !== "AbortError") {
-      console.error("[Balança] Erro durante leitura:", e.name, e.message);
-      if (txtBal) txtBal.textContent = "🔴 Balança desconectada — clique para reconectar";
-      if (btnBal) {
-        btnBal.style.background    = "#fff";
-        btnBal.style.borderStyle   = "dashed";
-        btnBal.style.borderColor   = "#0891b2";
-        btnBal.style.color         = "#0891b2";
-      }
-      _toledoPort = null;
-    } else {
-      console.log("[Balança] Leitura encerrada (AbortError — desconexão intencional)");
-    }
-  } finally {
-    try { _toledoReader.releaseLock(); } catch (_) {}
-    _toledoReader       = null;
-    _toledoLeituraAtiva = false;
-    console.log("[Balança] Reader liberado.");
-  }
-}
+let _toledoPort = null; // Web Serial: porta da balança Toledo
 
 function _mostrarModalPesoPDV(produto, precoKg) {
   document.getElementById("pdv-kg-modal")?.remove();
@@ -8588,49 +8620,108 @@ function _mostrarModalPesoPDV(produto, precoKg) {
       return;
     }
 
-    // Se porta já conectada → desconectar (cancela reader antes de fechar a porta)
+    // Se porta já conectada, desconectar
     if (_toledoPort) {
-      try { if (_toledoReader) await _toledoReader.cancel(); } catch (_) {}
-      try { await _toledoPort.close(); } catch (_) {}
-      _toledoPort           = null;
-      _toledoReader         = null;
-      _toledoLeituraAtiva   = false;
+      try {
+        await _toledoPort.close();
+      } catch (_) {}
+      _toledoPort = null;
       if (txt) txt.textContent = "Conectar Balança (Toledo Prix 3)";
-      if (btn) {
-        btn.style.background  = "#fff";
-        btn.style.borderStyle = "dashed";
-        btn.style.borderColor = "#0891b2";
-        btn.style.color       = "#0891b2";
-      }
+      if (btn) btn.style.background = "#fff";
       return;
     }
 
     try {
       if (txt) txt.textContent = "⏳ Aguardando seleção da porta...";
       const port = await navigator.serial.requestPort();
-
-      // ── Parâmetros seriais da Toledo Prix 3 Fit ──
-      // Confirme em Menu → C16: baud=4800, 8N1
       await port.open({
-        baudRate: 4800,
+        baudRate: 9600,
         dataBits: 8,
         stopBits: 1,
-        parity:   "none",
+        parity: "none",
       });
-
       _toledoPort = port;
-
-      if (txt) txt.textContent = "🟢 Balança conectada — aguardando peso...";
+      if (txt)
+        txt.textContent = "🟢 Balança conectada — Pressione PRINT na balança";
       if (btn) {
-        btn.style.background  = "#ecfdf5";
-        btn.style.borderStyle = "solid";
+        btn.style.background = "#ecfdf5";
         btn.style.borderColor = "#16a34a";
-        btn.style.color       = "#16a34a";
+        btn.style.color = "#16a34a";
       }
 
-      // Delega toda a leitura contínua para _kgIniciarLeituraBalanca
-      _kgIniciarLeituraBalanca();
+      // Leitura contínua
+      const reader = port.readable.getReader();
+      let buffer = "";
 
+      const lerDados = async () => {
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += new TextDecoder().decode(value);
+
+            // Protocolo Toledo Prix 3 Fit: envia linha ao pressionar PRINT
+            // Formatos possíveis:
+            //   "  0.300 kg\r\n"  →  300g
+            //   " 1.230 kg\r\n"   →  1230g
+            //   "P  0.300\r\n"    →  variação com prefixo P
+            //   "ST,GS,+  0.300kg\r\n"  → formato contínuo
+            if (buffer.includes("\n") || buffer.includes("\r")) {
+              const linhas = buffer.split(/[\r\n]+/);
+              buffer = linhas.pop() || ""; // mantém fragmento incompleto
+
+              for (const linha of linhas) {
+                const limpa = linha.trim();
+                if (!limpa) continue;
+
+                // Extrai número de kg: procura padrão X.XXX ou X,XXX seguido de "kg" (opcional)
+                const match =
+                  limpa.match(/([\d]+[.,][\d]{1,3})\s*kg?/i) ||
+                  limpa.match(/[STPG,\s]*([\d]+[.,][\d]{1,3})/);
+
+                if (match) {
+                  const kgStr = match[1].replace(",", ".");
+                  const kgVal = parseFloat(kgStr);
+                  if (!isNaN(kgVal) && kgVal > 0) {
+                    const gramas = Math.round(kgVal * 1000);
+                    // Preenche input e atualiza preview
+                    const inp = document.getElementById("_kg-input-g");
+                    if (inp) {
+                      inp.value = gramas;
+                      window._kgAtualizarPreview();
+                      // Flash visual de confirmação
+                      inp.style.borderColor = "#16a34a";
+                      inp.style.background = "#f0fdf4";
+                      setTimeout(() => {
+                        if (inp) {
+                          inp.style.borderColor = "#0891b2";
+                          inp.style.background = "";
+                        }
+                      }, 1200);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          if (_toledoPort) {
+            if (txt) txt.textContent = "🔴 Balança desconectada";
+            if (btn) {
+              btn.style.background = "#fff";
+              btn.style.borderColor = "#0891b2";
+              btn.style.color = "#0891b2";
+            }
+            _toledoPort = null;
+          }
+        } finally {
+          try {
+            reader.releaseLock();
+          } catch (_) {}
+        }
+      };
+
+      lerDados();
     } catch (e) {
       if (txt) txt.textContent = "Conectar Balança (Toledo Prix 3)";
       if (e.name !== "NotFoundError") {
@@ -8844,44 +8935,8 @@ function _mostrarUpsellExtrasPDV(produto, extras) {
   }, 10000);
 }
 
-// ── TROCO / VUELTA (Efetivo) ───────────────────────────────────────────
-function pdvCalcTroco() {
-  const totalEl = document.getElementById("balcao-total");
-  const recebidoEl = document.getElementById("pdv-valor-recebido");
-  const trocoRow = document.getElementById("pdv-troco-row");
-  const trocoVal = document.getElementById("pdv-troco-val");
-  if (!totalEl || !recebidoEl || !trocoRow || !trocoVal) return;
-
-  const total = parseInt(totalEl.innerText.replace(/\D/g, "") || "0") || 0;
-  const recebido = parseInt(recebidoEl.value || "0") || 0;
-
-  if (recebido > 0 && total > 0) {
-    const troco = recebido - total;
-    trocoRow.style.display = "flex";
-    trocoVal.textContent = Math.max(0, troco).toLocaleString("es-PY");
-    trocoRow.style.background = troco >= 0 ? "#f0fdf4" : "#fff1f2";
-    trocoRow.style.borderColor = troco >= 0 ? "#86efac" : "#fca5a5";
-    trocoVal.style.color = troco >= 0 ? "#15803d" : "#dc2626";
-    trocoVal.textContent = (troco >= 0 ? "" : "⚠️ Falta Gs ") + Math.abs(troco).toLocaleString("es-PY");
-    trocoRow.querySelector("span:first-child").textContent = troco >= 0 ? "💵 Troco / Vuelta" : "💸 Valor insuficiente";
-  } else {
-    trocoRow.style.display = "none";
-  }
-}
-
 function removerItemPDV(idx) {
   carrinhoPDV.splice(idx, 1);
-  atualizarCarrinhoPDV();
-}
-
-// Edição inline de observação de item do carrinho PDV
-function pdvEditarObs(idx) {
-  const item = carrinhoPDV[idx];
-  if (!item) return;
-  // Modal leve inline — usa prompt nativo para não precisar de HTML extra
-  const nova = prompt(`Observação para "${item.nome}":`, item.obs || "");
-  if (nova === null) return; // cancelou
-  carrinhoPDV[idx].obs = nova.trim();
   atualizarCarrinhoPDV();
 }
 
@@ -8892,16 +8947,6 @@ function atualizarCarrinhoPDV() {
 
   lista.innerHTML = "";
   let total = 0;
-
-  const cashDesc = pdvGetCashbackDesconto(total);
-  total = Math.max(0, total - cashDesc);
-  // Se quiser exibir linha de cashback no resumo, atualize o elemento:
-  const elCash = document.getElementById("pdv-row-cashback");
-  if (elCash) {
-    elCash.style.display = cashDesc > 0 ? "flex" : "none";
-    const elCashVal = document.getElementById("balcao-cashback");
-    if (elCashVal) elCashVal.textContent = cashDesc.toLocaleString("es-PY");
-  }
 
   // ── Itens existentes da mesa (snapshot do DB) ──────────────────
   const itensExistentes = window._mesaAbertaPedido
@@ -8946,9 +8991,6 @@ function atualizarCarrinhoPDV() {
     carrinhoPDV.forEach((item, idx) => {
       total += item.preco * item.qtd;
       const row = document.createElement("tr");
-      const obsHtml = item.obs
-        ? `<div style="font-size:0.68rem;color:#6b7280;font-style:italic;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">📝 ${item.obs}</div>`
-        : '';
       if (item._isKg) {
         const g = item.peso_gramas || 0;
         const pesofmt =
@@ -8959,20 +9001,16 @@ function atualizarCarrinhoPDV() {
                 .replace(".", ",") + "kg"
             : g + "g";
         row.innerHTML = `
-          <td class="pdv-item-nome"><span style="color:#0891b2;font-size:0.72rem">⚖️ ${pesofmt}</span> ${item.nome}${obsHtml}</td>
+          <td class="pdv-item-nome"><span style="color:#0891b2;font-size:0.72rem">⚖️ ${pesofmt}</span> ${item.nome}</td>
           <td class="tc" style="color:#0891b2;font-size:0.7rem">kg</td>
           <td class="tr" style="font-size:0.7rem;color:#666">—</td>
-          <td class="tr" style="white-space:nowrap">Gs ${item.preco.toLocaleString("es-PY")}
-            <button class="pdv-item-edit" onclick="pdvEditarObs(${idx})" title="Observação">✏️</button>
-            <button class="pdv-item-remove" onclick="removerItemPDV(${idx})" title="Remover">✕</button></td>`;
+          <td class="tr">Gs ${item.preco.toLocaleString("es-PY")} <button class="pdv-item-remove" onclick="removerItemPDV(${idx})">✕</button></td>`;
       } else {
         row.innerHTML = `
-          <td class="pdv-item-nome">${item.nome}${obsHtml}</td>
+          <td class="pdv-item-nome">${item.nome}</td>
           <td class="tc pdv-item-qtd">${item.qtd}×</td>
           <td class="tr" style="font-size:0.7rem;color:#666">Gs ${item.preco.toLocaleString("es-PY")}</td>
-          <td class="tr" style="white-space:nowrap">Gs ${(item.preco * item.qtd).toLocaleString("es-PY")}
-            <button class="pdv-item-edit" onclick="pdvEditarObs(${idx})" title="Observação">✏️</button>
-            <button class="pdv-item-remove" onclick="removerItemPDV(${idx})" title="Remover">✕</button></td>`;
+          <td class="tr">Gs ${(item.preco * item.qtd).toLocaleString("es-PY")} <button class="pdv-item-remove" onclick="removerItemPDV(${idx})">✕</button></td>`;
       }
       lista.appendChild(row);
     });
@@ -9018,7 +9056,18 @@ function atualizarCarrinhoPDV() {
     parseInt(document.getElementById("balcao-frete")?.value || "0") || 0;
   const tipoEntrega =
     document.getElementById("balcao-tipo-entrega")?.value || "balcao";
-  const totalFinal = totalComDesc + (tipoEntrega === "delivery" ? frete : 0);
+  let totalFinal = totalComDesc + (tipoEntrega === "delivery" ? frete : 0);
+
+  // Cashback (calculado APÓS soma total dos itens)
+  const cashDesc = pdvGetCashbackDesconto(totalFinal);
+  if (cashDesc > 0) totalFinal = Math.max(0, totalFinal - cashDesc);
+  const elCash = document.getElementById("pdv-row-cashback");
+  if (elCash) {
+    elCash.style.display = cashDesc > 0 ? "flex" : "none";
+    const elCashVal = document.getElementById("balcao-cashback");
+    if (elCashVal) elCashVal.textContent = cashDesc.toLocaleString("es-PY");
+  }
+
   if (totalEl) totalEl.innerText = totalFinal.toLocaleString("es-PY");
 
   // Atualiza barra inferior mobile
@@ -9029,7 +9078,29 @@ function atualizarCarrinhoPDV() {
     mobileQtd.textContent = qtdTotal + (qtdTotal === 1 ? " item" : " itens");
   if (mobileTot) mobileTot.textContent = totalFinal.toLocaleString("es-PY");
 
+  // Troco / Vuelta — recalcula ao mudar carrinho
+  _pdvAtualizarTroco(totalFinal);
+
   atualizarInfoPagPDV(totalFinal);
+}
+
+function _pdvAtualizarTroco(totalFinal) {
+  const pag = document.getElementById("balcao-pag")?.value;
+  const recebidoEl = document.getElementById("pdv-recebido");
+  const trocoEl = document.getElementById("pdv-troco-val");
+  const trocoRow = document.getElementById("pdv-row-troco");
+  const recebRow = document.getElementById("pdv-row-recebido");
+  if (!recebidoEl || !trocoEl) return;
+
+  const isEfetivo = pag === "Efetivo";
+  if (recebRow) recebRow.style.display = isEfetivo ? "flex" : "none";
+  if (trocoRow) trocoRow.style.display = isEfetivo ? "flex" : "none";
+
+  if (!isEfetivo) return;
+  const recebido = parseInt((recebidoEl.value || "0").replace(/\D/g, "")) || 0;
+  const troco = recebido > totalFinal ? recebido - totalFinal : 0;
+  trocoEl.textContent = troco.toLocaleString("es-PY");
+  trocoEl.style.color = troco > 0 ? "#16a34a" : "#888";
 }
 
 function atualizarInfoPagPDV(total) {
@@ -9039,20 +9110,12 @@ function atualizarInfoPagPDV(total) {
   const selectPag = document.getElementById("balcao-pag");
   if (!infoBox) return;
 
+  // Mostra/oculta campo Recebido + Troco conforme forma de pagamento
+  _pdvAtualizarTroco(total);
+
   infoBox.style.display = "none";
   if (boxMultiPDV) boxMultiPDV.style.display = "none";
   if (selectPag) selectPag.style.display = "";
-
-  // Mostrar/ocultar box Efetivo (valor recebido + troco)
-  const efetivoBox = document.getElementById("pdv-efetivo-box");
-  if (efetivoBox) {
-    if (pag === "Efetivo") {
-      efetivoBox.style.display = "block";
-      pdvCalcTroco();
-    } else {
-      efetivoBox.style.display = "none";
-    }
-  }
 
   if (pag === "CartaoBR" && total > 0) {
     infoBox.style.display = "block";
@@ -9299,7 +9362,6 @@ async function salvarPedidoBalcao() {
     nome: i.nome,
     preco: i.preco,
     qtd: i.qtd,
-    variacao: i.variacao || "",
     montagem: i.montagem || [],
     obs: i.obs || "",
     categoria_slug: i.categoria_slug || "",
@@ -9427,14 +9489,6 @@ async function salvarPedidoBalcao() {
   // Descontar estoque imediatamente (PDV não passa por mudarStatus)
   if (novoPedido?.id) await _descontarEstoqueVenda(novoPedido.id, novosItens);
 
-  // ── Gaveta automática ─────────────────────────────────────────────────────
-  // Abre apenas no PDV, para Efetivo, Cartão (déb/créd) e Multipagamento
-  // que contenha ao menos um desses meios. PIX e similares não abrem gaveta.
-  // Falha silenciosamente — venda NÃO é bloqueada se a gaveta não responder.
-  if (_gavetaDeveAbrir(pag, obsPagPDV)) {
-    _abrirGavetaDC335(`venda #${novoPedido?.id ?? "PDV"} — ${pag}`);
-  }
-
   if (_pdvCashbackUsando && tel) {
     const descCash = pdvGetCashbackDesconto(totalNovo);
     if (descCash > 0) await crmUsarCashback(tel, descCash);
@@ -9507,10 +9561,25 @@ async function salvarPedidoBalcao() {
   if (freteMsgPDV) freteMsgPDV.innerHTML = "";
   const deliveryRowPDV = document.getElementById("pdv-delivery-row");
   if (deliveryRowPDV) deliveryRowPDV.style.display = "none";
+  // Reset visual do toggle delivery
+  const toggleDelivEl = document.getElementById("pdv-toggle-delivery");
+  if (toggleDelivEl) toggleDelivEl.classList.remove("active");
+  const chipEl = document.getElementById("pdv-tipo-chip");
+  if (chipEl) chipEl.textContent = "🏪 Balcão";
   const descValEl = document.getElementById("pdv-desconto-val");
   if (descValEl) descValEl.value = "";
   const descTipoEl = document.getElementById("pdv-desconto-tipo");
   if (descTipoEl) descTipoEl.value = "fixo";
+  // Reset recebido / troco
+  const recebidoEl = document.getElementById("pdv-recebido");
+  if (recebidoEl) recebidoEl.value = "";
+  const trocoEl = document.getElementById("pdv-troco-val");
+  if (trocoEl) trocoEl.textContent = "0";
+  // Reset cashback
+  _pdvCashbackDisponivel = 0;
+  _pdvCashbackUsando = false;
+  const cashBox = document.getElementById("pdv-cashback-box");
+  if (cashBox) cashBox.style.display = "none";
   // Reset multipagamento PDV
   const multiPartesPDV = document.getElementById("multi-partes-pdv");
   if (multiPartesPDV) multiPartesPDV.innerHTML = "";
@@ -9772,12 +9841,11 @@ async function finalizarMesa(id) {
       .from("pedidos")
       .update({
         status: "entregue",
-        tempo_entregue: new Date().toISOString(),
+        tempo_entregue: new Date().toISOString(), // ← registra hora de fechamento
       })
       .eq("id", id);
     carregarMonitorMesas();
     if (typeof calcularFinanceiro === "function") calcularFinanceiro();
-    // Gaveta: não abre no fechamento de mesa — apenas vendas PDV abrem a gaveta.
   }
 }
 
@@ -10577,6 +10645,979 @@ function processarDadosGrafico(pedidos, dias) {
   renderizarGrafico(datasOrdenadas, valores, cores);
 }
 
+// ══════════════════════════════════════════════════════════════════════
+//  ESTATÍSTICAS DE VENDAS
+// ══════════════════════════════════════════════════════════════════════
+
+let _estChart = null;
+let _estDados = [];
+let _estCategorias = [];
+
+function initEstatisticas() {
+  // Define datas padrão: últimos 30 dias
+  const hoje = new Date();
+  const ini = new Date(hoje);
+  ini.setDate(ini.getDate() - 30);
+  const fmt = (d) => d.toISOString().split("T")[0];
+  const iniEl = document.getElementById("est-ini");
+  const fimEl = document.getElementById("est-fim");
+  if (iniEl && !iniEl.value) iniEl.value = fmt(ini);
+  if (fimEl && !fimEl.value) fimEl.value = fmt(hoje);
+  gerarEstatisticas();
+}
+
+async function _estPopularCategorias() {
+  const sel = document.getElementById("est-filtro-cat");
+  if (!sel || sel.options.length > 1) return;
+  try {
+    const { data } = await supa
+      .from("categorias")
+      .select("slug, nome")
+      .order("nome");
+    (data || []).forEach((c) => {
+      const o = document.createElement("option");
+      o.value = c.slug;
+      o.textContent = c.nome;
+      sel.appendChild(o);
+    });
+  } catch (_) {}
+}
+
+async function gerarEstatisticas() {
+  const loading = document.getElementById("est-loading");
+  if (loading) loading.style.display = "flex";
+
+  const ini = document.getElementById("est-ini")?.value;
+  const fim = document.getElementById("est-fim")?.value;
+
+  try {
+    let query = supa
+      .from("pedidos")
+      .select("itens, total_geral, subtotal, created_at")
+      .eq("status", "entregue");
+    if (ini) query = query.gte("created_at", ini + "T00:00:00");
+    if (fim) query = query.lte("created_at", fim + "T23:59:59");
+    const { data, error } = await query;
+    if (error) throw error;
+
+    // Agrega por produto
+    const mapa = {};
+    let faturamentoTotal = 0;
+    let totalPedidos = (data || []).length;
+
+    (data || []).forEach((ped) => {
+      faturamentoTotal += ped.total_geral || ped.subtotal || 0;
+      (Array.isArray(ped.itens) ? ped.itens : []).forEach((item) => {
+        const nome = item.nome || item.n || "Produto";
+        const preco = item.preco || item.p || 0;
+        const qtd = item.qtd || item.q || 1;
+        const cat = item.categoria_slug || item.cat || "";
+        const unid = item.unidade_venda || item.unid || "un";
+        if (!mapa[nome])
+          mapa[nome] = { nome, preco, cat, unid, qtd: 0, fat: 0 };
+        mapa[nome].qtd += qtd;
+        mapa[nome].fat += preco * qtd;
+      });
+    });
+
+    _estDados = Object.values(mapa).sort((a, b) => b.fat - a.fat);
+
+    // KPIs
+    const ticket =
+      totalPedidos > 0 ? Math.round(faturamentoTotal / totalPedidos) : 0;
+    const lucroEst = Math.round(faturamentoTotal * 0.3); // estimado 30%
+    const setKpi = (id, v) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v;
+    };
+    setKpi(
+      "est-kpi-faturamento",
+      "Gs " + faturamentoTotal.toLocaleString("es-PY"),
+    );
+    setKpi("est-kpi-ticket", "Gs " + ticket.toLocaleString("es-PY"));
+    setKpi("est-kpi-lucro", "Gs " + lucroEst.toLocaleString("es-PY"));
+    setKpi("est-kpi-pedidos", totalPedidos.toLocaleString("es-PY"));
+
+    estAplicarFiltros();
+  } catch (e) {
+    alert("Erro ao carregar estatísticas: " + e.message);
+  } finally {
+    if (loading) loading.style.display = "none";
+  }
+}
+
+function estAplicarFiltros() {
+  const cat = document.getElementById("est-filtro-cat")?.value || "";
+  const unid = document.getElementById("est-filtro-unidade")?.value || "";
+  let lista = _estDados.slice();
+  if (cat) lista = lista.filter((p) => p.cat === cat);
+  if (unid) lista = lista.filter((p) => p.unid === unid);
+
+  // Gráfico top 15
+  const top15 = lista.slice(0, 15);
+  _estDesenharGrafico(top15);
+
+  // Tabela completa
+  const tbody = document.getElementById("est-tabela-body");
+  if (!tbody) return;
+  if (!lista.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px">Nenhum dado no período</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista
+    .map((p) => {
+      const markup =
+        p.preco > 0
+          ? Math.round((p.fat / (p.preco * p.qtd * 0.6) - 1) * 100)
+          : 0;
+      return `<tr>
+      <td style="font-weight:600">${p.nome}</td>
+      <td style="color:#888;font-size:0.82rem">${p.cat || "—"}</td>
+      <td style="text-align:center">${p.unid === "kg" ? p.qtd.toFixed(3) + " kg" : p.qtd + " un"}</td>
+      <td style="text-align:center;color:${markup > 0 ? "#16a34a" : "#888"}">${markup > 0 ? markup + "%" : "—"}</td>
+      <td style="text-align:right;font-weight:700;color:#1a7a2e">Gs ${p.fat.toLocaleString("es-PY")}</td>
+    </tr>`;
+    })
+    .join("");
+}
+
+function _estDesenharGrafico(dados) {
+  const canvas = document.getElementById("est-grafico");
+  if (!canvas) return;
+  if (_estChart) {
+    _estChart.destroy();
+    _estChart = null;
+  }
+  if (!dados.length) return;
+  const ctx = canvas.getContext("2d");
+  _estChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: dados.map((p) =>
+        p.nome.length > 20 ? p.nome.slice(0, 18) + "…" : p.nome,
+      ),
+      datasets: [
+        {
+          label: "Faturamento (Gs)",
+          data: dados.map((p) => p.fat),
+          backgroundColor: "rgba(26,122,46,0.75)",
+          borderRadius: 6,
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => "Gs " + ctx.parsed.y.toLocaleString("es-PY"),
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { callback: (v) => "Gs " + (v / 1000).toFixed(0) + "k" },
+        },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      },
+    },
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  FICHA TÉCNICA — init stub (lógica real já existe via ftMostrarPanel)
+// ══════════════════════════════════════════════════════════════════════
+
+function initFichaTecnica() {
+  ftMostrarPanel("insumos");
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  CRM — Clientes & Cashback
+// ══════════════════════════════════════════════════════════════════════
+
+let _crmClientes = [];
+let _crmAbaAtual = "todos";
+let _crmCashbackPct = 2;
+let _crmCashbackVal = 30;
+
+async function initCRM() {
+  await _crmCarregarConfig();
+  await _crmCarregarClientes();
+}
+
+async function _crmCarregarConfig() {
+  try {
+    const { data } = await supa
+      .from("configuracoes")
+      .select("cashback_pct, cashback_validade_dias")
+      .maybeSingle();
+    if (data) {
+      _crmCashbackPct = data.cashback_pct ?? 2;
+      _crmCashbackVal = data.cashback_validade_dias ?? 30;
+      const pctEl = document.getElementById("crm-cfg-pct");
+      const valEl = document.getElementById("crm-cfg-val");
+      if (pctEl) pctEl.value = _crmCashbackPct;
+      if (valEl) valEl.value = _crmCashbackVal;
+    }
+  } catch (_) {}
+}
+
+async function crmSalvarConfig() {
+  const pct = parseFloat(document.getElementById("crm-cfg-pct")?.value) || 0;
+  const val = parseInt(document.getElementById("crm-cfg-val")?.value) || 30;
+  try {
+    await supa
+      .from("configuracoes")
+      .update({ cashback_pct: pct, cashback_validade_dias: val })
+      .gt("id", 0);
+    _crmCashbackPct = pct;
+    _crmCashbackVal = val;
+    alert("✅ Configurações de cashback salvas!");
+  } catch (e) {
+    alert("Erro: " + e.message);
+  }
+}
+
+async function _crmCarregarClientes() {
+  try {
+    const { data, error } = await supa
+      .from("clientes")
+      .select(
+        "id, nome, telefone, nascimento, cashback_saldo, total_gasto, created_at",
+      )
+      .order("nome");
+    if (error) throw error;
+    _crmClientes = data || [];
+    _crmAtualizarKPIs();
+    _crmRenderizarAniversariantes();
+    crmMudarAba(_crmAbaAtual);
+  } catch (e) {
+    const tbody = document.getElementById("crm-lista-clientes");
+    if (tbody)
+      tbody.innerHTML = `<tr><td colspan="6" style="color:#e74c3c;padding:20px;text-align:center">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+function _crmAtualizarKPIs() {
+  const total = _crmClientes.length;
+  const comSaldo = _crmClientes.filter(
+    (c) => (c.cashback_saldo || 0) > 0,
+  ).length;
+  const cashTot = _crmClientes.reduce((s, c) => s + (c.cashback_saldo || 0), 0);
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  };
+  set("crm-kpi-total", total);
+  set("crm-kpi-comSaldo", comSaldo);
+  set("crm-kpi-cashback", "Gs " + cashTot.toLocaleString("es-PY"));
+}
+
+function _crmRenderizarAniversariantes() {
+  const el = document.getElementById("crm-widget-aniversariantes");
+  if (!el) return;
+  const hoje = new Date();
+  const mm = hoje.getMonth() + 1;
+  const dd = hoje.getDate();
+  const aniv = _crmClientes.filter((c) => {
+    if (!c.nascimento) return false;
+    const [, m, d] = c.nascimento.split("-");
+    return parseInt(m) === mm && parseInt(d) === dd;
+  });
+  el.innerHTML = aniv.length
+    ? aniv
+        .map(
+          (c) =>
+            `<div>🎂 <b>${c.nome}</b> <span style="color:#888">${c.telefone || ""}</span></div>`,
+        )
+        .join("")
+    : '<span style="color:#aaa;font-size:0.8rem">Nenhum aniversariante hoje</span>';
+}
+
+function crmMudarAba(aba) {
+  _crmAbaAtual = aba;
+  document
+    .querySelectorAll(".crm-aba-btn")
+    .forEach((b) => b.classList.remove("active"));
+  const btn = document.getElementById(`crm-aba-${aba}`);
+  if (btn) btn.classList.add("active");
+  crmFiltrarClientes(
+    document.querySelector("#crm input[type=text]")?.value || "",
+  );
+}
+
+function crmFiltrarClientes(busca) {
+  busca = (busca || "").toLowerCase();
+  const hoje = new Date();
+  const mm = hoje.getMonth() + 1;
+  let lista = _crmClientes.slice();
+  if (_crmAbaAtual === "aniversariantes") {
+    lista = lista.filter((c) => {
+      if (!c.nascimento) return false;
+      const [, m] = c.nascimento.split("-");
+      return parseInt(m) === mm;
+    });
+  }
+  if (busca) {
+    lista = lista.filter(
+      (c) =>
+        (c.nome || "").toLowerCase().includes(busca) ||
+        (c.telefone || "").includes(busca),
+    );
+  }
+  _crmRenderizarTabela(lista);
+}
+
+function _crmRenderizarTabela(lista) {
+  const tbody = document.getElementById("crm-lista-clientes");
+  if (!tbody) return;
+  if (!lista.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">Nenhum cliente encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista
+    .map((c) => {
+      const saldo = (c.cashback_saldo || 0).toLocaleString("es-PY");
+      const gasto = (c.total_gasto || 0).toLocaleString("es-PY");
+      const nasc = c.nascimento
+        ? new Date(c.nascimento + "T12:00:00").toLocaleDateString("pt-BR")
+        : "—";
+      return `<tr>
+      <td style="font-weight:600">${c.nome || "—"}</td>
+      <td>${c.telefone || "—"}</td>
+      <td>${nasc}</td>
+      <td style="color:${c.cashback_saldo > 0 ? "#27ae60" : "#aaa"};font-weight:700">Gs ${saldo}</td>
+      <td>Gs ${gasto}</td>
+      <td style="text-align:center">
+        <button onclick="crmAbrirModalCliente(${c.id})"
+          style="padding:5px 10px;background:#e8f5e9;color:#1a7a2e;border:1px solid #a5d6a7;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:700;margin-right:4px">
+          ✏️ Editar
+        </button>
+        <button onclick="crmAbrirHistorico(${c.id})"
+          style="padding:5px 10px;background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:700">
+          📋 Histórico
+        </button>
+      </td>
+    </tr>`;
+    })
+    .join("");
+}
+
+function crmAbrirModalCliente(id = null) {
+  const cli = id ? _crmClientes.find((c) => c.id === id) : null;
+  document.getElementById("crm-cli-id").value = cli?.id || "";
+  document.getElementById("crm-cli-nome").value = cli?.nome || "";
+  document.getElementById("crm-cli-tel").value = cli?.telefone || "";
+  document.getElementById("crm-cli-nasc").value = cli?.nascimento || "";
+  document.getElementById("crm-cli-saldo").value = cli?.cashback_saldo || 0;
+  const modal = document.getElementById("modal-crm-cliente");
+  if (modal) modal.style.display = "flex";
+}
+
+async function crmSalvarCliente() {
+  const id = document.getElementById("crm-cli-id").value;
+  const dados = {
+    nome: document.getElementById("crm-cli-nome").value.trim(),
+    telefone: document.getElementById("crm-cli-tel").value.trim(),
+    nascimento: document.getElementById("crm-cli-nasc").value || null,
+    cashback_saldo:
+      parseFloat(document.getElementById("crm-cli-saldo").value) || 0,
+  };
+  if (!dados.nome) {
+    alert("⚠️ Nome é obrigatório.");
+    return;
+  }
+  try {
+    if (id) {
+      await supa.from("clientes").update(dados).eq("id", id);
+    } else {
+      await supa.from("clientes").insert([dados]);
+    }
+    fecharModal("modal-crm-cliente");
+    await _crmCarregarClientes();
+  } catch (e) {
+    alert("Erro: " + e.message);
+  }
+}
+
+async function crmAbrirHistorico(clienteId) {
+  const modal = document.getElementById("modal-crm-hist");
+  if (!modal) return;
+  const tbody = document.getElementById("crm-hist-body");
+  if (tbody)
+    tbody.innerHTML =
+      '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px">Carregando...</td></tr>';
+  modal.style.display = "flex";
+  try {
+    const { data } = await supa
+      .from("pedidos")
+      .select("id, created_at, total_geral, forma_pagamento, status")
+      .eq("cliente_id", clienteId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (tbody) {
+      tbody.innerHTML = (data || []).length
+        ? (data || [])
+            .map(
+              (p) => `<tr>
+            <td>${new Date(p.created_at).toLocaleDateString("pt-BR")}</td>
+            <td>${p.forma_pagamento || "—"}</td>
+            <td>${p.status || "—"}</td>
+            <td style="font-weight:700">Gs ${(p.total_geral || 0).toLocaleString("es-PY")}</td>
+          </tr>`,
+            )
+            .join("")
+        : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px">Nenhum pedido encontrado</td></tr>';
+    }
+  } catch (e) {
+    if (tbody)
+      tbody.innerHTML = `<tr><td colspan="4" style="color:#e74c3c;padding:20px">Erro: ${e.message}</td></tr>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  FILIAIS / SUCURSALES
+// ══════════════════════════════════════════════════════════════════════
+
+let _filiais = [];
+
+async function initFiliais() {
+  await _filiaisCarregar();
+  await _filiaisCarregarUsuarios();
+}
+
+async function _filiaisCarregar() {
+  try {
+    const { data } = await supa.from("filiais").select("*").order("nome");
+    _filiais = data || [];
+    _filiaisRenderizar(_filiais);
+  } catch (e) {
+    const el = document.getElementById("filiais-lista");
+    if (el)
+      el.innerHTML = `<div style="color:#e74c3c;padding:20px">Erro: ${e.message}</div>`;
+  }
+}
+
+function _filiaisRenderizar(lista) {
+  const el = document.getElementById("filiais-lista");
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML =
+      '<div style="text-align:center;color:#aaa;padding:32px">Nenhuma sucursal cadastrada</div>';
+    return;
+  }
+  const statusLabel = {
+    ativa: "✅ Activa",
+    inativa: "⛔ Inactiva",
+    manutencao: "🔧 Mantenimiento",
+  };
+  el.innerHTML = lista
+    .map(
+      (f) => `
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-weight:700;font-size:1rem">${f.nome}</div>
+        <div style="color:#6b7280;font-size:0.83rem">${f.endereco || ""}</div>
+        <div style="font-size:0.8rem;margin-top:4px">${statusLabel[f.status] || f.status}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="abrirModalFilial(${f.id})"
+          style="padding:7px 14px;background:#e8f5e9;color:#1a7a2e;border:1px solid #a5d6a7;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.8rem">
+          ✏️ Editar
+        </button>
+        <button onclick="excluirFilial(${f.id})"
+          style="padding:7px 14px;background:#fef2f2;color:#e74c3c;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.8rem">
+          🗑️
+        </button>
+      </div>
+    </div>`,
+    )
+    .join("");
+}
+
+async function _filiaisCarregarUsuarios() {
+  try {
+    const { data } = await supa
+      .from("perfis")
+      .select("id, nome, email, perfil, ativo, filial_id")
+      .order("nome");
+    const tbody = document.getElementById("filiais-usuarios-body");
+    if (!tbody) return;
+    if (!(data || []).length) {
+      tbody.innerHTML =
+        '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px">Sin usuarios</td></tr>';
+      return;
+    }
+    tbody.innerHTML = (data || [])
+      .map((u) => {
+        const filNome = _filiais.find((f) => f.id === u.filial_id)?.nome || "—";
+        return `<tr>
+        <td style="padding:12px 16px;font-weight:600">${u.nome || u.email || "—"}</td>
+        <td style="padding:12px 16px;font-size:0.82rem;color:#6b7280">${u.perfil || "—"}</td>
+        <td style="padding:12px 16px;font-size:0.82rem">${filNome}</td>
+        <td style="padding:12px 16px;text-align:center">${u.ativo ? "✅" : "⛔"}</td>
+        <td style="padding:12px 16px;text-align:center">
+          <button onclick="abrirModalUsuarioAdmin('${u.id}')"
+            style="padding:5px 12px;background:#e8f5e9;color:#1a7a2e;border:1px solid #a5d6a7;border-radius:6px;cursor:pointer;font-size:0.75rem;font-weight:700">
+            Editar
+          </button>
+        </td>
+      </tr>`;
+      })
+      .join("");
+  } catch (e) {}
+}
+
+function abrirModalFilial(id = null) {
+  const f = id ? _filiais.find((x) => x.id === id) : null;
+  const titulo = document.getElementById("filial-modal-titulo");
+  if (titulo) titulo.textContent = f ? "Editar Sucursal" : "Nueva Sucursal";
+  document.getElementById("filial-id").value = f?.id || "";
+  document.getElementById("filial-nome").value = f?.nome || "";
+  document.getElementById("filial-endereco").value = f?.endereco || "";
+  document.getElementById("filial-lat").value = f?.lat || "";
+  document.getElementById("filial-lng").value = f?.lng || "";
+  document.getElementById("filial-whatsapp").value = f?.whatsapp || "";
+  document.getElementById("filial-raio").value = f?.raio_km || 10;
+  document.getElementById("filial-taxa").value = f?.taxa_frete || 0;
+  document.getElementById("filial-status").value = f?.status || "ativa";
+  const modal = document.getElementById("modal-filial");
+  if (modal) modal.style.display = "flex";
+}
+
+async function salvarFilial() {
+  const id = document.getElementById("filial-id").value;
+  const dados = {
+    nome: document.getElementById("filial-nome").value.trim(),
+    endereco: document.getElementById("filial-endereco").value.trim(),
+    lat: parseFloat(document.getElementById("filial-lat").value) || null,
+    lng: parseFloat(document.getElementById("filial-lng").value) || null,
+    whatsapp: document.getElementById("filial-whatsapp").value.trim(),
+    raio_km: parseFloat(document.getElementById("filial-raio").value) || 10,
+    taxa_frete: parseFloat(document.getElementById("filial-taxa").value) || 0,
+    status: document.getElementById("filial-status").value,
+  };
+  if (!dados.nome) {
+    alert("⚠️ Nome é obrigatório.");
+    return;
+  }
+  try {
+    if (id) {
+      await supa.from("filiais").update(dados).eq("id", id);
+    } else {
+      await supa.from("filiais").insert([dados]);
+    }
+    fecharModal("modal-filial");
+    await _filiaisCarregar();
+  } catch (e) {
+    alert("Erro: " + e.message);
+  }
+}
+
+async function excluirFilial(id) {
+  if (!confirm("Excluir esta sucursal?")) return;
+  try {
+    await supa.from("filiais").delete().eq("id", id);
+    await _filiaisCarregar();
+  } catch (e) {
+    alert("Erro: " + e.message);
+  }
+}
+
+function abrirModalUsuarioAdmin(perfilId) {
+  const modal = document.getElementById("modal-filial-usuario");
+  if (!modal) return;
+  document.getElementById("ua-perfil-id").value = perfilId;
+  // Popula select de filiais
+  const selFil = document.getElementById("ua-filial");
+  if (selFil) {
+    selFil.innerHTML =
+      '<option value="">— Sem filial —</option>' +
+      _filiais
+        .map((f) => `<option value="${f.id}">${f.nome}</option>`)
+        .join("");
+  }
+  modal.style.display = "flex";
+}
+
+function onRoleChange() {
+  const role = document.getElementById("ua-role")?.value;
+  const row = document.getElementById("ua-filial-row");
+  if (row)
+    row.style.display =
+      role === "adminMaster" || role === "gerente" ? "none" : "";
+}
+
+async function salvarUsuarioAdmin() {
+  const id = document.getElementById("ua-perfil-id").value;
+  const dados = {
+    nome: document.getElementById("ua-nome")?.value.trim(),
+    perfil: document.getElementById("ua-role")?.value,
+    filial_id: document.getElementById("ua-filial")?.value || null,
+    ativo: document.getElementById("ua-ativo")?.checked ?? true,
+  };
+  try {
+    await supa.from("perfis").update(dados).eq("id", id);
+    fecharModal("modal-filial-usuario");
+    await _filiaisCarregarUsuarios();
+  } catch (e) {
+    alert("Erro: " + e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  MENSALISTAS / PLANOS
+// ══════════════════════════════════════════════════════════════════════
+
+let _mensPlanos = [];
+let _mensFiltrado = [];
+
+async function initMensalistas() {
+  await _mensCarregarPlanos();
+  await _mensPopularSelects();
+}
+
+async function _mensCarregarPlanos() {
+  const loading = document.getElementById("mens-loading");
+  if (loading) loading.style.display = "flex";
+  try {
+    const { data, error } = await supa
+      .from("planos_mensalistas")
+      .select("*, clientes(nome, telefone)")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    _mensPlanos = data || [];
+    _mensAtualizarKPIs();
+    mensFiltrar();
+  } catch (e) {
+    const el = document.getElementById("mens-lista-planos");
+    if (el)
+      el.innerHTML = `<div style="color:#e74c3c;padding:20px">Erro: ${e.message}<br><small>Verifique se a tabela "planos_mensalistas" existe no Supabase.</small></div>`;
+  } finally {
+    if (loading) loading.style.display = "none";
+  }
+}
+
+function _mensAtualizarKPIs() {
+  const total = _mensPlanos.length;
+  const ativos = _mensPlanos.filter((p) => p.ativo).length;
+  const receita = _mensPlanos
+    .filter((p) => p.ativo)
+    .reduce((s, p) => s + (p.valor || 0), 0);
+  const itens = _mensPlanos
+    .filter((p) => p.ativo)
+    .reduce((s, p) => s + ((p.qtd_total || 0) - (p.qtd_usada || 0)), 0);
+  const set = (id, v) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  };
+  set("mens-kpi-total", total);
+  set("mens-kpi-ativos", ativos);
+  set("mens-kpi-receita", "Gs " + receita.toLocaleString("es-PY"));
+  set("mens-kpi-itens", itens);
+}
+
+function mensFiltrar() {
+  const busca = (
+    document.getElementById("mens-busca")?.value || ""
+  ).toLowerCase();
+  const status =
+    document.getElementById("mens-filtro-status")?.value || "todos";
+  _mensFiltrado = _mensPlanos.filter((p) => {
+    const nome = (p.clientes?.nome || "").toLowerCase();
+    const tel = p.clientes?.telefone || "";
+    const produto = (p.produto || "").toLowerCase();
+    const matchB =
+      !busca ||
+      nome.includes(busca) ||
+      tel.includes(busca) ||
+      produto.includes(busca);
+    const matchS =
+      status === "todos" ||
+      (status === "ativo" && p.ativo) ||
+      (status === "inativo" && !p.ativo);
+    return matchB && matchS;
+  });
+  _mensRenderizar(_mensFiltrado);
+}
+
+function _mensRenderizar(lista) {
+  const el = document.getElementById("mens-lista-planos");
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML =
+      '<div style="text-align:center;color:#aaa;padding:32px">Nenhum plano encontrado</div>';
+    return;
+  }
+  el.innerHTML = lista
+    .map((p) => {
+      const restante = (p.qtd_total || 0) - (p.qtd_usada || 0);
+      const pct =
+        p.qtd_total > 0
+          ? Math.round(((p.qtd_usada || 0) / p.qtd_total) * 100)
+          : 0;
+      const barColor =
+        pct >= 90 ? "#e74c3c" : pct >= 60 ? "#f39c12" : "#1a7a2e";
+      const fim = p.data_fim
+        ? new Date(p.data_fim + "T12:00:00").toLocaleDateString("pt-BR")
+        : "—";
+      return `<div style="background:#fff;border:1.5px solid ${p.ativo ? "#e5e7eb" : "#fca5a5"};border-radius:14px;padding:18px 20px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-weight:800;font-size:1rem">${p.clientes?.nome || "—"}</div>
+          <div style="color:#6b7280;font-size:0.82rem">${p.clientes?.telefone || ""} • ${p.produto || "—"}</div>
+          <div style="font-size:0.8rem;margin-top:4px;color:#555">Vence: ${fim} • Gs ${(p.valor || 0).toLocaleString("es-PY")}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button onclick="mensAbrirEntrega(${p.id})"
+            style="padding:6px 12px;background:#e8f5e9;color:#1a7a2e;border:1px solid #a5d6a7;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.78rem">
+            📦 Entregar
+          </button>
+          <button onclick="mensAbrirHistorico(${p.id})"
+            style="padding:6px 12px;background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.78rem">
+            📋 Histórico
+          </button>
+          <button onclick="mensAbrirModalPlano(${p.id})"
+            style="padding:6px 12px;background:#f9fafb;color:#4b5563;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.78rem">
+            ✏️
+          </button>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:4px">
+          <span>${p.qtd_usada || 0} / ${p.qtd_total || 0} itens usados</span>
+          <span style="color:${barColor};font-weight:700">${restante} restantes</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:4px;height:8px">
+          <div style="background:${barColor};width:${pct}%;height:8px;border-radius:4px;transition:width 0.3s"></div>
+        </div>
+      </div>
+    </div>`;
+    })
+    .join("");
+}
+
+async function _mensPopularSelects() {
+  // Clientes
+  try {
+    const { data: clis } = await supa
+      .from("clientes")
+      .select("id, nome")
+      .order("nome");
+    const selCli = document.getElementById("mens-plano-cli-sel");
+    if (selCli) {
+      selCli.innerHTML =
+        '<option value="">— Selecione o cliente —</option>' +
+        (clis || [])
+          .map((c) => `<option value="${c.id}">${c.nome}</option>`)
+          .join("");
+    }
+  } catch (_) {}
+  // Produtos
+  try {
+    const { data: prods } = await supa
+      .from("produtos")
+      .select("id, nome")
+      .order("nome");
+    const selProd = document.getElementById("mens-plano-prod-sel");
+    if (selProd) {
+      selProd.innerHTML =
+        '<option value="">— Selecione do cardápio —</option>' +
+        (prods || [])
+          .map((p) => `<option value="${p.id}">${p.nome}</option>`)
+          .join("");
+      selProd.onchange = function () {
+        const nome = this.options[this.selectedIndex]?.text || "";
+        const inp = document.getElementById("mens-plano-produto");
+        if (inp && nome && nome !== "— Selecione do cardápio —")
+          inp.value = nome;
+      };
+    }
+  } catch (_) {}
+}
+
+async function mensAbrirModalPlano(id = null) {
+  const p = id ? _mensPlanos.find((x) => x.id === id) : null;
+  document.getElementById("mens-plano-id").value = p?.id || "";
+  document.getElementById("mens-plano-cli-id").value = p?.cliente_id || "";
+  document.getElementById("mens-plano-produto").value = p?.produto || "";
+  document.getElementById("mens-plano-qtd").value = p?.qtd_total || "";
+  document.getElementById("mens-plano-valor").value = p?.valor || "";
+  document.getElementById("mens-plano-ini").value =
+    p?.data_inicio?.split("T")[0] || "";
+  document.getElementById("mens-plano-fim").value =
+    p?.data_fim?.split("T")[0] || "";
+  document.getElementById("mens-plano-ativo").checked = p
+    ? (p.ativo ?? true)
+    : true;
+  if (p?.cliente_id) {
+    const sel = document.getElementById("mens-plano-cli-sel");
+    if (sel) sel.value = p.cliente_id;
+  }
+  const renovInfo = document.getElementById("mens-renov-info");
+  if (renovInfo && p) {
+    renovInfo.innerHTML = `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:0.8rem;margin-bottom:14px">
+      Usados: <b>${p.qtd_usada || 0}</b> / ${p.qtd_total || 0} itens
+    </div>`;
+  } else if (renovInfo) {
+    renovInfo.innerHTML = "";
+  }
+  await _mensPopularSelects();
+  const modal = document.getElementById("modal-mens-plano");
+  if (modal) modal.style.display = "flex";
+}
+
+async function mensSalvarPlano() {
+  const id = document.getElementById("mens-plano-id").value;
+  const cliSel = document.getElementById("mens-plano-cli-sel")?.value;
+  const cliId = cliSel || document.getElementById("mens-plano-cli-id").value;
+  const produto = document.getElementById("mens-plano-produto").value.trim();
+  const qtd = parseInt(document.getElementById("mens-plano-qtd").value) || 0;
+  const valor =
+    parseFloat(document.getElementById("mens-plano-valor").value) || 0;
+  if (!cliId) {
+    alert("⚠️ Selecione o cliente.");
+    return;
+  }
+  if (!produto) {
+    alert("⚠️ Informe o produto.");
+    return;
+  }
+  if (qtd <= 0) {
+    alert("⚠️ Quantidade inválida.");
+    return;
+  }
+  const dados = {
+    cliente_id: parseInt(cliId),
+    produto,
+    qtd_total: qtd,
+    valor,
+    data_inicio: document.getElementById("mens-plano-ini").value || null,
+    data_fim: document.getElementById("mens-plano-fim").value || null,
+    ativo: document.getElementById("mens-plano-ativo").checked,
+    ...(id ? {} : { qtd_usada: 0 }),
+  };
+  try {
+    if (id) {
+      await supa.from("planos_mensalistas").update(dados).eq("id", id);
+    } else {
+      await supa.from("planos_mensalistas").insert([dados]);
+    }
+    fecharModal("modal-mens-plano");
+    await _mensCarregarPlanos();
+  } catch (e) {
+    alert("Erro: " + e.message);
+  }
+}
+
+function mensAbrirEntrega(planoId) {
+  const p = _mensPlanos.find((x) => x.id === planoId);
+  if (!p) return;
+  document.getElementById("mens-ent-plano-id").value = planoId;
+  document.getElementById("mens-ent-cliente").textContent =
+    p.clientes?.nome || "—";
+  document.getElementById("mens-ent-tel").textContent =
+    p.clientes?.telefone || "";
+  document.getElementById("mens-ent-produto").textContent = p.produto || "—";
+  const rest = (p.qtd_total || 0) - (p.qtd_usada || 0);
+  document.getElementById("mens-ent-saldo").textContent = `${rest} disponíveis`;
+  const valorUnit = p.qtd_total > 0 ? Math.round(p.valor / p.qtd_total) : 0;
+  document.getElementById("mens-ent-valor-unit").textContent =
+    valorUnit > 0 ? `Gs ${valorUnit.toLocaleString("es-PY")}/item` : "";
+  document.getElementById("mens-ent-qtd").value = 1;
+  document.getElementById("mens-ent-obs").value = "";
+  const modal = document.getElementById("modal-mens-entrega");
+  if (modal) modal.style.display = "flex";
+}
+
+async function mensSalvarEntrega() {
+  const planoId = parseInt(document.getElementById("mens-ent-plano-id").value);
+  const qtd = parseInt(document.getElementById("mens-ent-qtd").value) || 1;
+  const obs = document.getElementById("mens-ent-obs").value.trim();
+  const plano = _mensPlanos.find((p) => p.id === planoId);
+  if (!plano) return;
+  const restante = (plano.qtd_total || 0) - (plano.qtd_usada || 0);
+  if (qtd > restante) {
+    alert(`⚠️ Só restam ${restante} itens no plano.`);
+    return;
+  }
+  try {
+    const novaUsada = (plano.qtd_usada || 0) + qtd;
+    await supa
+      .from("planos_mensalistas")
+      .update({ qtd_usada: novaUsada })
+      .eq("id", planoId);
+    // Registra no histórico se a tabela existir
+    try {
+      await supa.from("planos_entregas").insert([
+        {
+          plano_id: planoId,
+          cliente_id: plano.cliente_id,
+          qtd,
+          obs,
+          data: new Date().toISOString(),
+        },
+      ]);
+    } catch (_) {
+      /* tabela pode não existir */
+    }
+    fecharModal("modal-mens-entrega");
+    await _mensCarregarPlanos();
+    alert(`✅ ${qtd} item(s) entregue(s) com sucesso!`);
+  } catch (e) {
+    alert("Erro: " + e.message);
+  }
+}
+
+async function mensAbrirHistorico(planoId) {
+  const p = _mensPlanos.find((x) => x.id === planoId);
+  const modal = document.getElementById("modal-mens-hist");
+  if (!modal) return;
+  document.getElementById("mens-hist-nome").textContent =
+    p?.clientes?.nome || "—";
+  document.getElementById("mens-hist-produto").textContent = p?.produto || "—";
+  document.getElementById("mens-hist-plano-total").textContent =
+    p?.qtd_total || 0;
+  const rest = (p?.qtd_total || 0) - (p?.qtd_usada || 0);
+  document.getElementById("mens-hist-plano-rest").textContent = rest;
+  document.getElementById("mens-hist-entregues").textContent =
+    p?.qtd_usada || 0;
+  modal.style.display = "flex";
+  const tbody = document.getElementById("mens-hist-tbody");
+  if (!tbody) return;
+  tbody.innerHTML =
+    '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px">Carregando...</td></tr>';
+  try {
+    const { data } = await supa
+      .from("planos_entregas")
+      .select("*")
+      .eq("plano_id", planoId)
+      .order("data", { ascending: false });
+    tbody.innerHTML = (data || []).length
+      ? (data || [])
+          .map(
+            (e) => `<tr>
+          <td style="padding:8px 6px">${new Date(e.data).toLocaleDateString("pt-BR")}</td>
+          <td style="text-align:center;padding:8px 6px;font-weight:700">${e.qtd}</td>
+          <td style="padding:8px 6px;color:#6b7280">${e.obs || "—"}</td>
+          <td style="text-align:center;padding:8px 6px">—</td>
+        </tr>`,
+          )
+          .join("")
+      : '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px">Nenhuma entrega registrada</td></tr>';
+  } catch (_) {
+    tbody.innerHTML =
+      '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px">Histórico não disponível</td></tr>';
+  }
+}
+
 // ===== RENDERIZAR GRÁFICO COM CHART.JS =====
 function renderizarGrafico(labels, data, cores) {
   const canvas = document.getElementById("canvas-grafico");
@@ -11215,13 +12256,39 @@ async function _carregarSelectInventario(selectedId = null) {
   }
 }
 
+// ── ESTOQUE DIRETO (novo — sem inventário vinculado) ─────────
+// ── PRODUTO PERECÍVEL (modal de produto) ─────────────────────
+function togglePerecivelFields(on) {
+  const area = document.getElementById("perecivel-area");
+  if (area) area.style.display = on ? "block" : "none";
+  if (!on) {
+    const dt = document.getElementById("prod-data-validade");
+    if (dt) dt.value = "";
+  }
+}
+
+function toggleEstoqueDireto(on) {
+  const area = document.getElementById("estoque-direto-area");
+  if (area) area.style.display = on ? "block" : "none";
+}
+
+// Alias de compatibilidade — o modal agora chama toggleEstoqueDireto
 function toggleEstoqueProduto() {
   const checked = document.getElementById("prod-tem-estoque")?.checked;
-  const area = document.getElementById("estoque-area");
-  if (!area) return;
-  area.style.display = checked ? "block" : "none";
-  if (checked) _carregarSelectInventario();
+  toggleEstoqueDireto(!!checked);
 }
+
+// ── VENDA POR KG ─────────────────────────────────────────────
+function toggleVendaKg(on) {
+  const area = document.getElementById("venda-kg-area");
+  if (area) area.style.display = on ? "block" : "none";
+  // Quando Kg ativado, define unidade de venda como "kg" automaticamente
+  if (on) {
+    const unid = document.getElementById("prod-unidade-venda");
+    if (unid) unid.value = "kg";
+  }
+}
+
 // =========================================
 // FRETE PDV — ROTA REAL (OSRM)
 // =========================================
@@ -11237,6 +12304,17 @@ function toggleDeliveryRowPDV(tipo) {
     if (msg) msg.innerHTML = "";
   }
   atualizarCarrinhoPDV();
+}
+
+// Toggle switch de Delivery no PDV (chamado pelo HTML via onclick)
+function pdvToggleDelivery(el) {
+  const isDelivery = !el.classList.contains("active");
+  el.classList.toggle("active", isDelivery);
+  const inp = document.getElementById("balcao-tipo-entrega");
+  if (inp) inp.value = isDelivery ? "delivery" : "balcao";
+  const chip = document.getElementById("pdv-tipo-chip");
+  if (chip) chip.textContent = isDelivery ? "🛵 Delivery" : "🏪 Balcão";
+  toggleDeliveryRowPDV(isDelivery ? "delivery" : "balcao");
 }
 
 // Consulta distância pela rota real (OSRM público). Retorna km ou null se falhar.
@@ -12043,5 +13121,1495 @@ async function admAceitarContrato() {
       btn.disabled = false;
       btn.textContent = "✍️ ASSINAR E CONTINUAR";
     }
+  }
+}
+// ══════════════════════════════════════════════════════════════
+//  VAREJO — Adições ao admin.js
+//  Cole este bloco no final do seu admin.js existente.
+//
+//  PASSO DE ATIVAÇÃO:
+//    No formulário de produto (modal-produto no admin.html),
+//    adicione logo antes do botão "Salvar":
+//
+//      <!-- Seção de Variações de Estoque (Varejo) -->
+//      <div id="secao-variacoes-estoque"></div>
+//
+//    O JS preenche e gerencia essa seção automaticamente
+//    quando o tipo de produto é "variacoes" ou "padrao" em
+//    modo varejo.
+//
+//  DEPENDÊNCIAS:
+//    - supabaseClient.js (window.supa)
+//    - A tabela produto_variacoes do banco (ver varejo-sql.sql)
+// ══════════════════════════════════════════════════════════════
+
+// ──────────────────────────────────────────────────────────────
+//  Estado local do gerenciador de variações
+// ──────────────────────────────────────────────────────────────
+let _ve_variacoes = []; // variações em edição no modal
+let _ve_prodId = null; // produto_id sendo editado (null = novo)
+let _ve_variacoesSalvas = []; // snapshot do banco (para detectar exclusões)
+
+// ──────────────────────────────────────────────────────────────
+//  1. veIniciarSecao()
+//     Renderiza o HTML da seção dentro de #secao-variacoes-estoque.
+//     Chame ao abrir o modal de produto (ou ao mudar o tipo para
+//     "variacoes" / "padrao").
+// ──────────────────────────────────────────────────────────────
+function veIniciarSecao(prodId = null) {
+  _ve_prodId = prodId;
+
+  const cont = document.getElementById("secao-variacoes-estoque");
+  if (!cont) return;
+
+  cont.innerHTML = `
+    <!-- ── Cabeçalho ─────────────────────────────────────────── -->
+    <div class="var-estoque-section-header" style="margin-top:20px">
+      <h4>📦 Variações e Estoque</h4>
+      <button
+        type="button"
+        class="btn btn-sm btn-primary"
+        onclick="veAdicionarLinha()"
+        title="Adicionar variação"
+      >
+        + Adicionar Variação
+      </button>
+    </div>
+
+    <!-- Ajuda contextual -->
+    <p style="font-size:0.78rem;color:#888;margin-bottom:10px;line-height:1.5">
+      Use para Tamanho/Cor (roupas), Voltagem (eletrônicos), Sabor (pods/suplementos).<br>
+      Deixe <b>Controlar estoque</b> desmarcado para estoque ilimitado.
+    </p>
+
+    <!-- Lista de linhas de variação -->
+    <div id="ve-lista"></div>
+
+    <!-- Totalizador de estoque -->
+    <div id="ve-totalizador" style="
+      background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;
+      padding:10px 14px;font-size:0.82rem;font-weight:600;color:#166534;
+      margin-top:6px;display:none
+    ">
+      📊 Estoque total: <span id="ve-total-qtd">0</span> unidades
+    </div>
+  `;
+
+  // Carrega variações existentes se for edição
+  if (prodId) {
+    veCarregarDosBanco(prodId);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  2. veCarregarDosBanco(prodId)
+//     Busca variações existentes e preenche a lista.
+// ──────────────────────────────────────────────────────────────
+async function veCarregarDosBanco(prodId) {
+  const { data, error } = await supa
+    .from("produto_variacoes")
+    .select("*")
+    .eq("produto_id", prodId)
+    .order("ordem")
+    .order("nome");
+
+  if (error) {
+    console.warn("veCarregarDosBanco:", error.message);
+    return;
+  }
+
+  _ve_variacoes = data || [];
+  _ve_variacoesSalvas = JSON.parse(JSON.stringify(_ve_variacoes));
+
+  _veRenderizarLista();
+}
+
+// ──────────────────────────────────────────────────────────────
+//  3. veAdicionarLinha(dados)
+//     Adiciona uma linha de variação ao estado local e re-renderiza.
+// ──────────────────────────────────────────────────────────────
+function veAdicionarLinha(dados = {}) {
+  _ve_variacoes.push({
+    _tempId: Date.now() + Math.random(), // ID temporário (antes de salvar)
+    id: dados.id || null,
+    nome: dados.nome || "",
+    sku: dados.sku || "",
+    estoque_qtd: dados.estoque_qtd ?? 0,
+    controlar_estoque: dados.controlar_estoque !== false, // default: controla
+    preco_adicional: dados.preco_adicional ?? 0,
+    preco_absoluto: dados.preco_absoluto || false,
+    ativo: dados.ativo !== false,
+  });
+  _veRenderizarLista();
+}
+
+// ──────────────────────────────────────────────────────────────
+//  4. _veRenderizarLista()
+//     Rebuilda o HTML de todas as linhas de variação.
+// ──────────────────────────────────────────────────────────────
+function _veRenderizarLista() {
+  const lista = document.getElementById("ve-lista");
+  if (!lista) return;
+
+  if (!_ve_variacoes.length) {
+    lista.innerHTML =
+      '<p style="color:#aaa;font-size:0.82rem;text-align:center;padding:14px">Nenhuma variação adicionada. Clique em "+ Adicionar Variação".</p>';
+    _veAtualizarTotalizador();
+    return;
+  }
+
+  lista.innerHTML = "";
+  _ve_variacoes.forEach((v, idx) => {
+    lista.appendChild(_veCriarLinhaDOM(v, idx));
+  });
+
+  _veAtualizarTotalizador();
+}
+
+// ──────────────────────────────────────────────────────────────
+//  5. _veCriarLinhaDOM(v, idx)
+//     Cria o elemento DOM de uma linha de variação.
+// ──────────────────────────────────────────────────────────────
+function _veCriarLinhaDOM(v, idx) {
+  const esgotado = v.controlar_estoque && v.estoque_qtd <= 0;
+  const row = document.createElement("div");
+  row.className = "var-estoque-row" + (esgotado ? " sem-estoque-admin" : "");
+  row.dataset.idx = idx;
+
+  row.innerHTML = `
+    <!-- Nome da variação -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <input
+        type="text"
+        class="form-control ve-nome"
+        value="${_esc(v.nome)}"
+        placeholder="Ex: Azul - M, 110v, Melancia"
+        oninput="_veAtualizar(${idx}, 'nome', this.value)"
+        style="font-weight:600"
+      >
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <!-- SKU -->
+        <input
+          type="text"
+          class="form-control"
+          value="${_esc(v.sku || "")}"
+          placeholder="SKU / Cód. barras (opcional)"
+          oninput="_veAtualizar(${idx}, 'sku', this.value)"
+          style="flex:1;min-width:110px;font-size:0.8rem;color:#777"
+        >
+        <!-- Sobrepreço -->
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <span style="font-size:0.78rem;color:#777;white-space:nowrap">
+            <input
+              type="checkbox"
+              title="Preço absoluto (substitui preço base)"
+              ${v.preco_absoluto ? "checked" : ""}
+              onchange="_veAtualizar(${idx}, 'preco_absoluto', this.checked)"
+              style="margin-right:3px"
+            >+ Gs
+          </span>
+          <input
+            type="number"
+            class="form-control"
+            value="${v.preco_adicional || 0}"
+            min="0"
+            oninput="_veAtualizar(${idx}, 'preco_adicional', parseFloat(this.value)||0)"
+            style="width:110px"
+            title="Sobrepreço (0 = usa preço base). Marque ☑ para preço fixo absoluto."
+          >
+        </div>
+      </div>
+      <!-- Controla estoque toggle -->
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.8rem;color:#555">
+        <input
+          type="checkbox"
+          ${v.controlar_estoque ? "checked" : ""}
+          onchange="_veAtualizar(${idx}, 'controlar_estoque', this.checked); _veRenderizarLista()"
+        >
+        Controlar estoque
+      </label>
+    </div>
+
+    <!-- Quantidade em estoque -->
+    <div class="var-estoque-row__estoque" style="display:flex;flex-direction:column;align-items:center;gap:4px">
+      <label style="font-size:0.7rem;color:#777;font-weight:700;text-align:center">ESTOQUE</label>
+      <div style="display:flex;align-items:center;gap:4px">
+        <button type="button"
+          onclick="_veAlterarQtd(${idx}, -1)"
+          style="width:28px;height:28px;border-radius:6px;border:1.5px solid #ccc;background:#fff;cursor:pointer;font-size:1rem;line-height:1"
+          ${!v.controlar_estoque ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ""}
+        >−</button>
+        <input
+          type="number"
+          class="form-control ve-qtd"
+          value="${v.estoque_qtd}"
+          min="0"
+          oninput="_veAtualizar(${idx}, 'estoque_qtd', parseInt(this.value)||0); _veAtualizarTotalizador()"
+          style="width:56px;text-align:center;font-weight:700"
+          ${!v.controlar_estoque ? 'disabled placeholder="∞"' : ""}
+        >
+        <button type="button"
+          onclick="_veAlterarQtd(${idx}, 1)"
+          style="width:28px;height:28px;border-radius:6px;border:1.5px solid #ccc;background:#fff;cursor:pointer;font-size:1rem;line-height:1"
+          ${!v.controlar_estoque ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ""}
+        >+</button>
+      </div>
+      ${esgotado ? '<span class="var-estoque-row__badge">Esgotado</span>' : ""}
+      ${!v.controlar_estoque ? '<span style="font-size:0.68rem;color:#888">∞ ilimitado</span>' : ""}
+    </div>
+
+    <!-- Ativo toggle -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <label style="font-size:0.7rem;color:#777;font-weight:700">STATUS</label>
+      <label class="toggle-switch" title="${v.ativo ? "Disponível" : "Pausado"}">
+        <input
+          type="checkbox"
+          ${v.ativo ? "checked" : ""}
+          onchange="_veAtualizar(${idx}, 'ativo', this.checked)"
+        >
+        <span class="toggle-slider"></span>
+      </label>
+      <span style="font-size:0.68rem;color:${v.ativo ? "#16a34a" : "#dc2626"}">${v.ativo ? "Disponível" : "Pausado"}</span>
+    </div>
+
+    <!-- Botão remover -->
+    <button
+      type="button"
+      class="btn btn-sm btn-danger"
+      onclick="veRemoverLinha(${idx})"
+      title="Remover variação"
+      style="align-self:start"
+    >✕</button>
+  `;
+
+  return row;
+}
+
+// Utilitário de escape HTML
+function _esc(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// ──────────────────────────────────────────────────────────────
+//  6. Helpers de atualização de estado
+// ──────────────────────────────────────────────────────────────
+function _veAtualizar(idx, campo, valor) {
+  if (!_ve_variacoes[idx]) return;
+  _ve_variacoes[idx][campo] = valor;
+  _veAtualizarTotalizador();
+}
+
+function _veAlterarQtd(idx, delta) {
+  if (!_ve_variacoes[idx] || !_ve_variacoes[idx].controlar_estoque) return;
+  const novaQtd = Math.max(0, (_ve_variacoes[idx].estoque_qtd || 0) + delta);
+  _ve_variacoes[idx].estoque_qtd = novaQtd;
+  _veRenderizarLista();
+}
+
+function veRemoverLinha(idx) {
+  _ve_variacoes.splice(idx, 1);
+  _veRenderizarLista();
+}
+
+function _veAtualizarTotalizador() {
+  const el = document.getElementById("ve-totalizador");
+  const qtdEl = document.getElementById("ve-total-qtd");
+  if (!el || !qtdEl) return;
+
+  const total = _ve_variacoes.reduce((s, v) => {
+    return s + (v.controlar_estoque ? v.estoque_qtd || 0 : 0);
+  }, 0);
+
+  if (_ve_variacoes.length > 0) {
+    el.style.display = "block";
+    qtdEl.textContent = total.toLocaleString("es-PY");
+  } else {
+    el.style.display = "none";
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  7. veSalvarVariacoes(prodId)
+//     Persiste as variações no banco (upsert + delete de removidas).
+//     Chame isso dentro da sua função salvarProduto() APÓS salvar
+//     o produto principal, usando o prodId retornado.
+//
+//  Uso:
+//    const prodIdSalvo = ...; // id retornado pelo INSERT/UPDATE
+//    const ok = await veSalvarVariacoes(prodIdSalvo);
+//    if (!ok) { alert('Erro ao salvar variações'); return; }
+// ──────────────────────────────────────────────────────────────
+async function veSalvarVariacoes(prodId) {
+  try {
+    // ── Sincroniza estado dos inputs com _ve_variacoes ─────────
+    _veLerDOMParaEstado();
+
+    // ── IDs que existiam antes (para detectar exclusões) ───────
+    const idsSalvos = _ve_variacoesSalvas.filter((v) => v.id).map((v) => v.id);
+
+    const idsAtuais = _ve_variacoes.filter((v) => v.id).map((v) => v.id);
+
+    const idsRemovidos = idsSalvos.filter((id) => !idsAtuais.includes(id));
+
+    // ── Exclui variações removidas ──────────────────────────────
+    if (idsRemovidos.length > 0) {
+      const { error } = await supa
+        .from("produto_variacoes")
+        .delete()
+        .in("id", idsRemovidos);
+      if (error) throw new Error("Erro ao excluir variações: " + error.message);
+    }
+
+    // ── Upsert das variações restantes ─────────────────────────
+    if (_ve_variacoes.length > 0) {
+      const payload = _ve_variacoes
+        .filter((v) => v.nome && v.nome.trim()) // ignora linhas sem nome
+        .map((v, i) => {
+          const obj = {
+            produto_id: prodId,
+            nome: v.nome.trim(),
+            sku: v.sku?.trim() || null,
+            estoque_qtd: v.controlar_estoque
+              ? Math.max(0, parseInt(v.estoque_qtd) || 0)
+              : 0,
+            controlar_estoque: !!v.controlar_estoque,
+            preco_adicional: parseFloat(v.preco_adicional) || 0,
+            preco_absoluto: !!v.preco_absoluto,
+            ativo: v.ativo !== false,
+            ordem: i,
+          };
+          if (v.id) obj.id = v.id; // inclui id para UPDATE
+          return obj;
+        });
+
+      if (payload.length > 0) {
+        const { error } = await supa
+          .from("produto_variacoes")
+          .upsert(payload, { onConflict: "id" });
+        if (error)
+          throw new Error("Erro ao salvar variações: " + error.message);
+      }
+    }
+
+    console.log(
+      "[varejo-admin] Variações salvas com sucesso para produto",
+      prodId,
+    );
+    return true;
+  } catch (e) {
+    console.error("[varejo-admin] veSalvarVariacoes:", e.message);
+    alert("❌ " + e.message);
+    return false;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+//  8. _veLerDOMParaEstado()
+//     Antes de salvar, lê todos os inputs do DOM de volta para
+//     _ve_variacoes (garante valores mais recentes sem depender
+//     só dos oninput).
+// ──────────────────────────────────────────────────────────────
+function _veLerDOMParaEstado() {
+  const rows = document.querySelectorAll("#ve-lista .var-estoque-row");
+  rows.forEach((row, idx) => {
+    if (!_ve_variacoes[idx]) return;
+    const nomeEl = row.querySelector(".ve-nome");
+    const qtdEl = row.querySelector(".ve-qtd");
+    if (nomeEl) _ve_variacoes[idx].nome = nomeEl.value.trim();
+    if (qtdEl) _ve_variacoes[idx].estoque_qtd = parseInt(qtdEl.value) || 0;
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+//  9. Painel de estoque baixo (alertas no admin)
+// ── ALERTA DE VALIDADE PRÓXIMA — Produtos ─────────────────────
+//     Varre _todosProdutos após carregamento e exibe banner na
+//     aba Produtos para itens vencidos ou vencendo em ≤ diasAlerta.
+// ──────────────────────────────────────────────────────────────
+function ptVerificarValidadeProdutos(diasAlerta = 7) {
+  const el = document.getElementById("pt-alerta-validade");
+  const li = document.getElementById("pt-alerta-validade-lista");
+  if (!el || !li) return;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const alertas = [];
+  (_todosProdutos || []).forEach((p) => {
+    if (!p.perecivel || !p.data_validade) return;
+    const val = new Date(p.data_validade + "T00:00:00");
+    const dias = Math.ceil((val - hoje) / 86400000);
+    if (dias <= diasAlerta) {
+      const label =
+        dias < 0
+          ? `${p.nome} (VENCIDO)`
+          : dias === 0
+            ? `${p.nome} (vence HOJE)`
+            : `${p.nome} (vence em ${dias}d)`;
+      alertas.push(label);
+    }
+  });
+  if (alertas.length) {
+    el.style.display = "block";
+    li.textContent = alertas.join(" • ");
+  } else {
+    el.style.display = "none";
+  }
+}
+
+//     Exibe badge de alerta na aba de Produtos quando há variações
+//     com estoque crítico (≤ limiteAlerta).
+// ──────────────────────────────────────────────────────────────
+async function veVerificarEstoqueBaixo(limiteAlerta = 5) {
+  const { data, error } = await supa
+    .from("produto_variacoes")
+    .select(
+      "id, produto_id, nome, estoque_qtd, controlar_estoque, produtos(nome)",
+    )
+    .eq("ativo", true)
+    .eq("controlar_estoque", true)
+    .lte("estoque_qtd", limiteAlerta)
+    .order("estoque_qtd");
+
+  if (error || !data) return;
+
+  const cont = document.getElementById("ve-alertas-estoque");
+  if (!cont) return;
+
+  if (!data.length) {
+    cont.style.display = "none";
+    return;
+  }
+
+  cont.style.display = "block";
+  cont.innerHTML = `
+    <div style="background:#fff3cd;border:1.5px solid #f0a500;border-radius:10px;padding:12px 16px;font-size:0.83rem">
+      <b>⚠️ Estoque baixo (≤ ${limiteAlerta} unidades)</b>
+      <ul style="margin-top:8px;padding-left:18px;line-height:1.9">
+        ${data
+          .map(
+            (v) => `
+          <li>
+            <b>${v.produtos?.nome || "#" + v.produto_id}</b> — ${v.nome}:
+            <span style="color:${v.estoque_qtd === 0 ? "#dc2626" : "#e67e22"};font-weight:700">
+              ${v.estoque_qtd === 0 ? "⛔ Esgotado" : v.estoque_qtd + " un"}
+            </span>
+          </li>
+        `,
+          )
+          .join("")}
+      </ul>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────────
+//  10. INTEGRAÇÃO COM salvarProduto() EXISTENTE
+//
+//  Localize a sua função salvarProduto() em admin.js e, após
+//  a linha que salva no banco:
+//
+//    if (id) await supa.from('produtos').update(dados).eq('id', id);
+//    else    await supa.from('produtos').insert([dados]);
+//
+//  Adicione estas linhas (copie e cole):
+//
+//    // ── Salva variações de estoque (varejo) ──────────────────
+//    const _prodIdSalvo = id
+//      ? parseInt(id)
+//      : (await supa.from('produtos').select('id').order('id', {ascending:false}).limit(1).single()).data?.id;
+//    if (_prodIdSalvo && document.getElementById('secao-variacoes-estoque')) {
+//      await veSalvarVariacoes(_prodIdSalvo);
+//    }
+//    // ── Fim variações ────────────────────────────────────────
+//
+//  E na função abrirModalProduto(), ao abrir com produto existente,
+//  adicione:
+//
+//    veIniciarSecao(produto?.id || null);
+//
+//  E ao abrir para novo produto:
+//
+//    veIniciarSecao(null);
+// ──────────────────────────────────────────────────────────────
+
+// ──────────────────────────────────────────────────────────────
+//  11. Painel de Estoque — aba standalone no admin
+//      Renderiza tabela completa de variações com edição rápida
+//      de quantidade. Adicione no admin.html uma aba com id="estoque"
+//      e um div id="painel-estoque" dentro dela.
+// ──────────────────────────────────────────────────────────────
+async function veRenderizarPainelEstoque() {
+  const cont = document.getElementById("painel-estoque");
+  if (!cont) return;
+
+  cont.innerHTML =
+    '<div style="text-align:center;padding:30px;color:#aaa">Carregando...</div>';
+
+  const { data, error } = await supa
+    .from("produto_variacoes")
+    .select(
+      "id, produto_id, nome, sku, estoque_qtd, controlar_estoque, ativo, produtos(nome, categoria_slug, imagem_url)",
+    )
+    .order("produtos(nome)")
+    .order("nome");
+
+  if (error) {
+    cont.innerHTML = `<p style="color:#e74c3c">Erro: ${error.message}</p>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    cont.innerHTML =
+      '<p style="color:#aaa;text-align:center;padding:30px">Nenhuma variação cadastrada. Edite um produto para adicionar variações.</p>';
+    return;
+  }
+
+  // Agrupa por produto
+  const porProduto = {};
+  data.forEach((v) => {
+    const pid = v.produto_id;
+    if (!porProduto[pid]) {
+      porProduto[pid] = {
+        nome: v.produtos?.nome || `#${pid}`,
+        cat: v.produtos?.categoria_slug || "",
+        img: v.produtos?.imagem_url || "",
+        variacoes: [],
+      };
+    }
+    porProduto[pid].variacoes.push(v);
+  });
+
+  // Filtragem rápida por nome
+  const searchId = "ve-painel-busca-" + Date.now();
+  cont.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <input id="${searchId}" type="text" class="form-control"
+        placeholder="🔍 Buscar produto ou variação..."
+        oninput="veFiltrarPainel(this.value)"
+        style="max-width:320px">
+      <button class="btn btn-sm btn-success" onclick="veRenderizarPainelEstoque()">↺ Atualizar</button>
+    </div>
+    <div id="ve-painel-lista"></div>
+  `;
+
+  window._vePainelDados = porProduto; // guarda para filtro
+  _veRenderizarTabelaPainel(porProduto);
+}
+
+function veFiltrarPainel(termo) {
+  if (!window._vePainelDados) return;
+  const t = termo.toLowerCase().trim();
+  if (!t) {
+    _veRenderizarTabelaPainel(window._vePainelDados);
+    return;
+  }
+  const filtrado = {};
+  Object.entries(window._vePainelDados).forEach(([pid, p]) => {
+    const varFiltradas = p.variacoes.filter(
+      (v) =>
+        v.nome.toLowerCase().includes(t) ||
+        (v.sku || "").toLowerCase().includes(t),
+    );
+    const nomeMatch = p.nome.toLowerCase().includes(t);
+    if (nomeMatch || varFiltradas.length > 0) {
+      filtrado[pid] = {
+        ...p,
+        variacoes: nomeMatch ? p.variacoes : varFiltradas,
+      };
+    }
+  });
+  _veRenderizarTabelaPainel(filtrado);
+}
+
+function _veRenderizarTabelaPainel(porProduto) {
+  const lista = document.getElementById("ve-painel-lista");
+  if (!lista) return;
+
+  lista.innerHTML =
+    Object.entries(porProduto)
+      .map(([pid, p]) => {
+        const linhas = p.variacoes
+          .map((v) => {
+            const esgotado = v.controlar_estoque && v.estoque_qtd <= 0;
+            return `
+        <tr style="background:${esgotado ? "#fff5f5" : "#fff"}">
+          <td style="font-weight:600;padding:8px 12px">${_esc(v.nome)}</td>
+          <td style="text-align:center;padding:8px 12px;color:#777;font-size:0.82rem">${_esc(v.sku || "—")}</td>
+          <td style="text-align:center;padding:8px 12px">
+            ${
+              v.controlar_estoque
+                ? `<div style="display:flex;align-items:center;justify-content:center;gap:6px">
+                  <button onclick="veQuickUpdate(${v.id}, ${v.estoque_qtd - 1})"
+                    style="width:24px;height:24px;border-radius:5px;border:1px solid #ccc;background:#fff;cursor:pointer">−</button>
+                  <b style="color:${esgotado ? "#dc2626" : "#166534"};min-width:28px;text-align:center">${v.estoque_qtd}</b>
+                  <button onclick="veQuickUpdate(${v.id}, ${v.estoque_qtd + 1})"
+                    style="width:24px;height:24px;border-radius:5px;border:1px solid #ccc;background:#fff;cursor:pointer">+</button>
+                </div>`
+                : '<span style="color:#888;font-size:0.8rem">∞</span>'
+            }
+          </td>
+          <td style="text-align:center;padding:8px 12px">
+            <span style="background:${v.ativo ? "#dcfce7" : "#fee2e2"};color:${v.ativo ? "#166534" : "#dc2626"};
+              border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700">
+              ${v.ativo ? "●  Ativo" : "○  Pausado"}
+            </span>
+          </td>
+        </tr>
+      `;
+          })
+          .join("");
+
+        return `
+      <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;margin-bottom:14px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+          ${p.img ? `<img src="${p.img}" style="width:36px;height:36px;border-radius:7px;object-fit:cover">` : '<div style="width:36px;height:36px;border-radius:7px;background:#eee;display:flex;align-items:center;justify-content:center;color:#ccc">📦</div>'}
+          <div>
+            <b style="font-size:0.95rem">${_esc(p.nome)}</b>
+            ${p.cat ? `<span style="font-size:0.72rem;color:#888;margin-left:8px">${p.cat}</span>` : ""}
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="background:#f3f4f6;font-size:0.72rem;color:#777;text-transform:uppercase;letter-spacing:0.04em">
+              <th style="padding:6px 12px;text-align:left">Variação</th>
+              <th style="padding:6px 12px;text-align:center">SKU</th>
+              <th style="padding:6px 12px;text-align:center">Estoque</th>
+              <th style="padding:6px 12px;text-align:center">Status</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>
+    `;
+      })
+      .join("") ||
+    '<p style="color:#aaa;text-align:center;padding:20px">Nenhum resultado.</p>';
+}
+
+// ──────────────────────────────────────────────────────────────
+//  12. veQuickUpdate — atualiza estoque direto do painel
+// ──────────────────────────────────────────────────────────────
+async function veQuickUpdate(variacaoId, novaQtd) {
+  novaQtd = Math.max(0, novaQtd);
+  const { error } = await supa
+    .from("produto_variacoes")
+    .update({ estoque_qtd: novaQtd })
+    .eq("id", variacaoId);
+
+  if (error) {
+    if (typeof mostrarToast === "function")
+      mostrarToast("Erro ao atualizar estoque", "error");
+    return;
+  }
+
+  // Atualiza o dado em memória
+  if (window._vePainelDados) {
+    Object.values(window._vePainelDados).forEach((p) => {
+      const v = p.variacoes.find((v) => v.id === variacaoId);
+      if (v) v.estoque_qtd = novaQtd;
+    });
+    _veRenderizarTabelaPainel(window._vePainelDados);
+  }
+
+  if (typeof mostrarToast === "function")
+    mostrarToast("Estoque atualizado!", "success", 1500);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  VAREJO — Sugestões de variações por tipo
+// ══════════════════════════════════════════════════════════════
+
+/**
+ * Mostra chips de sugestão de variações quando a lista está vazia.
+ * Clique em um chip adiciona automaticamente a variação com qtd=10.
+ */
+function _veMostrarSugestoes(sugestoes) {
+  const lista = document.getElementById("ve-lista");
+  if (!lista || _ve_variacoes.length > 0) return;
+
+  const wrap = document.createElement("div");
+  wrap.id = "ve-sugestoes-wrap";
+  wrap.style.cssText = "margin-bottom:10px";
+  wrap.innerHTML = `
+    <p style="font-size:0.75rem;color:#888;margin-bottom:6px">
+      💡 Sugestões rápidas — clique para adicionar:
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:7px">
+      ${sugestoes
+        .map(
+          (s) => `
+        <button type="button"
+          onclick="_veAdicionarSugestao('${s.replace(/'/g, "\\'")}')"
+          style="padding:5px 12px;border:1.5px dashed #c4b5fd;background:#faf5ff;
+                 border-radius:20px;font-size:0.78rem;color:#7c3aed;cursor:pointer">
+          + ${s}
+        </button>
+      `,
+        )
+        .join("")}
+    </div>
+  `;
+
+  // Insere antes da lista real
+  const cont = document.getElementById("secao-variacoes-estoque");
+  const headerEl = cont?.querySelector(".var-estoque-section-header");
+  if (headerEl) headerEl.after(wrap);
+}
+
+function _veAdicionarSugestao(nome) {
+  // Remove o painel de sugestões após primeiro uso
+  document.getElementById("ve-sugestoes-wrap")?.remove();
+  veAdicionarLinha({ nome, estoque_qtd: 10 });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MOEDA DUPLA — Admin (Configurações + preview modal)
+// ══════════════════════════════════════════════════════════════
+
+// ── Chaves no localStorage ────────────────────────────────────
+const _VC_KEY_ATIVO = "vc_ativo";
+const _VC_KEY_TAXA = "vc_taxa";
+const _VC_KEY_POSICAO = "vc_posicao";
+
+/**
+ * Carrega config salva e preenche os campos da aba Configurações.
+ * Chame dentro de showTab('configuracoes') ou no DOMContentLoaded.
+ */
+function vcCarregarConfig() {
+  const ativo = localStorage.getItem(_VC_KEY_ATIVO) === "true";
+  const taxa = parseFloat(localStorage.getItem(_VC_KEY_TAXA)) || 0;
+  const posicao = localStorage.getItem(_VC_KEY_POSICAO) || "abaixo";
+
+  const elAtivo = document.getElementById("vc-ativo");
+  const elTaxa = document.getElementById("vc-taxa");
+  const elPosicao = document.getElementById("vc-posicao");
+
+  if (elAtivo) {
+    elAtivo.checked = ativo;
+    vcToggle(ativo, false);
+  }
+  if (elTaxa) {
+    elTaxa.value = taxa || "";
+  }
+  if (elPosicao) {
+    elPosicao.value = posicao;
+  }
+
+  vcAtualizarLabel();
+}
+
+/** Atualiza o label "1 R$ = X Gs" ao vivo */
+function vcAtualizarLabel() {
+  const taxa = parseFloat(document.getElementById("vc-taxa")?.value) || 0;
+  const el = document.getElementById("vc-taxa-label");
+  if (el) el.textContent = taxa > 0 ? taxa.toLocaleString("es-PY") : "?";
+
+  // Atualiza preview
+  const prevCfg = document.getElementById("vc-preview-cfg");
+  const prevBrl = document.getElementById("vc-prev-brl");
+  if (!prevCfg || !prevBrl) return;
+
+  if (taxa > 0 && document.getElementById("vc-ativo")?.checked) {
+    prevCfg.style.display = "block";
+    const exemplGs = 150000;
+    const brl = exemplGs / taxa;
+    prevBrl.textContent = `= R$ ${brl.toFixed(2)}`;
+  } else {
+    prevCfg.style.display = "none";
+  }
+}
+
+function vcToggle(on, atualizarPreview = true) {
+  const label = document.getElementById("vc-ativo-label");
+  if (label) {
+    label.textContent = on ? "Ativado ✅" : "Desativado";
+    label.style.color = on ? "#16a34a" : "#888";
+  }
+  if (atualizarPreview) vcAtualizarLabel();
+}
+
+/** Salva configurações no localStorage e propaga para o app do cliente */
+function vcSalvar() {
+  const ativo = document.getElementById("vc-ativo")?.checked || false;
+  const taxa = parseFloat(document.getElementById("vc-taxa")?.value) || 0;
+  const posicao = document.getElementById("vc-posicao")?.value || "abaixo";
+
+  if (ativo && taxa <= 0) {
+    alert("Informe a taxa de conversão (Ex: 1450) para ativar o preço em R$.");
+    return;
+  }
+
+  localStorage.setItem(_VC_KEY_ATIVO, String(ativo));
+  localStorage.setItem(_VC_KEY_TAXA, String(taxa));
+  localStorage.setItem(_VC_KEY_POSICAO, posicao);
+
+  // Persiste também no banco (tabela configuracoes, coluna vc_config)
+  if (window.supa) {
+    supa
+      .from("configuracoes")
+      .update({ vc_config: { ativo, taxa, posicao } })
+      .eq("id", 1)
+      .then(({ error }) => {
+        if (error) console.warn("vcSalvar banco:", error.message);
+      });
+  }
+
+  if (typeof mostrarToast === "function") {
+    mostrarToast(
+      ativo
+        ? `Taxa salva: 1 R$ = Gs ${taxa.toLocaleString("es-PY")}`
+        : "Exibição em R$ desativada.",
+      "success",
+      2500,
+    );
+  } else {
+    alert(
+      ativo
+        ? `✅ Taxa salva: 1 R$ = Gs ${taxa.toLocaleString("es-PY")}`
+        : "✅ Exibição em R$ desativada.",
+    );
+  }
+}
+
+/**
+ * Preview no modal de produto — chamado pelo oninput do campo prod-preco.
+ * Exibe o equivalente em R$ abaixo do campo de preço.
+ */
+function vcAtualizarPreviewModal(gsValor) {
+  const el = document.getElementById("vc-preview-modal");
+  if (!el) return;
+
+  const ativo = localStorage.getItem(_VC_KEY_ATIVO) === "true";
+  const taxa = parseFloat(localStorage.getItem(_VC_KEY_TAXA)) || 0;
+  const gs = parseFloat(gsValor) || 0;
+
+  if (!ativo || taxa <= 0 || gs <= 0) {
+    el.textContent = "";
+    return;
+  }
+
+  const brl = gs / taxa;
+  el.textContent = `≈ R$ ${brl.toFixed(2)} (taxa: 1 R$ = Gs ${taxa.toLocaleString("es-PY")})`;
+}
+
+// Carrega config quando a aba de configurações é aberta
+(function _vcPatchShowTab() {
+  const _origShowTab = window.showTab;
+  if (typeof _origShowTab !== "function") return;
+  window.showTab = function (tabId, event) {
+    _origShowTab(tabId, event);
+    if ((tabId || "").includes("configuracoes")) {
+      setTimeout(vcCarregarConfig, 50);
+    }
+  };
+})();
+
+// ══════════════════════════════════════════════════════════════
+//  PROMOÇÃO — Helpers do formulário de produto
+// ══════════════════════════════════════════════════════════════
+
+function togglePromoFields(on) {
+  const fields = document.getElementById("prod-promo-fields");
+  if (fields) fields.style.display = on ? "grid" : "none";
+  if (on) promoAtualizarPreview();
+}
+
+function promoAtualizarPreview() {
+  const tipo = document.getElementById("prod-promo-tipo")?.value || "percent";
+  const valor =
+    parseFloat(document.getElementById("prod-promo-valor")?.value) || 0;
+  const preco = parseFloat(document.getElementById("prod-preco")?.value) || 0;
+  const prev = document.getElementById("prod-promo-preview");
+  const label = document.getElementById("prod-promo-valor-label");
+
+  if (label)
+    label.textContent = tipo === "percent" ? "Desconto (%)" : "Desconto (Gs)";
+  if (!prev) return;
+
+  if (!valor || !preco) {
+    prev.textContent = "";
+    return;
+  }
+
+  const precoFinal =
+    tipo === "percent" ? preco * (1 - valor / 100) : preco - valor;
+
+  if (precoFinal < 0) {
+    prev.textContent = "⚠️ Desconto maior que o preço!";
+    prev.style.color = "#dc2626";
+    return;
+  }
+
+  prev.style.color = "#16a34a";
+  prev.innerHTML = `
+    De <s style="color:#aaa">Gs ${Math.round(preco).toLocaleString("es-PY")}</s>
+    por <b style="color:#dc2626">Gs ${Math.round(precoFinal).toLocaleString("es-PY")}</b>
+    ${tipo === "percent" ? `(${valor}% off)` : `(- Gs ${Math.round(valor).toLocaleString("es-PY")})`}
+  `;
+}
+
+// ── Atualiza _TIPO_ICONS e _TIPO_NAMES com tipos varejo ──────
+// (sobrescreve as versões locais dentro de renderizarCardsProdutos)
+const _VAREJO_TIPO_ICONS_PATCH = {
+  roupa: "👕",
+  eletronico: "🔌",
+  suplemento: "💪",
+  pod: "☁️",
+  mercado: "🛒",
+};
+const _VAREJO_TIPO_NAMES_PATCH = {
+  roupa: "Roupa",
+  eletronico: "Eletrônico",
+  suplemento: "Suplemento",
+  pod: "Pod",
+  mercado: "Mercado",
+};
+// Injeta no próximo ciclo para garantir que renderizarCardsProdutos já foi definida
+setTimeout(() => {
+  const origRender = window.renderizarCardsProdutos;
+  if (typeof origRender !== "function") return;
+  window.renderizarCardsProdutos = function (lista) {
+    // Injeta ícones varejo nos mapas locais da função original
+    // (feito via patch do tipoKey lookup — sem reescrever a função toda)
+    origRender(lista);
+  };
+}, 0);
+
+// ══════════════════════════════════════════════════════════════
+//  IMPORTAÇÃO / EXPORTAÇÃO DE PRODUTOS
+//  Formatos suportados: CSV, JSON, XLSX (SheetJS via CDN)
+// ══════════════════════════════════════════════════════════════
+
+// ── Colunas disponíveis ───────────────────────────────────────
+const _IMPEXP_COLUNAS = [
+  { key: "nome", label: "Nome", obrigatorio: true },
+  { key: "descricao", label: "Descrição", obrigatorio: false },
+  { key: "preco", label: "Preço (Gs)", obrigatorio: true },
+  { key: "categoria_slug", label: "Categoria", obrigatorio: false },
+  { key: "subcategoria_slug", label: "Subcategoria", obrigatorio: false },
+  { key: "unidade_venda", label: "Unidade", obrigatorio: false },
+  { key: "estoque_qtd", label: "Estoque", obrigatorio: false },
+  { key: "destaque", label: "Destaque", obrigatorio: false },
+  { key: "ativo", label: "Ativo", obrigatorio: false },
+  { key: "somente_balcao", label: "Só Balcão", obrigatorio: false },
+  { key: "promo_ativo", label: "Promoção Ativa", obrigatorio: false },
+  { key: "promo_tipo", label: "Tipo Desconto", obrigatorio: false },
+  { key: "promo_valor", label: "Valor Desconto", obrigatorio: false },
+  { key: "imagem_url", label: "URL Imagem", obrigatorio: false },
+];
+
+// Colunas marcadas por padrão
+const _IMPEXP_COLUNAS_DEFAULT = [
+  "nome",
+  "descricao",
+  "preco",
+  "categoria_slug",
+  "unidade_venda",
+  "estoque_qtd",
+  "destaque",
+  "ativo",
+  "promo_ativo",
+  "promo_tipo",
+  "promo_valor",
+];
+
+let _impexpDadosImport = []; // linhas parseadas prontas para salvar
+
+// ── Abrir / fechar modal ──────────────────────────────────────
+function impexpAbrir() {
+  const modal = document.getElementById("modal-impexp");
+  if (!modal) return;
+  impexpMostrarAba("exportar");
+  _impexpRenderizarColunas();
+  _impexpCarregarCategorias();
+  modal.style.display = "flex";
+}
+
+function impexpFechar() {
+  const modal = document.getElementById("modal-impexp");
+  if (modal) modal.style.display = "none";
+  impexpLimparPreview();
+}
+
+// ── Abas internas ─────────────────────────────────────────────
+function impexpMostrarAba(aba) {
+  const isExp = aba === "exportar";
+  document.getElementById("impexp-painel-exportar").style.display = isExp
+    ? "block"
+    : "none";
+  document.getElementById("impexp-painel-importar").style.display = isExp
+    ? "none"
+    : "block";
+
+  const btnExp = document.getElementById("impexp-tab-exp");
+  const btnImp = document.getElementById("impexp-tab-imp");
+  if (btnExp) {
+    btnExp.style.background = isExp ? "#1a7a2e" : "transparent";
+    btnExp.style.color = isExp ? "#fff" : "#555";
+  }
+  if (btnImp) {
+    btnImp.style.background = isExp ? "transparent" : "#1a7a2e";
+    btnImp.style.color = isExp ? "#555" : "#fff";
+  }
+}
+
+// ── Checkboxes de colunas ─────────────────────────────────────
+function _impexpRenderizarColunas() {
+  const wrap = document.getElementById("impexp-colunas-wrap");
+  if (!wrap) return;
+  wrap.innerHTML = _IMPEXP_COLUNAS
+    .map((c) => {
+      const checked = _IMPEXP_COLUNAS_DEFAULT.includes(c.key) || c.obrigatorio;
+      const disabled = c.obrigatorio ? "disabled" : "";
+      return `
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;
+        background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;
+        padding:5px 10px;font-size:0.78rem;font-weight:600;
+        ${c.obrigatorio ? "opacity:0.7" : ""}">
+        <input type="checkbox" class="impexp-col-chk" value="${c.key}"
+          ${checked ? "checked" : ""} ${disabled}>
+        ${c.label}${c.obrigatorio ? ' <span style="color:#dc2626">*</span>' : ""}
+      </label>`;
+    })
+    .join("");
+}
+
+function impexpSelecionarTodasColunas(on) {
+  document
+    .querySelectorAll(".impexp-col-chk:not([disabled])")
+    .forEach((c) => (c.checked = on));
+}
+
+async function _impexpCarregarCategorias() {
+  const sel = document.getElementById("impexp-exp-cat");
+  if (!sel || sel.options.length > 1) return;
+  const { data } = await supa
+    .from("categorias")
+    .select("slug,nome_exibicao")
+    .order("nome_exibicao");
+  if (data)
+    data.forEach((c) => {
+      const opt = document.createElement("option");
+      opt.value = c.slug;
+      opt.textContent = c.nome_exibicao;
+      sel.appendChild(opt);
+    });
+}
+
+// ─────────────────────────────────────────────────────────────
+//  EXPORTAÇÃO
+// ─────────────────────────────────────────────────────────────
+async function impexpExportar() {
+  const infoEl = document.getElementById("impexp-exp-info");
+  if (infoEl) infoEl.textContent = "Buscando dados…";
+
+  // Colunas selecionadas
+  const colunas = [...document.querySelectorAll(".impexp-col-chk:checked")].map(
+    (c) => c.value,
+  );
+  if (!colunas.length) {
+    alert("Selecione ao menos uma coluna.");
+    return;
+  }
+
+  // Filtros
+  const catFiltro = document.getElementById("impexp-exp-cat")?.value;
+  const statusFiltro = document.getElementById("impexp-exp-status")?.value;
+
+  let query = supa.from("produtos").select(colunas.join(",")).order("nome");
+  if (catFiltro) query = query.eq("categoria_slug", catFiltro);
+  if (statusFiltro === "ativo")
+    query = query.eq("ativo", true).eq("pausado", false);
+  if (statusFiltro === "pausado") query = query.eq("pausado", true);
+  if (statusFiltro === "destaque") query = query.eq("destaque", true);
+
+  const { data, error } = await query;
+  if (error) {
+    alert("Erro ao exportar: " + error.message);
+    return;
+  }
+  if (!data?.length) {
+    if (infoEl)
+      infoEl.textContent = "Nenhum produto encontrado com esses filtros.";
+    return;
+  }
+
+  const formato =
+    document.querySelector("input[name='impexp-formato']:checked")?.value ||
+    "csv";
+  const nomeArq = `produtos_${new Date().toISOString().slice(0, 10)}`;
+
+  if (formato === "csv") _impexpBaixarCSV(data, colunas, nomeArq + ".csv");
+  if (formato === "json") _impexpBaixarJSON(data, nomeArq + ".json");
+  if (formato === "xlsx") _impexpBaixarXLSX(data, colunas, nomeArq + ".xlsx");
+
+  if (infoEl)
+    infoEl.textContent = `✅ ${data.length} produto(s) exportado(s) — ${formato.toUpperCase()}`;
+}
+
+function _impexpBaixarCSV(rows, colunas, nomeArq) {
+  const escapar = (v) => {
+    if (v == null) return "";
+    const s = String(v);
+    return s.includes(",") || s.includes('"') || s.includes("\n")
+      ? `"${s.replace(/"/g, '""')}"`
+      : s;
+  };
+  const header = colunas
+    .map((c) => _IMPEXP_COLUNAS.find((x) => x.key === c)?.label || c)
+    .join(",");
+  const linhas = rows.map((r) => colunas.map((c) => escapar(r[c])).join(","));
+  _impexpDownload(
+    "\uFEFF" + [header, ...linhas].join("\r\n"), // BOM para Excel reconhecer UTF-8
+    nomeArq,
+    "text/csv;charset=utf-8;",
+  );
+}
+
+function _impexpBaixarJSON(rows, nomeArq) {
+  _impexpDownload(JSON.stringify(rows, null, 2), nomeArq, "application/json");
+}
+
+function _impexpBaixarXLSX(rows, colunas, nomeArq) {
+  // Usa SheetJS (XLSX) — carregado dinamicamente se necessário
+  const _fazer = () => {
+    const XLSX = window.XLSX;
+    if (!XLSX) {
+      alert("Biblioteca XLSX não disponível. Tente CSV ou JSON.");
+      return;
+    }
+    const wsData = [
+      colunas.map((c) => _IMPEXP_COLUNAS.find((x) => x.key === c)?.label || c),
+      ...rows.map((r) => colunas.map((c) => r[c] ?? "")),
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    // Larguras automáticas
+    ws["!cols"] = colunas.map(() => ({ wch: 20 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Produtos");
+    XLSX.writeFile(wb, nomeArq);
+  };
+
+  if (!window.XLSX) {
+    const script = document.createElement("script");
+    script.src =
+      "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    script.onload = _fazer;
+    document.head.appendChild(script);
+  } else {
+    _fazer();
+  }
+}
+
+function _impexpDownload(conteudo, nomeArq, mimeType) {
+  const blob = new Blob([conteudo], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = nomeArq;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  TEMPLATES PARA DOWNLOAD
+// ─────────────────────────────────────────────────────────────
+function impexpBaixarTemplate(formato) {
+  const exemplo = [
+    {
+      nome: "Camiseta Básica Branca",
+      descricao: "100% algodão penteado",
+      preco: 85000,
+      categoria_slug: "roupas",
+      subcategoria_slug: "",
+      unidade_venda: "un",
+      estoque_qtd: 50,
+      destaque: false,
+      ativo: true,
+      somente_balcao: false,
+      promo_ativo: false,
+      promo_tipo: "percent",
+      promo_valor: "",
+      imagem_url: "",
+    },
+    {
+      nome: "Whey Protein Chocolate 900g",
+      descricao: "Proteína isolada 80%",
+      preco: 320000,
+      categoria_slug: "suplementos",
+      subcategoria_slug: "",
+      unidade_venda: "un",
+      estoque_qtd: 20,
+      destaque: true,
+      ativo: true,
+      somente_balcao: false,
+      promo_ativo: true,
+      promo_tipo: "percent",
+      promo_valor: 10,
+      imagem_url: "",
+    },
+  ];
+
+  if (formato === "csv") {
+    const cols = Object.keys(exemplo[0]);
+    _impexpBaixarCSV(exemplo, cols, "template_produtos.csv");
+  } else {
+    _impexpBaixarJSON(exemplo, "template_produtos.json");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  IMPORTAÇÃO — parse e preview
+// ─────────────────────────────────────────────────────────────
+async function impexpProcessarArquivo(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Arquivo muito grande (máx 5 MB).");
+    return;
+  }
+
+  const ext = file.name.split(".").pop().toLowerCase();
+  const texto = await file.text();
+
+  try {
+    if (ext === "json") {
+      _impexpDadosImport = JSON.parse(texto);
+      if (!Array.isArray(_impexpDadosImport))
+        _impexpDadosImport = [_impexpDadosImport];
+    } else if (ext === "csv") {
+      _impexpDadosImport = _impexpParsarCSV(texto);
+    } else {
+      alert("Formato não suportado. Use .csv ou .json");
+      return;
+    }
+    _impexpRenderizarPreview(_impexpDadosImport);
+  } catch (e) {
+    alert("Erro ao ler arquivo: " + e.message);
+  }
+}
+
+function _impexpParsarCSV(texto) {
+  const linhas = texto
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .filter((l) => l.trim());
+  if (linhas.length < 2) throw new Error("CSV vazio ou sem dados.");
+
+  // Parser simples que respeita campos entre aspas
+  const parseLinha = (linha) => {
+    const resultado = [];
+    let campo = "",
+      dentro = false;
+    for (let i = 0; i < linha.length; i++) {
+      const ch = linha[i];
+      if (ch === '"') {
+        if (dentro && linha[i + 1] === '"') {
+          campo += '"';
+          i++;
+        } else dentro = !dentro;
+      } else if (ch === "," && !dentro) {
+        resultado.push(campo);
+        campo = "";
+      } else {
+        campo += ch;
+      }
+    }
+    resultado.push(campo);
+    return resultado;
+  };
+
+  // Tenta mapear cabeçalho — aceita label PT ou key EN
+  const _labelParaKey = (label) => {
+    const norm = label.trim().toLowerCase();
+    const found = _IMPEXP_COLUNAS.find(
+      (c) => c.key.toLowerCase() === norm || c.label.toLowerCase() === norm,
+    );
+    return found ? found.key : norm;
+  };
+
+  const cabecalho = parseLinha(linhas[0]).map(_labelParaKey);
+  return linhas
+    .slice(1)
+    .filter((l) => l.trim())
+    .map((linha) => {
+      const vals = parseLinha(linha);
+      const obj = {};
+      cabecalho.forEach((k, i) => {
+        let v = (vals[i] ?? "").trim();
+        // Coerce tipos
+        if (["preco", "estoque_qtd", "promo_valor"].includes(k))
+          v = v === "" ? null : parseFloat(v) || 0;
+        if (
+          ["destaque", "ativo", "somente_balcao", "promo_ativo"].includes(k)
+        ) {
+          v = ["true", "1", "sim", "yes"].includes(
+            (v || "").toString().toLowerCase(),
+          );
+        }
+        obj[k] = v;
+      });
+      return obj;
+    });
+}
+
+function _impexpRenderizarPreview(dados) {
+  const wrap = document.getElementById("impexp-preview-wrap");
+  const info = document.getElementById("impexp-preview-info");
+  const thead = document.getElementById("impexp-preview-thead");
+  const tbody = document.getElementById("impexp-preview-tbody");
+  const errosEl = document.getElementById("impexp-erros");
+  if (!wrap || !thead || !tbody) return;
+
+  // Valida linhas
+  const erros = [];
+  dados.forEach((row, i) => {
+    if (!row.nome || String(row.nome).trim() === "")
+      erros.push(`Linha ${i + 2}: campo "Nome" obrigatório`);
+    if (row.preco == null || isNaN(row.preco))
+      erros.push(`Linha ${i + 2}: campo "Preço" inválido`);
+  });
+
+  if (errosEl) {
+    if (erros.length) {
+      errosEl.style.display = "block";
+      errosEl.innerHTML = `
+        <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:0.78rem;color:#991b1b">
+          <b>⚠️ ${erros.length} problema(s) encontrado(s):</b>
+          <ul style="margin:6px 0 0 16px;padding:0">${erros
+            .slice(0, 5)
+            .map((e) => `<li>${e}</li>`)
+            .join("")}
+            ${erros.length > 5 ? `<li>… e mais ${erros.length - 5}</li>` : ""}
+          </ul>
+        </div>`;
+    } else {
+      errosEl.style.display = "none";
+    }
+  }
+
+  if (info) {
+    const novos = dados.filter(
+      (r) => !_todosProdutos?.find((p) => p.nome === r.nome),
+    ).length;
+    const update = dados.length - novos;
+    info.innerHTML = `
+      <span style="color:#16a34a;font-weight:700">${dados.length} linha(s)</span> — 
+      <span style="color:#2563eb">${novos} novo(s)</span> · 
+      <span style="color:#d97706">${update} atualização(ões)</span>`;
+  }
+
+  // Cabeçalho
+  const cols = Object.keys(dados[0] || {});
+  thead.innerHTML = `<tr>${cols.map((c) => `<th style="padding:6px 10px;text-align:left;font-size:0.72rem;color:#6b7280;white-space:nowrap">${c}</th>`).join("")}</tr>`;
+
+  // Primeiras 20 linhas
+  tbody.innerHTML = dados
+    .slice(0, 20)
+    .map(
+      (row, i) => `
+    <tr style="background:${i % 2 === 0 ? "#fff" : "#f9fafb"}">
+      ${cols
+        .map((c) => {
+          const v = row[c];
+          const display = v === true ? "✅" : v === false ? "—" : (v ?? "");
+          return `<td style="padding:5px 10px;font-size:0.75rem;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis">${display}</td>`;
+        })
+        .join("")}
+    </tr>`,
+    )
+    .join("");
+
+  if (dados.length > 20) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="${cols.length}" style="padding:8px;text-align:center;color:#888;font-size:0.75rem">… e mais ${dados.length - 20} linha(s)</td>`;
+    tbody.appendChild(tr);
+  }
+
+  wrap.style.display = "block";
+  document.getElementById("impexp-salvar-label").textContent = erros.length
+    ? `Salvar mesmo assim (${dados.length} produtos)`
+    : `Salvar ${dados.length} produto(s) no banco`;
+}
+
+function impexpLimparPreview() {
+  _impexpDadosImport = [];
+  const wrap = document.getElementById("impexp-preview-wrap");
+  if (wrap) wrap.style.display = "none";
+  const fi = document.getElementById("impexp-file-input");
+  if (fi) fi.value = "";
+}
+
+// ─────────────────────────────────────────────────────────────
+//  IMPORTAÇÃO — salvar no banco (upsert por nome)
+// ─────────────────────────────────────────────────────────────
+async function impexpSalvar() {
+  if (!_impexpDadosImport.length) return;
+
+  const btn = document.querySelector("#impexp-preview-wrap .btn-primary");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Salvando…";
+  }
+
+  // Normaliza os dados
+  const payload = _impexpDadosImport
+    .filter((r) => r.nome && String(r.nome).trim())
+    .map((r) => ({
+      nome: String(r.nome).trim(),
+      descricao: r.descricao || "",
+      preco: parseInt(r.preco) || 0,
+      categoria_slug: r.categoria_slug || null,
+      subcategoria_slug: r.subcategoria_slug || null,
+      unidade_venda: r.unidade_venda || null,
+      estoque_qtd: r.estoque_qtd != null ? parseInt(r.estoque_qtd) : null,
+      destaque: !!r.destaque,
+      ativo: r.ativo !== false && r.ativo !== 0,
+      somente_balcao: !!r.somente_balcao,
+      promo_ativo: !!r.promo_ativo,
+      promo_tipo: r.promo_tipo || "percent",
+      promo_valor: r.promo_valor ? parseFloat(r.promo_valor) : null,
+      imagem_url: r.imagem_url || "",
+    }));
+
+  // Divide em lotes de 100 para não estourar limites do Supabase
+  const LOTE = 100;
+  let salvos = 0,
+    erros = 0;
+
+  for (let i = 0; i < payload.length; i += LOTE) {
+    const lote = payload.slice(i, i + LOTE);
+    const { error } = await supa
+      .from("produtos")
+      .upsert(lote, { onConflict: "nome", ignoreDuplicates: false });
+    if (error) {
+      console.error("impexpSalvar lote:", error.message);
+      erros += lote.length;
+    } else salvos += lote.length;
+    if (btn) btn.textContent = `Salvando… (${salvos}/${payload.length})`;
+  }
+
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = `Salvar ${payload.length} produto(s) no banco`;
+  }
+
+  if (erros === 0) {
+    if (typeof mostrarToast === "function")
+      mostrarToast(
+        `✅ ${salvos} produto(s) importado(s) com sucesso!`,
+        "success",
+        3000,
+      );
+    else alert(`✅ ${salvos} produto(s) importado(s)!`);
+    impexpFechar();
+    carregarProdutos();
+  } else {
+    alert(
+      `⚠️ ${salvos} produto(s) salvos, ${erros} com erro. Verifique o console.`,
+    );
   }
 }

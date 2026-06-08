@@ -8,120 +8,90 @@
 
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Rubik', sans-serif; -webkit-tap-highlight-color:transparent; }
 html { height: 100%; }
-body {
-  background: var(--bg);
-  min-height: 100vh;
+body { 
+    background: var(--bg); 
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    /* padding-bottom: 80px; espaço para cart-float */
 }
 main.menu-container { flex: 1; }
 
 /* Header */
-/* ══════════════════════════════════════════════════════════════
-   HEADER NOVO — logo + busca integrada
-   ══════════════════════════════════════════════════════════════ */
 .app-header {
-  position: relative;
-  background: #fff;
-  padding: 12px 16px 10px;
-  z-index: 80;
-  box-shadow: 0 1px 0 #f0f0f0;
+    position: relative;
+    background: #fff;
+    padding: 12px 16px;
+    z-index: 80;
+    border-bottom: 1px solid #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-
-/* Linha 1: logo + status + idioma */
-.header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
 }
-
-.header-content { display: flex; justify-content: space-between; align-items: center; }
-.logo-area { display: flex; align-items: center; gap: 10px; }
-.logo-area img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: contain;
-  forced-color-adjust: none;
-  filter: none !important;
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
 }
-.store-details h1 { font-size: 1rem; color: var(--dark); font-weight: 700; }
+/* Logo circular — tamanho generoso como na referência */
+#logo-app {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #f0f0f0;
+    flex-shrink: 0;
+    background: #f3f4f6;
+    forced-color-adjust: none;
+    -webkit-filter: none !important;
+    filter: none !important;
+}
+.store-details {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+.store-details h1 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--dark, #1a1a1a);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+    line-height: 1.2;
+}
 .badge-status {
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+    display: inline-block;
+    width: fit-content;
 }
-.badge-status.open   { color: #16a34a; background: #dcfce7; }
+.badge-status.open   { color: #1a7a2e; background: #e6ffea; }
 .badge-status.closed { color: #c0392b; background: #ffebee; }
-.header-info p { font-size: 0.72rem; color: var(--gray); text-align: right; line-height: 1.5; }
-
-/* ── Barra de busca ────────────────────────────────────────── */
-.header-search-bar {
-  display: flex;
-  align-items: center;
-  background: #f5f5f5;
-  border-radius: 12px;
-  padding: 0 12px;
-  gap: 8px;
-  height: 42px;
-  transition: box-shadow 0.2s, background 0.2s;
+/* Info direita: estrela + tempo */
+.header-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
 }
-.header-search-bar:focus-within {
-  background: #fff;
-  box-shadow: 0 0 0 2px var(--primary);
-}
-.header-search-icon {
-  color: #aaa;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-  transition: color 0.2s;
-}
-.header-search-bar:focus-within .header-search-icon {
-  color: var(--primary);
-}
-.header-search-input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  font-size: 0.88rem;
-  color: #333;
-  outline: none;
-  font-family: 'Rubik', sans-serif;
-  min-width: 0;
-}
-.header-search-input::placeholder { color: #aaa; }
-.header-search-clear {
-  background: none;
-  border: none;
-  color: #aaa;
-  cursor: pointer;
-  padding: 4px;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-/* ── Resultados de busca ──────────────────────────────────── */
-#search-results-section {
-  padding: 12px 12px 0;
-  display: none;
-}
-#search-results-section.visible { display: block; }
-.search-results-title {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
-  padding: 0 2px;
-}
-.search-no-results {
-  text-align: center;
-  padding: 32px 16px;
-  color: #aaa;
-  font-size: 0.9rem;
+.header-info p {
+    font-size: 0.78rem;
+    color: var(--gray, #777);
+    text-align: right;
+    margin: 0;
+    line-height: 1.3;
 }
 
 /* Banner */
@@ -234,189 +204,211 @@ main.menu-container { flex: 1; }
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   MENU — Grid de 2 colunas (mobile-first)
-   ══════════════════════════════════════════════════════════════ */
-.menu-container { padding: 0 12px; }
-.section-title {
-  margin: 22px 0 12px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--dark);
-  text-transform: capitalize;
-  padding: 0 4px;
+/* Menu */
+.menu-container { padding: 0 14px; }
+.section-title { margin: 22px 0 14px; font-size: 1.1rem; font-weight: 800; color: #1a1a1a; text-transform: capitalize; display: flex; align-items: center; gap: 8px; }
+
+/* ─── 2-column product grid ─── */
+/* ═══════════════════════════════════════════════
+   GRID DE PRODUTOS
+   ═══════════════════════════════════════════════ */
+.products-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 2px;
+    margin-bottom: 8px;
 }
 
-/* Wrapper grid — 2 colunas */
-.product-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-
-/* Card vertical */
+/* ── Card vertical ────────────────────────────── */
 .product-item {
-  background: #fff;
-  border-radius: 14px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-  cursor: pointer;
-  position: relative;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
-  /* reset legado */
-  padding: 0;
-  margin-bottom: 0;
-  gap: 0;
+    background: #fff;
+    border-radius: 16px;
+    padding: 0;
+    margin-bottom: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease;
+    border: 1px solid #efefef;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    min-width: 0;
 }
-.product-item:active {
-  transform: scale(0.97);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-}
+.product-item:active { transform: scale(0.97) !important; }
+.product-item:hover  { transform: translateY(-3px) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
+.product-item--promo { border-color: #fce8e8; }
 
-/* Imagem — altura fixa compacta */
-.prod-img-wrap {
-  position: relative;
-  width: 100%;
-  height: 80px;
-  overflow: hidden;
-  background: #f3f4f6;
-  flex-shrink: 0;
+/* ── Imagem — proporção retangular ────────────── */
+.prod-img-container {
+    position: relative;
+    width: 100%;
+    padding-top: 72%;
+    overflow: hidden;
+    border-radius: 16px 16px 0 0;
+    background: #f3f4f6;
+    flex-shrink: 0;
 }
 .prod-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.3s ease;
+    position: absolute !important;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .3s ease;
 }
-.product-item:active .prod-img { transform: scale(1.04); }
+.product-item:hover .prod-img { transform: scale(1.04); }
 
-/* Badges sobrepostos na imagem */
+/* ── Botão favorito (coração) ─────────────────── */
+.prod-btn-fav {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 30px; height: 30px;
+    background: rgba(255,255,255,0.92);
+    border: none;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.14);
+    z-index: 6;
+    transition: transform .15s;
+}
+.prod-btn-fav:active { transform: scale(0.9); }
+
+/* ── Badge -15% vermelho (canto superior direito) */
+.prod-badge-discount {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 8px;
+    z-index: 5;
+    box-shadow: 0 2px 8px rgba(231,76,60,.4);
+    pointer-events: none;
+}
+
+/* ── Badge ☆ Destaque verde (canto superior esq) */
 .prod-badge-destaque {
-  position: absolute;
-  top: 6px;
-  left: 6px;
-  background: #f59e0b;
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 4px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  pointer-events: none;
-}
-.prod-badge-promo {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: #dc2626;
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 4px;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  pointer-events: none;
+    position: absolute;
+    top: 8px; left: 8px;
+    background: var(--primary, #1a7a2e);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    z-index: 5;
+    display: flex; align-items: center; gap: 3px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    pointer-events: none;
 }
 
-/* Corpo do card */
-.prod-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 7px 8px 8px;
-  gap: 3px;
+/* ── Área de texto do card ────────────────────── */
+.prod-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px 6px;
+    min-width: 0;
 }
-
-/* Nome: máx 2 linhas, truncado */
 .prod-title {
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--dark);
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-transform: capitalize;
-  min-height: calc(0.76rem * 1.3 * 2);
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 8px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-/* Bloco de preços */
-.prod-prices {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-top: auto;
-}
+/* ── Preços ───────────────────────────────────── */
 .prod-price {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: var(--primary);
-  line-height: 1.2;
-}
-.prod-a-partir {
-  display: block;
-  font-size: 0.58rem;
-  font-weight: 500;
-  color: var(--gray);
-  line-height: 1.1;
-  margin-bottom: 1px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--primary, #1a7a2e);
+    display: block;
 }
 .prod-price-brl {
-  font-size: 0.65rem;
-  color: #16a34a;
-  font-weight: 700;
-  line-height: 1.2;
+    font-size: 0.68rem;
+    color: #aaa;
+    margin-top: 1px;
+    display: block;
 }
-.prod-preco-antigo {
-  font-size: 0.65rem;
-  color: #aaa;
-  text-decoration: line-through;
-  line-height: 1.2;
+.prod-promo-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
 }
-
-/* Botão Comprar / Ver Opções */
-.btn-comprar {
-  margin-top: 6px;
-  width: 100%;
-  padding: 6px 4px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: 'Rubik', sans-serif;
-  letter-spacing: 0.01em;
-  transition: opacity 0.15s, background 0.15s;
-  -webkit-tap-highlight-color: transparent;
+.prod-price-old {
+    font-size: 0.73rem;
+    color: #bbb;
+    text-decoration: line-through;
+    font-weight: 500;
 }
-.btn-comprar:active { opacity: 0.82; }
-
-/* Hover no desktop */
-@media (hover: hover) {
-  .product-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  }
-  .product-item:hover .prod-img { transform: scale(1.06); }
-  .btn-comprar:hover { filter: brightness(0.9); }
+.prod-price-promo {
+    font-size: 1rem !important;
+    color: #e74c3c !important;
+    font-weight: 800 !important;
 }
+/* "Promo Gs X" vermelho — estilo referência */
+.prod-price-promo-label {
+    font-size: 0.9rem;
+    color: #e74c3c;
+    font-weight: 800;
+}
+.prod-price-secondary { font-size: 0.7rem; color: #999; }
 
-/* ocultar desc (não cabe no card pequeno) */
-.prod-info { display: none; }
-.prod-desc  { display: none; }
+/* ── Botão Comprar ────────────────────────────── */
+.prod-btn-add {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    margin: 8px 12px 12px !important;
+    padding: 10px 0 !important;
+    background: var(--primary, #1a7a2e) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-size: 0.84rem !important;
+    font-weight: 700 !important;
+    cursor: pointer;
+    transition: background .15s !important;
+    flex-shrink: 0;
+    width: auto !important;
+    height: auto !important;
+    position: static !important;
+    box-shadow: none !important;
+    border-radius: 10px !important;
+    letter-spacing: 0.01em;
+}
+.prod-btn-add:hover  { background: #155a23 !important; }
+.prod-btn-add:active { background: #0f4019 !important; transform: scale(0.98); }
+.prod-btn-add i { pointer-events: none; font-size: 0.78rem !important; }
 
-/* Destaque: borda dourada */
-.product-item.produto-destaque {
-  border: 2px solid #f59e0b;
+/* legacy compat */
+.prod-promo-badge {
+    display: inline-block;
+    background: linear-gradient(90deg, #f39c12, #e74c3c);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
 }
 
 /* Aplica cor primária em todos os elementos de destaque */
@@ -653,124 +645,73 @@ main.menu-container { flex: 1; }
 /* --- ADICIONE ISSO NO FINAL DO SEU CSS --- */
 
 /* Lista de Itens no Carrinho */
-/* ══════════════════════════════════════════════════════════════
-   CARRINHO — lista compacta e fácil de visualizar
-   ══════════════════════════════════════════════════════════════ */
 .cart-items-list {
-  padding-bottom: 4px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
 }
 
 .cart-item-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f2f2f2;
-  animation: _cartItemIn 0.18s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f5f5f5;
 }
-@keyframes _cartItemIn {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.cart-item-row:last-child { border-bottom: none; }
 
-/* Thumbnail menor */
 .cart-thumb {
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
-  object-fit: cover;
-  background: #f3f4f6;
-  flex-shrink: 0;
-}
-
-/* Badge de quantidade sobreposto à thumb */
-.cart-thumb-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-.cart-thumb-qty {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: var(--primary);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 800;
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid #fff;
-  pointer-events: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #eee;
 }
 
 .cart-details {
-  flex: 1;
-  min-width: 0;
+    flex: 1;
 }
 
 .cart-title {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--dark);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dark);
+    margin-bottom: 2px;
 }
 
 .cart-variant {
-  font-size: 0.7rem;
-  color: var(--gray);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
+    font-size: 0.75rem;
+    color: var(--gray);
+    margin-bottom: 4px;
 }
 
 .cart-item-price {
-  font-size: 0.82rem;
-  color: var(--primary);
-  font-weight: 700;
-  white-space: nowrap;
-  flex-shrink: 0;
+    font-size: 0.9rem;
+    color: var(--primary);
+    font-weight: 600;
 }
 
-/* Controle de quantidade inline (−  N  +) */
+/* Controle de Quantidade Pequeno (Para o Carrinho) */
 .qty-mini {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  background: #f5f5f5;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    background: #fff;
 }
 .qty-mini button {
-  border: none;
-  background: none;
-  width: 26px;
-  height: 26px;
-  font-size: 1rem;
-  cursor: pointer;
-  color: var(--primary);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  -webkit-tap-highlight-color: transparent;
+    border: none;
+    background: none;
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+    color: var(--primary);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
 }
-.qty-mini button:active { background: #e8e8e8; }
 .qty-mini span {
-  font-size: 0.8rem;
-  font-weight: 700;
-  min-width: 20px;
-  text-align: center;
-  color: #333;
+    font-size: 0.9rem;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
 }
 
 .mt-20 { margin-top: 20px; }
@@ -1222,147 +1163,97 @@ footer {
    ═══════════════════════════════════════════ */
 
 /* Mobile first: sidebar oculta, layout normal */
-/* ══════════════════════════════════════════════════════════════
-   LAYOUT DESKTOP — header sticky + grid com scroll normal
-   ══════════════════════════════════════════════════════════════ */
-
-.app-header.sticky {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  width: 100%;
-  box-shadow: 0 1px 8px rgba(0,0,0,0.08);
+.desktop-layout {
+    display: block;
+    max-width: 100%;
 }
+.desktop-left { display: block; }
+.desktop-right { display: none; }  /* OCULTO no mobile */
 
-/* Mobile: layout normal, scroll da página */
-.desktop-layout { display: block; width: 100%; }
-.desktop-left   { display: block; }
-.desktop-right  { display: none; }
-
-/* ── Desktop ≥ 1024px ──────────────────────────────────────── */
+/* Desktop: grid de 2 colunas */
 @media (min-width: 1024px) {
-
-  /* Grid 2 colunas — scroll normal da página (sem overflow:hidden no body) */
-  .desktop-layout {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    align-items: start;
-    width: 100%;
-  }
-
-  /* Coluna de conteúdo — scroll normal */
-  .desktop-left {
-    min-width: 0;
-    padding: 0 12px 40px 20px;
-  }
-
-  /* Carrinho fica sticky conforme página scrolla */
-  .desktop-right {
-    display: flex;
-    flex-direction: column;
-    position: sticky;
-    top: 88px;                      /* logo abaixo do header */
-    height: calc(100vh - 100px);
-    background: #fff;
-    border-left: 1px solid #f0f0f0;
-    overflow: hidden;
-  }
-
-  /* Esconde botão flutuante */
-  .cart-float { display: none !important; }
-
-  /* Grid: 3 colunas */
-  .product-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
-
-  /* Cards maiores */
-  .prod-img-wrap { height: 140px; }
-  .prod-title    { font-size: 0.84rem; }
-  .prod-price    { font-size: 0.9rem; }
-  .btn-comprar   { font-size: 0.78rem; padding: 8px 6px; }
-
-  /* Hamburger sticky dentro da coluna */
-  .cat-hamburger-bar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #fff;
-    padding: 8px 0;
-    margin-bottom: 4px;
-  }
-
-  /* Banner */
-  .banner-area { border-radius: 16px; height: 180px; margin: 12px 0; }
+    .desktop-layout {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        max-width: 1200px;
+        margin: 0 auto;
+        gap: 0;
+        align-items: start;
+    }
+    .desktop-left {
+        min-width: 0;
+    }
+    .desktop-right {
+        display: flex;
+        flex-direction: column;
+        position: sticky;
+        top: 80px;
+        max-height: calc(100vh - 100px);
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin: 16px 16px 0 0;
+    }
+    /* Esconde o botão flutuante no desktop */
+    .cart-float { display: none !important; }
 }
 
-/* ── Desktop largo ≥ 1440px: 4 colunas ────────────────────── */
-@media (min-width: 1440px) {
-  .desktop-layout { grid-template-columns: 1fr 320px; }
-  .product-grid   { grid-template-columns: repeat(4, 1fr); }
-  .prod-img-wrap  { height: 150px; }
-}
-
-/* ── Carrinho lateral — componentes ───────────────────────── */
 .desktop-cart-header {
-  background: var(--primary);
-  color: #fff;
-  padding: 14px 18px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+    background: var(--primary);
+    color: white;
+    padding: 16px 20px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 .desktop-cart-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px 14px;
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    max-height: 380px;
 }
-.desktop-cart-body::-webkit-scrollbar { width: 4px; }
-.desktop-cart-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-
 .desktop-cart-empty {
-  text-align: center;
-  color: #bbb;
-  padding: 36px 20px;
+    text-align: center;
+    color: #bbb;
+    padding: 40px 20px;
 }
-.desktop-cart-empty i     { font-size: 2rem; display: block; margin-bottom: 10px; }
-.desktop-cart-empty small { font-size: 0.75rem; }
-
+.desktop-cart-empty i { font-size: 2rem; display: block; margin-bottom: 10px; }
+.desktop-cart-empty small { font-size: 0.78rem; }
 .desktop-cart-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 7px 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.82rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.85rem;
 }
-.desktop-cart-item-name  { color: #333; font-weight: 600; flex: 1; }
+.desktop-cart-item-name { color: #333; font-weight: 600; flex: 1; }
 .desktop-cart-item-price { color: var(--primary); font-weight: 700; white-space: nowrap; margin-left: 8px; }
-
 .desktop-cart-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 18px;
-  border-top: 2px solid #f0f0f0;
-  font-weight: 700;
-  font-size: 0.95rem;
-  flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-top: 2px solid #f0f0f0;
+    font-weight: 700;
+    font-size: 1rem;
 }
 .desktop-cart-btn {
-  padding: 14px 20px;
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.2s;
-  flex-shrink: 0;
+    margin: 0;
+    padding: 14px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
 }
-.desktop-cart-btn:hover:not(:disabled) { filter: brightness(0.92); }
-.desktop-cart-btn:disabled { background: #d1d5db; cursor: not-allowed; }
+.desktop-cart-btn:hover:not(:disabled) { background: #c0392b; }
+.desktop-cart-btn:disabled { background: #ccc; cursor: not-allowed; }
 
 /* ═══════════════════════════════════════════
    🍕 PIZZA BUILDER — UX Passo a Passo
@@ -1750,201 +1641,61 @@ footer {
     gap: 4px !important;
   }
 }
+/* ═══════════════════════════════════════════════════════════════
+   REDESIGN HARMÔNICO — Cards de produto, promoções, carrinho
+   Baseado na referência visual enviada pelo usuário.
+═══════════════════════════════════════════════════════════════ */
 
-/* ══════════════════════════════════════════════════════════════
-   VAREJO — Extensão do style.css
-   Cole este bloco no final do seu style.css existente.
-   Não remove nenhuma regra anterior — apenas acrescenta.
-   ══════════════════════════════════════════════════════════════ */
-
-/* ──────────────────────────────────────────────────────────────
-   1. GRID DE PRODUTOS (2 colunas — mobile first)
-   ────────────────────────────────────────────────────────────── */
-
-/*
- * Wrapper de grade dentro de cada <section> de categoria.
- * O JS cria este elemento automaticamente em renderizarProdutosGrid().
- */
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 0 0 8px;
-}
-
-/* Em telas um pouco maiores (ex: tablet) aumenta para 3 colunas */
-@media (min-width: 600px) {
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* ──────────────────────────────────────────────────────────────
-   2. CARD DE PRODUTO (varejo)
-   ────────────────────────────────────────────────────────────── */
-.product-card {
-  background: #fff;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  position: relative;
-}
-
-.product-card:active {
-  transform: scale(0.97);
-}
-
-/* Badge de "Sem estoque" sobrepõe o card */
-.product-card.sem-estoque {
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.badge-sem-estoque {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(231, 76, 60, 0.9);
+.cat-pill.active {
+  background: var(--primary);
   color: #fff;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 20px;
-  z-index: 2;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  border-color: var(--primary);
 }
 
-/* ── Imagem quadrada (proporção 1:1) ── */
-.product-card__img-wrap {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  background: #f0f0f0;
-  flex-shrink: 0;
-}
-
-.product-card__img-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.2s ease;
-}
-
-.product-card:hover .product-card__img-wrap img {
-  transform: scale(1.04);
-}
-
-/* Placeholder quando não há imagem */
-.product-card__img-placeholder {
-  width: 100%;
-  height: 100%;
+/* ── Seção de título de categoria ─────────────────────────────── */
+.section-title {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  color: #ccc;
-  background: #f7f7f7;
+  gap: 8px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 22px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
 }
 
-/* ── Corpo do card ── */
-.product-card__body {
-  padding: 10px 10px 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Nome truncado em 2 linhas */
-.product-card__name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--dark, #333);
-  line-height: 1.35;
-  /* Truncamento em 2 linhas (suporte amplo em 2024) */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.2em;   /* reserva espaço para 2 linhas mesmo com nome curto */
-}
-
-/* Categoria / variante em sub-texto */
-.product-card__sub {
-  font-size: 0.7rem;
-  color: var(--gray, #888);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Preço em destaque */
-.product-card__price {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--primary, #1a7a2e);
-  margin-top: 4px;
-}
-
-.product-card__price-from {
-  font-size: 0.65rem;
-  font-weight: 500;
-  opacity: 0.65;
-  display: block;
-  margin-bottom: 1px;
-}
-
-/* ── Botão de ação ── */
-.product-card__btn {
-  margin: 8px 10px 10px;
-  padding: 8px 6px;
-  background: var(--primary, #1a7a2e);
-  color: #fff;
-  border: none;
-  border-radius: 9px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
+/* ── Carrinho redesenhado (estilo mercado) ────────────────────── */
+.cart-empty-state {
   text-align: center;
-  transition: filter 0.15s ease;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
+  padding: 40px 20px;
+  color: #bbb;
+}
+.cart-empty-icon { font-size: 3rem; margin-bottom: 10px; }
+.cart-empty-title { font-size: 1rem; font-weight: 700; color: #999; margin-bottom: 4px; }
+.cart-empty-sub { font-size: 0.82rem; color: #bbb; }
+
+.cart-header-info {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 0 10px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
 }
 
-.product-card__btn:active {
-  filter: brightness(0.88);
-}
-
-/* Botão "Ver Opções" tem estilo diferenciado */
-.product-card__btn--opcoes {
-  background: transparent;
-  color: var(--primary, #1a7a2e);
-  border: 2px solid var(--primary, #1a7a2e);
-}
-
-/* ──────────────────────────────────────────────────────────────
-   3. MODAL DE SELEÇÃO DE VARIAÇÃO (retail)
-   ────────────────────────────────────────────────────────────── */
-
-/*
- * Reutiliza .modal-overlay e .modal-bottom-sheet do style.css base.
- * As regras abaixo apenas estilizam os itens internos do modal de variação.
- */
-
-.modal-variacoes__header {
+.cart-item-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
 }
+.cart-item-row:last-child { border-bottom: none; }
 
-.modal-variacoes__thumb {
+.cart-thumb {
   width: 64px;
   height: 64px;
   border-radius: 10px;
@@ -1952,714 +1703,525 @@ footer {
   flex-shrink: 0;
   background: #f0f0f0;
 }
+.cart-thumb--placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: #f0f4f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ccc;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
 
-.modal-variacoes__title {
+.cart-details { flex: 1; min-width: 0; }
+
+.cart-title {
+  font-size: 0.9rem;
   font-weight: 700;
-  font-size: 1rem;
-  color: var(--dark, #333);
+  color: #1a1a1a;
+  margin-bottom: 3px;
   line-height: 1.3;
 }
 
-.modal-variacoes__subtitle {
-  font-size: 0.78rem;
-  color: var(--gray, #888);
-  margin-top: 2px;
+.cart-detail-line {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 1px;
+  line-height: 1.4;
+}
+.cart-detail--variacao { color: var(--primary); font-weight: 600; }
+.cart-detail--preparo  { color: #2980b9; font-weight: 600; }
+.cart-detail--obs      { color: #e67e22; font-style: italic; }
+
+.cart-item-price {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-top: 5px;
 }
 
-/* Grid de chips de variação */
-.modal-variacoes__grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 9px;
-  margin-bottom: 18px;
-}
-
-.variacao-chip {
+.cart-item-controls {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 9px 14px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  background: #fafafa;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  min-width: 70px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--dark, #333);
-  text-align: center;
-  line-height: 1.25;
-  position: relative;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.variacao-chip:hover {
-  border-color: var(--primary, #1a7a2e);
-  background: #f0fff4;
-}
-
-.variacao-chip.selected {
-  border-color: var(--primary, #1a7a2e);
-  background: #ecfdf5;
-  color: var(--primary, #1a7a2e);
-}
-
-.variacao-chip.esgotado {
-  opacity: 0.4;
-  cursor: not-allowed;
-  text-decoration: line-through;
-}
-
-.variacao-chip__preco-extra {
-  font-size: 0.65rem;
-  font-weight: 500;
-  opacity: 0.7;
-  margin-top: 2px;
-}
-
-/* Área de quantidade dentro do modal de variação */
-.modal-variacoes__qty {
+/* Stepper grande e legível */
+.qty-mini {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 18px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafafa;
+  overflow: hidden;
 }
-
-.modal-variacoes__qty button {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid var(--primary, #1a7a2e);
-  background: transparent;
-  color: var(--primary, #1a7a2e);
-  font-size: 1.2rem;
-  font-weight: 700;
-  cursor: pointer;
-  line-height: 1;
-}
-
-.modal-variacoes__qty span {
+.qty-mini button {
+  border: none;
+  background: none;
+  width: 32px;
+  height: 32px;
   font-size: 1.1rem;
   font-weight: 700;
-  min-width: 30px;
-  text-align: center;
-}
-
-/* Botão confirmar dentro do modal */
-.modal-variacoes__confirm {
-  width: 100%;
-  padding: 14px;
-  background: var(--primary, #1a7a2e);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
+  color: var(--primary);
   cursor: pointer;
-  transition: filter 0.15s;
-}
-
-.modal-variacoes__confirm:active {
-  filter: brightness(0.88);
-}
-
-/* Observação opcional no modal */
-.modal-variacoes__obs {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 0.85rem;
-  font-family: inherit;
-  margin-bottom: 14px;
-  resize: none;
-  outline: none;
-  color: var(--dark, #333);
-}
-
-.modal-variacoes__obs:focus {
-  border-color: var(--primary, #1a7a2e);
-}
-
-/* ──────────────────────────────────────────────────────────────
-   4. ADMIN — Seção de variações de estoque no formulário
-   ────────────────────────────────────────────────────────────── */
-
-/* Cartão de variação no admin */
-.var-estoque-row {
-  display: grid;
-  grid-template-columns: 1fr 110px 120px auto;
-  gap: 8px;
-  align-items: center;
-  background: #fff;
-  border: 1.5px solid #e9d5ff;
-  border-radius: 10px;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-}
-
-@media (max-width: 520px) {
-  .var-estoque-row {
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto;
-  }
-  .var-estoque-row__estoque,
-  .var-estoque-row__sku {
-    grid-column: 1;
-  }
-}
-
-.var-estoque-row.sem-estoque-admin {
-  border-color: #fca5a5;
-  background: #fff5f5;
-}
-
-.var-estoque-row__badge {
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 20px;
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-/* Linha de cabeçalho da seção de variações */
-.var-estoque-section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  gap: 8px;
-}
-
-.var-estoque-section-header h4 {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #444;
-}
-
-/* ──────────────────────────────────────────────────────────────
-   5. AJUSTE: desabilita o layout antigo quando modo varejo ativo
-   ────────────────────────────────────────────────────────────── */
-
-/*
- * Quando o body tem data-mode="varejo", o layout de linha
- * (.product-item) é desativado — os cards passam a ser o padrão.
- * Isso permite convivência segura durante a migração.
- */
-body[data-mode="varejo"] .product-item {
-  display: none !important;
-}
-
-/* ──────────────────────────────────────────────────────────────
-   6. MOEDA DUPLA — Badge R$ no card e no carrinho
-   ────────────────────────────────────────────────────────────── */
-
-/* Badge "R$ X,XX" que aparece abaixo ou ao lado do preço em Gs */
-.prod-price-brl {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #16a34a;
-  margin-top: 2px;
-  line-height: 1.2;
-}
-
-/* Quando posicao = "lado": inline, separado por espaço */
-.product-card__price .prod-price-brl {
-  display: inline;
-  margin-top: 0;
-  margin-left: 6px;
-}
-
-/* No modal de variação */
-.modal-variacoes__confirm .prod-price-brl {
-  display: inline;
-  font-size: 0.8em;
-  opacity: 0.9;
-  margin-left: 6px;
-}
-
-/* No carrinho / linha de item */
-.cart-item-price-brl {
-  font-size: 0.72rem;
-  color: #2980b9;
-  font-weight: 500;
-  display: block;
-  margin-top: 1px;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   7. HAMBURGER DRAWER — Categorias
-   ══════════════════════════════════════════════════════════════ */
-
-/* Barra que substitui o category-nav horizontal */
-/* ══════════════════════════════════════════════════════════════
-   MENU INLINE DE CATEGORIAS — scroll horizontal
-   Substitui o antigo hamburguer+gaveta no app do cliente.
-   Em desktop (≥800px): sidebar vertical à esquerda (mantém).
-   ══════════════════════════════════════════════════════════════ */
-
-/* Barra inline (mobile) */
-.cat-inline-bar {
-  width: 100%;
-  background: #fff;
-  border-bottom: 1.5px solid #f0f0f0;
-  position: sticky;
-  top: 0;
-  z-index: 95;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-  overflow: hidden;
-}
-
-/* Lista horizontal com scroll */
-.cat-inline-list {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  /* Oculta scrollbar mas mantém funcionalidade */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.cat-inline-list::-webkit-scrollbar { display: none; }
-
-/* Pill individual (reusa .cat-drawer-pill semântica mas novo visual) */
-.cat-drawer-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  border-radius: 20px;
-  border: 1.5px solid #e5e7eb;
-  background: #fafafa;
-  text-align: center;
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: #555;
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
-}
-.cat-drawer-pill:hover {
-  background: #f0fdf4;
-  border-color: var(--primary, #1a7a2e);
-  color: var(--primary, #1a7a2e);
-}
-.cat-drawer-pill.active {
-  background: var(--primary, #1a7a2e);
-  border-color: var(--primary, #1a7a2e);
-  color: #fff;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(26,122,46,0.25);
-}
-.cat-drawer-pill:active { transform: scale(0.96); }
-
-/* Divider "Cardápio" — vira separador vertical na barra inline */
-.cat-drawer-divider {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #cbd5e1;
-  padding: 0 6px;
-  flex-shrink: 0;
-  user-select: none;
-  border-left: 1.5px solid #e5e7eb;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-}
-
-/* Oculta elementos do antigo hamburguer (se remanescentes) */
-.cat-hamburger-bar,
-.cat-drawer-overlay,
-.cat-drawer-close,
-.cat-drawer-header { display: none !important; }
-
-/* Em telas largas (desktop): a lista vira coluna vertical */
-@media (min-width: 800px) {
-  .cat-inline-bar {
-    display: none; /* No desktop o layout usa a sidebar do desktop-layout */
-  }
-}
-
-/* Barra hamburguer legado — nunca exibir */
-.cat-hamburger-btn,
-.cat-hamburger-icon,
-.cat-hamburger-arrow,
-.cat-ativa-pill { display: none !important; }
-
-
-/* ══════════════════════════════════════════════════════════════
-   8. PROMOÇÃO + UNIDADE + DESTAQUE — badges no app do cliente
-   ══════════════════════════════════════════════════════════════ */
-
-/* Badge de desconto (ex: "20% OFF") */
-.prod-promo-badge {
-  display: inline-block;
-  background: #dc2626;
-  color: #fff;
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  vertical-align: middle;
-}
-
-/* Preço antigo riscado */
-.prod-preco-antigo {
-  font-size: 0.75rem;
-  color: #aaa;
-  text-decoration: line-through;
-  vertical-align: middle;
-}
-
-/* Badge de unidade de venda (ex: "kg", "ml") */
-.prod-unidade-badge {
-  display: inline-block;
-  background: #e0f2fe;
-  color: #075985;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 20px;
-  vertical-align: middle;
-  text-transform: uppercase;
-}
-
-/* Estrela de destaque no nome */
-.prod-destaque-star {
-  font-size: 0.8rem;
-  vertical-align: middle;
-  margin-right: 2px;
-}
-
-/* Card de produto com destaque — borda dourada (definida no bloco do grid) */
-
-/* ── Cabeçalho da seção Destaques ─────────────────────────── */
-.destaques-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 4px 0;
-}
-.destaques-header__icon {
-  font-size: 1.25rem;
-  line-height: 1;
-}
-.section-title--destaques {
-  margin: 0 !important;
-  color: #b45309;
-}
-
-/* Separador visual entre Destaques e o resto do cardápio */
-.menu-section-sep {
-  height: 6px;
-  background: #f3f4f6;
-  margin: 18px -12px 0;
-}
-
-/* ── Skeleton loader (categoria carregando) ───────────────── */
-.cat-skeleton {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 4px 0 16px;
-}
-.cat-skeleton__card {
-  background: #f3f4f6;
-  border-radius: 14px;
-  overflow: hidden;
-  animation: _skelPulse 1.4s ease-in-out infinite;
-}
-.cat-skeleton__img  { width: 100%; aspect-ratio: 1/1; background: #e5e7eb; }
-.cat-skeleton__line { height: 10px; margin: 10px 10px 6px; background: #e5e7eb; border-radius: 6px; }
-.cat-skeleton__line--short { width: 55%; height: 10px; margin: 0 10px 14px; background: #e5e7eb; border-radius: 6px; }
-@keyframes _skelPulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.55; }
-}
-
-/* Divisor de grupo na barra inline ("Cardápio") — já definido no bloco de menu inline acima */
-
-/* ══════════════════════════════════════════════════════════════
-   9. BOTÃO "VER MAIS" (paginação)
-   ══════════════════════════════════════════════════════════════ */
-.btn-ver-mais {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  width: 100%;
-  padding: 14px;
-  margin: 8px 0 20px;
-  background: transparent;
-  border: 2px solid var(--primary, #1a7a2e);
-  border-radius: 12px;
-  color: var(--primary, #1a7a2e);
-  font-size: 0.9rem;
+  transition: background .15s;
+}
+.qty-mini button:active { background: #f0fdf4; }
+.qty-mini span {
+  font-size: 0.95rem;
   font-weight: 700;
+  min-width: 28px;
+  text-align: center;
+  color: #1a1a1a;
+}
+
+.cart-item-remove {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background .15s;
+  line-height: 1;
 }
-.btn-ver-mais:hover {
-  background: var(--primary, #1a7a2e);
-  color: #fff;
+.cart-item-remove:hover { background: #fef2f2; }
+
+/* ── Barra flutuante do carrinho ──────────────────────────────── */
+.cart-float {
+  background: var(--primary);
+  border-radius: 16px;
+  height: 58px;
+  box-shadow: 0 6px 24px rgba(26,122,46,.35);
+  padding: 0 18px;
 }
-.btn-ver-mais__count { font-weight: 400; font-size: 0.82em; opacity: 0.8; }
-.btn-ver-mais__icon  { font-size: 1.1rem; }
-
-/* ══════════════════════════════════════════════════════════════
-   10. LISTA DE SEPARAÇÃO (picking list)
-   ══════════════════════════════════════════════════════════════ */
-
-/* Card de pedido */
-.sep-card {
+.cart-count {
   background: #fff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 14px;
-  margin-bottom: 16px;
-  overflow: hidden;
-  transition: border-color 0.25s, background 0.25s;
-}
-
-/* Cabeçalho do card */
-.sep-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-  background: #f9fafb;
-  border-bottom: 1px solid #f0f0f0;
-  border-left: 4px solid #94a3b8;
-}
-
-.sep-card-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sep-num {
+  color: var(--primary);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
   font-weight: 800;
-  font-size: 1rem;
-  color: #1a7a2e;
+  font-size: 0.85rem;
+}
+.cart-text { font-size: 0.95rem; font-weight: 700; }
+
+/* ── Sidebar desktop carrinho ─────────────────────────────────── */
+.desktop-cart-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.desktop-cart-item-name { font-size: 0.82rem; color: #333; font-weight: 600; line-height: 1.3; }
+.desktop-cart-item-price { font-size: 0.85rem; color: var(--primary); font-weight: 800; }
+
+/* app-header duplicado removido */
+
+/* ── Footer ───────────────────────────────────────────────────── */
+footer {
+  background: #1a1a2e !important;
+  padding: 24px 16px !important;
 }
 
-.sep-cliente {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #374151;
+/* ── Responsivo carrinho ──────────────────────────────────────── */
+@media (max-width: 400px) {
+  .cart-thumb, .cart-thumb--placeholder { width: 52px; height: 52px; }
+  .qty-mini button { width: 28px; height: 28px; font-size: 1rem; }
+  .qty-mini span { min-width: 22px; font-size: 0.88rem; }
 }
 
-.sep-hora {
-  font-size: 0.78rem;
-  color: #888;
+/* ═══════════════════════════════════════════════════════════
+   MELHORIAS DE DESIGN — HARMONIA + PROMOÇÕES + CARRINHO
+   ═══════════════════════════════════════════════════════════ */
+
+/* app-header duplicado removido */
+
+
+
+/* ── Badge de promoção ── */
+.prod-promo-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #f39c12, #e74c3c);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
 }
 
-.sep-card-badges {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+/* prod-promo duplicado removido */
+
+/* ── Categoria nav pill "Destaques/Promos" com ícone ── */
+.cat-pill--promo {
+  background: linear-gradient(90deg, #f39c12, #e74c3c) !important;
+  color: #fff !important;
+  border-color: transparent !important;
 }
 
-.sep-status-badge, .sep-pgto-badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
+/* ══════════════════════════════════════════════════════════
+   CARRINHO — ESTILO MERCADO (mais intuitivo, claro, denso)
+   ══════════════════════════════════════════════════════════ */
 
-.sep-pgto-badge {
-  background: #f3f4f6;
-  color: #555;
-  border: 1px solid #e5e7eb;
-}
-
-/* Endereço */
-.sep-endereco {
-  padding: 7px 16px;
-  font-size: 0.82rem;
-  color: #555;
-  background: #fafafa;
-  border-bottom: 1px dashed #e5e7eb;
-}
-
-/* Lista de itens */
-.sep-itens-lista {
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-/* Linha de item com checkbox */
-.sep-item-row {
-  display: flex;
+/* Item de carrinho — layout compacto de mercado */
+.cart-item-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 10px;
   align-items: flex-start;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 9px;
-  cursor: pointer;
-  transition: background 0.15s;
-  border: 1.5px solid transparent;
-  user-select: none;
 }
 
-.sep-item-row:hover {
-  background: #f3f4f6;
+/* Thumbnail quadrado */
+.cart-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #f5f5f5;
 }
 
-/* Estado marcado */
-.sep-item-checked {
-  background: #f0fdf4 !important;
-  border-color: #86efac !important;
-}
-
-.sep-item-checked .sep-item-nome {
-  text-decoration: line-through;
-  color: #9ca3af;
-}
-
-/* Checkbox personalizado */
-.sep-checkbox {
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  border-radius: 5px;
-  cursor: pointer;
-  accent-color: #1a7a2e;
-  margin-top: 1px;
-}
-
-.sep-item-body {
+/* Info do produto no carrinho */
+.cart-details {
   flex: 1;
   min-width: 0;
 }
-
-.sep-item-nome {
-  font-size: 0.9rem;
-  color: #1f2937;
-  line-height: 1.4;
-  transition: color 0.15s, text-decoration 0.15s;
-}
-
-.sep-variacao {
-  font-size: 0.8rem;
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.sep-unidade {
-  display: inline-block;
-  background: #e0f2fe;
-  color: #075985;
-  font-size: 0.65rem;
+.cart-title {
+  font-size: 0.88rem;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 20px;
-  margin-left: 4px;
-  text-transform: uppercase;
-  vertical-align: middle;
+  color: #1a1a2e;
+  line-height: 1.3;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cart-item-price {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-top: 4px;
 }
 
-.sep-obs {
-  font-size: 0.78rem;
-  color: #dc2626;
-  margin-top: 3px;
-}
-
-/* Rodapé do card */
-.sep-card-footer {
+/* Controle de quantidade — estilo mercado (maior, mais claro) */
+.qty-mini {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 16px;
-  border-top: 1px solid #f0f0f0;
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+.qty-mini button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.qty-mini button:hover {
+  background: var(--primary);
+  color: white;
+}
+.qty-mini span {
+  font-size: 0.9rem;
+  font-weight: 800;
+  min-width: 28px;
+  text-align: center;
+  color: #1a1a2e;
+  border-left: 1.5px solid #e8e8e8;
+  border-right: 1.5px solid #e8e8e8;
+  line-height: 32px;
   background: #fafafa;
 }
 
-.sep-total {
+/* Botão remover item — mais discreto mas clicável */
+.btn-remover-item {
+  background: #ffeaea;
+  border: none;
+  color: #e74c3c;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-remover-item:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+/* ── Sidebar desktop — itens do carrinho ── */
+.desktop-cart-item {
+  padding: 10px 0;
+  gap: 8px;
+  align-items: center;
+}
+.desktop-cart-item-name {
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+.desktop-cart-item-price {
   font-size: 0.85rem;
-  color: #555;
+  font-weight: 800;
 }
 
-.sep-acoes {
+/* ── Resumo do checkout — visual mais limpo ── */
+#total-final-checkout > div {
+  border-radius: 12px;
+  background: #fafafa;
+  border: 1px solid #eee;
+  padding: 14px !important;
+  margin-top: 8px !important;
+}
+
+/* ── Seção título de categoria — mais harmônica ── */
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1a1a2e;
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary);
+  margin-bottom: 14px;
+}
+.section-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 18px;
+  background: var(--primary);
+  border-radius: 3px;
 }
 
-/* Botões de ação do card */
-.sep-btn-print {
-  background: #6b7280 !important;
-  color: #fff !important;
+/* ── Barra de categoria mais compacta ── */
+.cat-pill {
+  font-size: 0.82rem;
+  padding: 8px 16px;
 }
 
-.sep-btn-limpar {
-  background: #e5e7eb !important;
-  color: #374151 !important;
+/* ── Floating cart bar — mais elegante ── */
+.cart-float {
+  border-radius: 16px;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  height: 56px;
 }
 
-.sep-btn-pronto {
-  background: #1a7a2e !important;
-  color: #fff !important;
-  font-weight: 700 !important;
+/* ── Checkout footer fixo ── */
+.checkout-footer {
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  background: #fff;
 }
 
-.sep-btn-saiu {
-  background: #2563eb !important;
-  color: #fff !important;
-  font-weight: 700 !important;
+/* ── Melhorias de pesquisa / busca global ── */
+.search-bar-wrap {
+  margin: 0 20px 12px;
+  position: relative;
+}
+.search-bar-wrap input {
+  width: 100%;
+  padding: 11px 14px 11px 38px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  background: #f8f9fa;
+  color: #333;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: 'Rubik', sans-serif;
+}
+.search-bar-wrap input:focus {
+  border-color: var(--primary);
+  background: #fff;
+}
+.search-bar-wrap .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #aaa;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+.search-bar-wrap input::placeholder { color: #bbb; }
+
+/* ── Produto sem resultados de busca ── */
+.search-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+}
+.search-empty i { font-size: 2rem; display: block; margin-bottom: 10px; }
+
+
+/* ═══════════════════════════════════════════════════════════
+   2-COLUMN GRID REFINEMENTS & SECTION HEADER
+   ═══════════════════════════════════════════════════════════ */
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 22px 0 14px;
+}
+.section-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.section-title::before { display: none; }
+.section-title span { font-size: 1.1rem; }
+
+/* Responsive: single column on very small screens */
+@media (max-width: 320px) {
+  .products-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Impressão ─────────────────────────────────────────────── */
-@media print {
-  /* Esconde tudo menos a área de impressão */
-  body > *:not(#sep-print-area) { display: none !important; }
-  .sep-card-footer               { display: none !important; }
-  .sep-btn-print, .sep-btn-limpar,
-  .sep-btn-pronto, .sep-btn-saiu { display: none !important; }
-
-  .sep-card {
-    page-break-inside: avoid;
-    border: 1.5px solid #ccc;
-    margin-bottom: 14px;
-  }
-
-  /* Torna o checkbox imprimível como caixa vazia */
-  .sep-checkbox {
-    -webkit-appearance: none;
-    appearance: none;
-    border: 2px solid #333 !important;
-    border-radius: 3px !important;
-    background: #fff !important;
-    width: 16px !important;
-    height: 16px !important;
-  }
-  .sep-checkbox:checked::after {
-    content: "✓";
-    display: block;
-    text-align: center;
-    font-size: 12px;
-    line-height: 14px;
-    color: #1a7a2e;
-    font-weight: 900;
-  }
+/* Delivery toggle: only 2 buttons now */
+.delivery-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
+
+/* Better checkout item padding */
+.checkout-body {
+  padding: 0 4px 20px;
+}
+
+/* Cart item improvements */
+.cart-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+/* Cart coupon area cleaner */
+.cupom-area {
+  margin: 10px 0;
+  padding: 12px 14px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px dashed #dee2e6;
+}
+
+
+/* Grid items não overflow */
+.products-grid .product-item {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Section header search bar consistent */
+.search-bar-wrap { margin: 10px 14px 10px; }
+
+/* Category pill with emoji icon */
+.cat-pill { display: flex; align-items: center; gap: 6px; }
+.cat-pill-icon { font-size: 1rem; }
+
+/* ─── Paginação de produtos ─── */
+.pagination-ctrl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 14px 8px;
+  margin-top: 4px;
+}
+
+.pagination-info {
+  font-size: 0.78rem;
+  color: #999;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.pagination-btns {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.pag-btn {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: 10px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  color: #444;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+}
+
+.pag-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pag-btn:not(:disabled):hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #f0faf2;
+}
+
+.pag-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.pag-btn.primary {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.pag-btn.primary:not(:disabled):hover {
+  background: #155a23;
+  border-color: #155a23;
+  color: #fff;
+}
+
+/* Seção de destaques — badge especial no título */
+#sec-destaques .section-title {
+  color: #b8860b;
+}
+
+/* Grupo de subcategoria para paginação independente */
+.subcat-group {
+  margin-bottom: 4px;
+}
+
