@@ -95,9 +95,29 @@ main.menu-container { flex: 1; }
 }
 
 /* Banner */
-.banner-area { overflow: hidden; margin: 15px 20px; border-radius: 12px; height: 160px; }
-.banner-track { display: flex; width: 200%; animation: slide 10s infinite; }
-.banner-track img { width: 50%; height: 160px; object-fit: cover; }
+.banner-area {
+  overflow: hidden;
+  margin: 15px 20px;
+  border-radius: 12px;
+  /* Proporção 2.7:1 fixa — funciona em qualquer largura de tela */
+  position: relative;
+  width: calc(100% - 40px);
+  padding-top: calc((100% - 40px) / 2.7);
+  height: 0;
+}
+.banner-track {
+  position: absolute;
+  top: 0; left: 0;
+  width: 200%;
+  height: 100%;
+  display: flex;
+  animation: slide 10s infinite;
+}
+.banner-track img {
+  width: 50%;
+  height: 100%;
+  object-fit: cover;
+}
 @keyframes slide { 0%, 45% { transform: translateX(0); } 55%, 100% { transform: translateX(-50%); } }
 
 /* --- CSS PARA O CARD DE REPETIR PEDIDO --- */

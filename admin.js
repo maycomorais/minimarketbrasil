@@ -257,6 +257,22 @@ const CLOUDINARY_CLOUD_NAME = "dsxwnbj0o";
 const CLOUDINARY_UPLOAD_PRESET = "ml_default";
 const CLOUDINARY_ENDPOINT = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
+// Diagnóstico: rode testarCloudinary() no console do navegador para verificar se o preset está OK
+window.testarCloudinary = async function() {
+  // Cria um pixel 1x1 PNG mínimo para testar o upload
+  const pixel = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  const blob = await fetch(pixel).then(r => r.blob());
+  const file = new File([blob], "test.png", {type: "image/png"});
+  try {
+    const url = await uploadImageToCloudinary(file);
+    console.log("✅ Cloudinary OK! URL de teste:", url);
+    alert("✅ Cloudinary funcionando!\nURL: " + url);
+  } catch(e) {
+    console.error("❌ Cloudinary ERRO:", e.message);
+    alert("❌ Cloudinary com problema:\n\n" + e.message);
+  }
+};
+
 /**
  * Faz upload de um arquivo de imagem diretamente para o Cloudinary
  * usando um Unsigned Upload Preset público.
@@ -266,30 +282,43 @@ const CLOUDINARY_ENDPOINT = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_
  * @throws {Error} - Lança um erro se o upload falhar, impedindo o salvamento no Supabase.
  */
 async function uploadImageToCloudinary(file) {
+  // Valida tipo e tamanho antes de enviar
+  const tiposPermitidos = ["image/jpeg","image/png","image/webp","image/gif"];
+  if (!tiposPermitidos.includes(file.type)) {
+    throw new Error("Formato inválido. Use JPG, PNG ou WEBP.");
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error("Imagem muito grande. Máximo 10MB.");
+  }
+
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
-  const response = await fetch(CLOUDINARY_ENDPOINT, {
-    method: "POST",
-    body: formData,
-  });
+  let response;
+  try {
+    response = await fetch(CLOUDINARY_ENDPOINT, { method: "POST", body: formData });
+  } catch (netErr) {
+    throw new Error("Erro de rede ao enviar imagem. Verifique sua conexão.");
+  }
+
+  let data;
+  try { data = await response.json(); } catch (_) { data = {}; }
 
   if (!response.ok) {
-    let errMsg = `HTTP ${response.status}`;
-    try {
-      const errData = await response.json();
-      errMsg = errData?.error?.message || errMsg;
-    } catch (_) {}
-    throw new Error(`Cloudinary upload falhou: ${errMsg}`);
+    const msg = data?.error?.message || `HTTP ${response.status}`;
+    // Erro 400 com upload_preset geralmente = preset não configurado como "unsigned"
+    if (response.status === 400 && msg.toLowerCase().includes("upload_preset")) {
+      throw new Error(
+        `Upload preset '${CLOUDINARY_UPLOAD_PRESET}' não está habilitado para uploads não-assinados.
+` +
+        `Acesse cloudinary.com → Settings → Upload Presets → crie um preset com "Signing Mode: Unsigned" e atualize CLOUDINARY_UPLOAD_PRESET no código.`
+      );
+    }
+    throw new Error(`Cloudinary: ${msg}`);
   }
 
-  const data = await response.json();
-
-  if (!data.secure_url) {
-    throw new Error("Cloudinary não retornou uma URL válida.");
-  }
-
+  if (!data.secure_url) throw new Error("Cloudinary não retornou URL válida.");
   return data.secure_url;
 }
 
@@ -3186,6 +3215,9 @@ async function carregarProdutos() {
     document.getElementById("modal-produto")?.style.display === "flex";
   if (!modalAberto) carregarSelectCategorias();
 
+  // Popula filtro de categoria na tela de produtos
+  await ptPopularFiltroCategoria();
+
   // ── Alerta de estoque baixo (varejo) ──────────────────────
   veVerificarEstoqueBaixo(5);
   // ── Alerta de validade próxima (produtos) ─────────────────
@@ -3251,6 +3283,29 @@ function ptAplicarFiltros() {
     return 0;
   });
   renderizarCardsProdutos(lista);
+}
+
+async function ptPopularFiltroCategoria() {
+  const sel = document.getElementById("pt-filtro-cat");
+  if (!sel) return;
+  const valorAtual = sel.value;
+  // Busca todas as categorias com ativo=true OU ativa=true (tabela tem os dois campos)
+  const { data: cats, error } = await supa
+    .from("categorias")
+    .select("slug, nome_exibicao, ativo, ativa")
+    .or("ativo.eq.true,ativa.eq.true")
+    .order("ordem");
+  if (error) { console.warn("[ptPopularFiltroCategoria]", error.message); return; }
+  if (!cats || cats.length === 0) { console.warn("[ptPopularFiltroCategoria] Nenhuma categoria retornada"); return; }
+  sel.innerHTML = '<option value="">Todas as categorias</option>';
+  cats.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.slug;
+    opt.textContent = c.nome_exibicao;
+    if (c.slug === valorAtual) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  console.log("[ptPopularFiltroCategoria] Categorias carregadas:", cats.length);
 }
 
 function ptLimparFiltros() {
@@ -3441,6 +3496,23 @@ function editarProduto(p) {
 
 // (deletarProduto defined below alongside pausarProduto)
 
+// Preview ao colar/digitar URL de imagem no campo de texto
+function previewUrlImagem(url) {
+  const box = document.getElementById("box-preview");
+  const img = document.getElementById("img-preview");
+  if (!box || !img) return;
+  const trimmed = (url || "").trim();
+  if (!trimmed) {
+    box.style.display = "none";
+    img.src = "";
+    return;
+  }
+  img.src = trimmed;
+  box.style.display = "block";
+  img.onerror = () => { box.style.display = "none"; };
+  img.onload  = () => { box.style.display = "block"; };
+}
+
 function previewUpload(input) {
   if (input.files && input.files[0]) {
     const reader = new FileReader();
@@ -3460,15 +3532,25 @@ async function salvarProduto() {
     const fileInput = document.getElementById("prod-img-file");
     let urlFinal = document.getElementById("prod-img").value;
 
-    // ── Upload para o Cloudinary (substitui Supabase Storage) ──
+    // ── Upload para o Cloudinary ──────────────────────────────
+    console.log("[salvarProduto] fileInput.files.length:", fileInput.files.length, "| urlFinal atual:", urlFinal);
     if (fileInput.files.length > 0) {
-      btn.innerText = "Enviando imagem...";
+      btn.innerText = "📤 Enviando imagem...";
       try {
         urlFinal = await uploadImageToCloudinary(fileInput.files[0]);
+        // Atualiza o campo de URL para refletir o resultado
+        document.getElementById("prod-img").value = urlFinal;
+        document.getElementById("img-preview").src = urlFinal;
+        document.getElementById("box-preview").style.display = "block";
       } catch (uploadErr) {
-        alert("❌ Falha no upload da imagem: " + uploadErr.message + "\nO produto não foi salvo.");
+        btn.disabled = false;
+        btn.innerText = "Salvar Produto";
+        alert("❌ Falha no upload da imagem:\n\n" + uploadErr.message + "\n\nSe quiser, cole a URL da imagem diretamente no campo de URL e salve novamente.");
         return;
       }
+    } else if (urlFinal && urlFinal.trim()) {
+      // URL digitada manualmente — usa direto, sem upload
+      urlFinal = urlFinal.trim();
     }
 
     btn.innerText = "Salvando...";
@@ -3527,7 +3609,9 @@ async function salvarProduto() {
     let prodIdSalvo = id ? parseInt(id) : null;
 
     if (id) {
-      await supa.from("produtos").update(dados).eq("id", id);
+      const { error: errUpdate } = await supa.from("produtos").update(dados).eq("id", parseInt(id));
+      if (errUpdate) throw new Error("Erro ao salvar: " + errUpdate.message);
+      console.log("[salvarProduto] Produto atualizado. imagem_url:", dados.imagem_url);
     } else {
       const { data: novoProd, error: errInsert } = await supa
         .from("produtos")

@@ -609,11 +609,9 @@ async function renderMenu() {
     .from("produtos")
     .select("*")
     .eq("ativo", true)
-    .eq("pausado", false)
-    .or("somente_balcao.is.null,somente_balcao.eq.false")
     .order("categoria_slug", { ascending: true })
     .order("ordem", { ascending: true })
-    .limit(2000);
+    .limit(5000);
 
   if (!produtos || !categsDb) {
     console.error("Erro ao carregar menu do banco");
@@ -647,15 +645,15 @@ async function renderMenu() {
   });
 
   produtos.forEach((p) => {
-    const cat = p.categoria_slug;
-    const sub = p.subcategoria_slug;
+    const cat = p.categoria_slug || ""; // garante string, nunca null
+    const sub = p.subcategoria_slug || null;
     const item = {
       id: p.id,
       nome: p.nome,
       desc: p.descricao,
       preco: p.preco,
       preco_original: p.preco_original || null,
-      em_promocao: !!p.em_promocao,
+      em_promocao: !!(p.em_promocao || p.promo_ativo),
       em_destaque: !!(p.destaque || p.em_destaque || p.featured),
       img: p.imagem_url,
       montagem: p.montagem_config,
@@ -940,9 +938,7 @@ async function renderMenu() {
         .from("produtos")
         .select("id, nome, descricao, preco, preco_original, em_promocao, imagem_url, categoria_slug, subcategoria_slug, e_montavel, montagem_config, destaque")
         .eq("ativo", true)
-        .eq("pausado", false)
-        .eq("destaque", true)
-        .or("somente_balcao.is.null,somente_balcao.eq.false");
+        .eq("destaque", true);
 
       if (destaquesDb && destaquesDb.length > 0) {
         todosDestaques = destaquesDb.map((p) => ({
@@ -1000,18 +996,27 @@ async function renderMenu() {
 
   // ── 2. Categorias — seções ocultas, reveladas ao clicar na pill ──
   let primeiraCategoria = null; // usado como fallback se não houver destaques
+
+  // Slugs já criados pelas categorias do banco (evita duplicatas no fallback)
+  const keysJaCriadas = new Set();
+
   categsDb.forEach((cat) => {
     if (!categoriaVisivel(cat)) return;
     const key = cat.slug;
     const todosOsProdutos = MENU[key];
     if (!todosOsProdutos || todosOsProdutos.length === 0) return;
 
+    keysJaCriadas.add(key);
+
     // Pill de navegação
     const pill = document.createElement("button");
     pill.className = "cat-pill";
     pill.dataset.catKey = key;
     const catIcon2 = cat.icone || cat.emoji || "";
-    pill.innerHTML = catIcon2 ? `<span class="cat-pill-icon">${catIcon2}</span>${cat.nome_exibicao}` : cat.nome_exibicao;
+    const nomeExibir = cat.nome_exibicao || cat.nome || key.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+pill.innerHTML = catIcon2
+  ? `<span class="cat-pill-icon">${catIcon2}</span>${nomeExibir}`
+  : nomeExibir;
     pill.onclick = () => {
       document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
       pill.classList.add("active");
@@ -1044,12 +1049,73 @@ async function renderMenu() {
     const catIcon = cat.icone || cat.emoji || "";
     section.innerHTML = `
       <div class="section-title-row">
-        <h2 class="section-title">${catIcon ? `<span>${catIcon}</span>` : ""} ${cat.nome_exibicao}</h2>
+        <h2 class="section-title">${catIcon ? `<span>${catIcon}</span>` : ""} ${nomeExibir}</h2>
       </div>`;
 
     content.appendChild(section);
 
     // Registra a primeira categoria para fallback
+    if (!primeiraCategoria) primeiraCategoria = { pill, section, key };
+  });
+
+  // ── Fallback: categorias presentes nos produtos mas ausentes/inativas na tabela categorias ──
+  // Garante que nenhuma categoria com produtos fique invisível por problema de cadastro
+  const slugsNomesMap = {
+    "natura": "Natura Cosméticos",
+    "mercearia": "Mercearia",
+    "suplementos": "Suplementos",
+    "cacau-show": "Cacau Show",
+  };
+  const iconesPadrao = {
+    "natura": "🌿",
+    "mercearia": "🛒",
+    "suplementos": "💪",
+    "cacau-show": "🍫",
+  };
+  Object.keys(MENU).forEach((key) => {
+    if (keysJaCriadas.has(key)) return; // já criada pelo loop principal
+    if (!MENU[key] || MENU[key].length === 0) return;
+
+    const nomeExibicao = slugsNomesMap[key] || key.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const icone = iconesPadrao[key] || "📦";
+
+    const pill = document.createElement("button");
+    pill.className = "cat-pill";
+    pill.dataset.catKey = key;
+    pill.innerHTML = `<span class="cat-pill-icon">${icone}</span>${nomeExibicao}`;
+    pill.onclick = () => {
+      document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+
+      const sec = document.getElementById(key);
+      if (!sec) return;
+
+      if (!sec.dataset.loaded) {
+        sec.dataset.loaded = "1";
+        renderCategoriaSectionContent(sec, key);
+      }
+
+      const sd = document.getElementById("sec-destaques");
+      if (sd) sd.style.display = "none";
+      document.querySelectorAll("#menu-content > section[data-cat]").forEach((s) => {
+        s.style.display = s.id === key ? "" : "none";
+      });
+
+      sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    nav.appendChild(pill);
+
+    const section = document.createElement("section");
+    section.id = key;
+    section.dataset.cat = key;
+    section.style.display = "none";
+    section.innerHTML = `
+      <div class="section-title-row">
+        <h2 class="section-title"><span>${icone}</span> ${nomeExibicao}</h2>
+      </div>`;
+
+    content.appendChild(section);
+
     if (!primeiraCategoria) primeiraCategoria = { pill, section, key };
   });
 
@@ -1085,23 +1151,20 @@ function filtrarProdutos(termo) {
   const nav = document.getElementById("category-nav");
   if (!content) return;
 
+  // Remove seção de busca e mensagem de vazio anteriores
+  const oldSearchSec = document.getElementById("sec-busca-resultados");
+  if (oldSearchSec) oldSearchSec.remove();
+  const emptyOld = document.getElementById("search-empty-msg");
+  if (emptyOld) emptyOld.remove();
+
   if (!t) {
     // Sem termo: volta ao estado inicial (destaques visíveis, categorias ocultas)
     const secDest = document.getElementById("sec-destaques");
     if (secDest) secDest.style.display = "";
-
     content.querySelectorAll("section[data-cat]").forEach((sec) => {
       sec.style.display = "none";
     });
-
-    content.querySelectorAll(".product-item").forEach((el) => (el.style.display = ""));
-    content.querySelectorAll(".subcat-title").forEach((el) => (el.style.display = ""));
-    content.querySelectorAll(".pagination-ctrl").forEach((el) => (el.style.display = ""));
-
-    const empty = document.getElementById("search-empty-msg");
-    if (empty) empty.remove();
     if (nav) nav.style.display = "";
-
     // Reativa pill de início/destaques
     document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
     const pillInicio = document.getElementById("pill-todos") || document.getElementById("pill-destaques");
@@ -1109,58 +1172,80 @@ function filtrarProdutos(termo) {
     return;
   }
 
-  // Com termo: garante que todas as categorias são carregadas (lazy load forçado)
-  if (window._PROD_SEM_SUBCAT || window._PROD_POR_SUBCAT) {
-    content.querySelectorAll("section[data-cat]").forEach((sec) => {
-      if (!sec.dataset.loaded) {
-        sec.dataset.loaded = "1";
-        // Chama renderCategoriaSectionContent definida dentro de renderMenu
-        // Como é closure, usamos o evento customizado
-        const catKey = sec.dataset.cat;
-        if (catKey && window._renderCatContent) {
-          window._renderCatContent(sec, catKey);
-        }
-      }
-      sec.style.display = ""; // mostra para busca
-    });
-  }
-
+  // Oculta navegação e seções normais durante busca
   if (nav) nav.style.display = "none";
-
-  // Esconde destaques durante busca
   const secDest = document.getElementById("sec-destaques");
   if (secDest) secDest.style.display = "none";
-
-  // Esconde controles de paginação durante busca
-  content.querySelectorAll(".pagination-ctrl").forEach((el) => (el.style.display = "none"));
-
-  let total = 0;
-  content.querySelectorAll("section").forEach((sec) => {
-    let visíveis = 0;
-    sec.querySelectorAll(".product-item").forEach((el) => {
-      const nome = (el.querySelector(".prod-title")?.textContent || "").toLowerCase();
-      const desc = (el.querySelector(".prod-desc")?.textContent || "").toLowerCase();
-      const match = nome.includes(t) || desc.includes(t);
-      el.style.display = match ? "" : "none";
-      if (match) { visíveis++; total++; }
-    });
-    sec.style.display = visíveis > 0 ? "" : "none";
-    sec.querySelectorAll(".subcat-title").forEach((st) => (st.style.display = ""));
+  content.querySelectorAll("section[data-cat]").forEach((sec) => {
+    sec.style.display = "none";
   });
 
-  // Mensagem de vazio
-  let empty = document.getElementById("search-empty-msg");
-  if (total === 0) {
-    if (!empty) {
-      empty = document.createElement("div");
-      empty.id = "search-empty-msg";
-      empty.className = "search-empty";
-      empty.innerHTML = `<i class="fas fa-search"></i><div>Nenhum produto encontrado para "<strong>${termo}</strong>"</div>`;
-      content.prepend(empty);
-    }
-  } else {
-    if (empty) empty.remove();
+  // Busca diretamente nos dados em memória (todos os produtos, sem limite de paginação)
+  const todosOsProdutos = [];
+  if (window._PROD_SEM_SUBCAT) {
+    Object.values(window._PROD_SEM_SUBCAT).forEach((arr) => todosOsProdutos.push(...arr));
   }
+  if (window._PROD_POR_SUBCAT) {
+    Object.values(window._PROD_POR_SUBCAT).forEach((arr) => todosOsProdutos.push(...arr));
+  }
+
+  const resultados = todosOsProdutos.filter((item) => {
+    const nome = (item.nome || "").toLowerCase();
+    const desc = (item.desc || "").toLowerCase();
+    return nome.includes(t) || desc.includes(t);
+  });
+
+  if (resultados.length === 0) {
+    const emptyEl = document.createElement("div");
+    emptyEl.id = "search-empty-msg";
+    emptyEl.className = "search-empty";
+    emptyEl.innerHTML = `<i class="fas fa-search"></i><div>Nenhum produto encontrado para "<strong>${termo}</strong>"</div>`;
+    content.prepend(emptyEl);
+    return;
+  }
+
+  // Renderiza resultados em seção temporária (sem paginação, mostra tudo)
+  const secResultados = document.createElement("section");
+  secResultados.id = "sec-busca-resultados";
+  const grid = document.createElement("div");
+  grid.className = "products-grid";
+
+  resultados.forEach((item) => {
+    const div = document.createElement("div");
+    div.className = "product-item" + (item.em_promocao ? " product-item--promo" : "");
+    div.onclick = function () { abrirModal(item); };
+    const img = item.img || "";
+    const imgHtml = img
+      ? `<img src="${img}" class="prod-img" loading="lazy" onerror="this.style.display='none'">`
+      : `<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:2.5rem;background:#f5f5f5;">🛒</div>`;
+    const destaqueBadge = item.em_destaque
+      ? `<span class="prod-badge-destaque">☆ Destaque</span>` : "";
+    let precoLabel = "";
+    if (item.em_promocao && item.preco_original && item.preco_original > item.preco) {
+      const brl = (item.preco / COTACAO_REAL).toFixed(2);
+      precoLabel = `<div class="prod-promo-row"><span class="prod-price-old">Gs ${item.preco_original.toLocaleString("es-PY")}</span><span class="prod-price-promo-label">Promo Gs ${item.preco.toLocaleString("es-PY")}</span></div><div class="prod-price-brl">≈ R$ ${brl}</div>`;
+    } else {
+      const brl = (item.preco / COTACAO_REAL).toFixed(2);
+      precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div><div class="prod-price-brl">≈ R$ ${brl}</div>`;
+    }
+    div.innerHTML = `
+      <div class="prod-img-container">
+        ${imgHtml}
+        ${destaqueBadge}
+        <button class="prod-btn-fav" onclick="event.stopPropagation();this.classList.toggle('active');this.textContent=this.classList.contains('active')?'❤️':'🤍'" title="Favoritar">🤍</button>
+      </div>
+      <div class="prod-info">
+        <div class="prod-title">${item.nome}</div>
+        ${precoLabel}
+      </div>
+      <button class="prod-btn-add" onclick="event.stopPropagation();abrirModal(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+        <i class="fas fa-shopping-cart" style="font-size:0.8rem;"></i> Comprar
+      </button>`;
+    grid.appendChild(div);
+  });
+
+  secResultados.appendChild(grid);
+  content.prepend(secResultados);
 }
 
 // Variáveis de estado do modal
