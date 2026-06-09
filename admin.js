@@ -3182,21 +3182,19 @@ async function buscarProdutoPorBarcode(codigo) {
       e.preventDefault();
       const produto = await buscarProdutoPorBarcode(_buf);
       if (produto) {
-        // Adiciona ao carrinho do PDV se a função existir
-        if (typeof pdvAdicionarItem === "function") {
-          pdvAdicionarItem(produto);
+        if (_pdvF2Mode) {
+          // Modo F2: apenas exibe o preço, NÃO adiciona ao carrinho
+          _pdvMostrarToast(
+            `🔍 ${produto.nome} — Gs ${produto.preco.toLocaleString("es-PY")}`,
+            "#1565c0", 3000
+          );
         } else {
-          console.log("[Barcode PDV] Produto encontrado:", produto.nome);
+          // Modo normal: adiciona ao carrinho
+          if (typeof adicionarItemPDV === "function") adicionarItemPDV(produto);
+          _pdvMostrarToast(`✅ ${produto.nome} adicionado!`, "#16a34a", 2000);
         }
       } else {
-        // Feedback de não encontrado
-        const toast = document.createElement("div");
-        toast.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
-          background:#ef4444;color:#fff;padding:10px 20px;border-radius:8px;
-          font-weight:600;z-index:9999;font-size:0.9rem`;
-        toast.textContent = `❌ Código ${_buf} não encontrado`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 2500);
+        _pdvMostrarToast(`❌ Código ${_buf} não encontrado`, "#ef4444", 2500);
       }
       _buf = "";
     } else if (e.key.length === 1) {
@@ -7544,8 +7542,17 @@ async function pdvBuscaKeydown(e) {
     if (pareceBarcode) {
       const produto = await buscarProdutoPorBarcode(busca);
       if (produto) {
-        if (typeof adicionarItemPDV === "function") adicionarItemPDV(produto);
-        // Limpa o campo após adicionar
+        if (_pdvF2Mode) {
+          // Modo F2: apenas exibe o preço, NÃO adiciona ao carrinho
+          _pdvMostrarToast(
+            `🔍 ${produto.nome} — Gs ${produto.preco.toLocaleString("es-PY")}`,
+            "#1565c0", 3000
+          );
+        } else {
+          if (typeof adicionarItemPDV === "function") adicionarItemPDV(produto);
+          _pdvMostrarToast(`✅ ${produto.nome} adicionado!`, "#16a34a", 2000);
+        }
+        // Limpa o campo após processar
         e.target.value = "";
         filtrarPDV("");
         return;
@@ -7648,6 +7655,30 @@ async function _getExtrasGlobais() {
 function _deveMostrarExtrasGlobais(produto) {
   const cat = (produto.categoria_slug || "").toLowerCase();
   return !_CATS_SEM_EXTRAS_GLOBAIS.some((c) => cat.includes(c));
+}
+
+// ── Toast helper do PDV ───────────────────────────────────────────
+function _pdvMostrarToast(msg, cor, duracao) {
+  // Remove toast anterior se ainda visível
+  document.getElementById("_pdv-toast")?.remove();
+  const el = document.createElement("div");
+  el.id = "_pdv-toast";
+  el.style.cssText = `
+    position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(8px);
+    background:${cor || "#16a34a"};color:#fff;padding:11px 22px;border-radius:10px;
+    font-weight:700;z-index:9999;font-size:0.92rem;box-shadow:0 4px 16px rgba(0,0,0,.22);
+    opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;white-space:nowrap`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => {
+    el.style.opacity = "1";
+    el.style.transform = "translateX(-50%) translateY(0)";
+  });
+  setTimeout(() => {
+    el.style.opacity = "0";
+    el.style.transform = "translateX(-50%) translateY(8px)";
+    setTimeout(() => el.remove(), 200);
+  }, duracao || 2000);
 }
 
 function adicionarItemPDV(p) {
@@ -8807,6 +8838,73 @@ function removerItemPDV(idx) {
   atualizarCarrinhoPDV();
 }
 
+function limparCarrinhoPDV() {
+  if (carrinhoPDV.length === 0 && !window._mesaAbertaId) return;
+  if (!confirm("Cancelar a venda e limpar o carrinho?")) return;
+
+  carrinhoPDV = [];
+  window._mesaAbertaId = null;
+  window._mesaAbertaPedido = null;
+
+  const ids = {
+    "balcao-cliente": "", "balcao-mesa": "", "balcao-telefone": "",
+    "balcao-endereco": "", "balcao-geo-lat": "", "balcao-geo-lng": "",
+    "balcao-frete": "", "pdv-desconto-val": "", "pdv-recebido": ""
+  };
+  Object.entries(ids).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+
+  const selPag = document.getElementById("balcao-pag");
+  if (selPag) { selPag.value = "Efetivo"; selPag.style.display = ""; }
+  const selTipo = document.getElementById("balcao-tipo-entrega");
+  if (selTipo) selTipo.value = "balcao";
+  const descTipo = document.getElementById("pdv-desconto-tipo");
+  if (descTipo) descTipo.value = "fixo";
+
+  const trocoEl = document.getElementById("pdv-troco-val");
+  if (trocoEl) trocoEl.textContent = "0";
+  const freteMsgEl = document.getElementById("frete-msg-pdv");
+  if (freteMsgEl) freteMsgEl.innerHTML = "";
+
+  ["pdv-delivery-row", "box-multi-pdv", "pdv-cashback-box",
+   "pdv-row-troco", "pdv-row-recebido"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  });
+
+  const toggleEl = document.getElementById("pdv-toggle-delivery");
+  if (toggleEl) toggleEl.classList.remove("active");
+  const chipEl = document.getElementById("pdv-tipo-chip");
+  if (chipEl) chipEl.textContent = "🏪 Balcão";
+
+  const multiPartes = document.getElementById("multi-partes-pdv");
+  if (multiPartes) multiPartes.innerHTML = "";
+  if (typeof _multiContadorPDV !== "undefined") _multiContadorPDV = 0;
+
+  _pdvCashbackDisponivel = 0;
+  _pdvCashbackUsando = false;
+
+  atualizarCarrinhoPDV();
+  _pdvToast("🗑️ Carrinho limpo.");
+}
+
+function pdvAlterarQtd(idx, delta) {
+  const item = carrinhoPDV[idx];
+  if (!item) return;
+  item.qtd = Math.max(1, (item.qtd || 1) + delta);
+  atualizarCarrinhoPDV();
+}
+
+function pdvEditarItem(idx) {
+  const item = carrinhoPDV[idx];
+  if (!item) return;
+  // Reabre o modal de opções para o produto, preservando o índice para substituição
+  window._pdvEditandoIdx = idx;
+  adicionarItemPDV({ ...item, _editando: true });
+}
+
 function atualizarCarrinhoPDV() {
   const lista = document.getElementById("pdv-lista");
   const totalEl = document.getElementById("balcao-total");
@@ -8858,26 +8956,48 @@ function atualizarCarrinhoPDV() {
     carrinhoPDV.forEach((item, idx) => {
       total += item.preco * item.qtd;
       const row = document.createElement("tr");
+
       if (item._isKg) {
+        // Item por peso: layout compacto com remove
         const g = item.peso_gramas || 0;
-        const pesofmt =
-          g >= 1000
-            ? (g / 1000)
-                .toFixed(3)
-                .replace(/\.?0+$/, "")
-                .replace(".", ",") + "kg"
-            : g + "g";
+        const pesofmt = g >= 1000
+          ? (g / 1000).toFixed(3).replace(/\.?0+$/, "").replace(".", ",") + "kg"
+          : g + "g";
         row.innerHTML = `
-          <td class="pdv-item-nome"><span style="color:#0891b2;font-size:0.72rem">⚖️ ${pesofmt}</span> ${item.nome}</td>
-          <td class="tc" style="color:#0891b2;font-size:0.7rem">kg</td>
-          <td class="tr" style="font-size:0.7rem;color:#666">—</td>
-          <td class="tr">Gs ${item.preco.toLocaleString("es-PY")} <button class="pdv-item-remove" onclick="removerItemPDV(${idx})">✕</button></td>`;
+          <td colspan="4" class="pdv-item-card">
+            <div class="pdv-item-card-header">
+              <span class="pdv-item-card-nome">⚖️ ${pesofmt} — ${item.nome}</span>
+              <span class="pdv-item-card-total">Gs ${item.preco.toLocaleString("es-PY")}</span>
+            </div>
+            <div class="pdv-item-card-acoes">
+              <button class="pdv-item-card-excluir" onclick="removerItemPDV(${idx})">
+                <i class="fas fa-trash"></i> Excluir
+              </button>
+            </div>
+          </td>`;
       } else {
+        // Item normal: card com preço unitário, controles de qtd, Editar e Excluir
+        const temMontagem = item.montagem?.length > 0 || item.obs;
         row.innerHTML = `
-          <td class="pdv-item-nome">${item.nome}</td>
-          <td class="tc pdv-item-qtd">${item.qtd}×</td>
-          <td class="tr" style="font-size:0.7rem;color:#666">Gs ${item.preco.toLocaleString("es-PY")}</td>
-          <td class="tr">Gs ${(item.preco * item.qtd).toLocaleString("es-PY")} <button class="pdv-item-remove" onclick="removerItemPDV(${idx})">✕</button></td>`;
+          <td colspan="4" class="pdv-item-card">
+            <div class="pdv-item-card-header">
+              <span class="pdv-item-card-nome">${item.nome}</span>
+              <span class="pdv-item-card-total">Gs ${(item.preco * item.qtd).toLocaleString("es-PY")}</span>
+            </div>
+            <div class="pdv-item-card-sub">Gs ${item.preco.toLocaleString("es-PY")} / un.</div>
+            ${item.obs ? `<div class="pdv-item-card-obs">📝 ${item.obs}</div>` : ""}
+            <div class="pdv-item-card-acoes">
+              <div class="pdv-item-card-qtd">
+                <button class="pdv-qtd-btn" onclick="pdvAlterarQtd(${idx}, -1)">−</button>
+                <span class="pdv-qtd-val">${item.qtd}</span>
+                <button class="pdv-qtd-btn" onclick="pdvAlterarQtd(${idx}, +1)">+</button>
+              </div>
+              ${temMontagem ? `<button class="pdv-item-card-editar" onclick="pdvEditarItem(${idx})"><i class="fas fa-pencil-alt"></i> Editar</button>` : ""}
+              <button class="pdv-item-card-excluir" onclick="removerItemPDV(${idx})">
+                <i class="fas fa-trash"></i> Excluir
+              </button>
+            </div>
+          </td>`;
       }
       lista.appendChild(row);
     });
