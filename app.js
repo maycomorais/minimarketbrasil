@@ -1,16 +1,35 @@
 // ==========================================
 // 1. CONFIGURAÇÕES & DADOS GERAIS
 // ==========================================
-const FONE_LOJA = "595984692537";
-const COORD_LOJA = { lat: -25.2345649, lng: -57.5378941 };
-let COTACAO_REAL = 1100;
+let FONE_LOJA = "";
+let COORD_LOJA = { lat: 0, lng: 0 };
+let COTACAO_REAL = "";
 let autoConfirmTimer = null;
 
 // DADOS DE PAGAMENTO (Pix e Alias)
-const CHAVE_PIX = "thomazs719@gmail.com";
-const NOME_PIX = "Thomaz Victor Sousa dos Anjos";
-const DADOS_ALIAS = "595981279380"; // Transferência Banco Ueno
-const ALIAS_PY = "Thomaz Victor Sousa dos Anjos"; // Titular Banco Ueno
+let CHAVE_PIX = "";
+let NOME_PIX = "";
+let DADOS_ALIAS = ""; // Transferência Banco Ueno
+let ALIAS_PY = ""; // Titular Banco Ueno
+
+async function carregarConfiguracoesLoja() {
+  const { data, error } = await supa
+    .from("configuracoes")
+    .select(
+      "whatsapp_loja, telefone_loja, coord_lat, coord_lng, chave_pix, nome_pix, dados_alias, nome_alias, nome_restaurante"
+    )
+    .maybeSingle();
+
+  if (!data || error) return;
+
+  if (data.whatsapp_loja)  FONE_LOJA   = data.whatsapp_loja;
+  if (data.telefone_loja && !FONE_LOJA) FONE_LOJA = data.telefone_loja;
+  if (data.coord_lat)      COORD_LOJA  = { lat: parseFloat(data.coord_lat), lng: parseFloat(data.coord_lng) };
+  if (data.chave_pix)      CHAVE_PIX   = data.chave_pix;
+  if (data.nome_pix)       NOME_PIX    = data.nome_pix;
+  if (data.dados_alias)    DADOS_ALIAS = data.dados_alias;
+  if (data.nome_alias)     ALIAS_PY    = data.nome_alias;
+}
 
 function iniciarTimerAutoConfirmacao(pedidoId) {
   // 4 horas em milissegundos
@@ -272,6 +291,8 @@ let MENU = {
 // 3. INICIALIZAÇÃO
 // ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
+
+  await carregarConfiguracoesLoja();
   // 1. Carrega dados salvos (Nome, Tel, Último Pedido)
   carregarDadosLocal();
 
