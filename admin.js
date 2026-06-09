@@ -3164,13 +3164,15 @@ async function buscarProdutoPorBarcode(codigo) {
   const PDV_TABS = ["pdv"]; // abas onde o listener é ativo
 
   document.addEventListener("keydown", async (e) => {
-    // Só ativa se o foco não estiver em input/textarea comum
-    const tag = document.activeElement?.tagName;
-    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-
     // Só na aba PDV
     const abaAtiva = document.querySelector(".tab-btn.active")?.dataset?.tab;
     if (!PDV_TABS.includes(abaAtiva)) return;
+
+    // Bloqueia se o foco estiver em qualquer input EXCETO o campo de busca do PDV
+    // (o leitor USB pode colocar o foco em #pdv-busca ao digitar)
+    const tag = document.activeElement?.tagName;
+    const isPdvBusca = document.activeElement?.id === "pdv-busca";
+    if ((tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") && !isPdvBusca) return;
 
     const now = Date.now();
     if (now - _last > 80) _buf = ""; // reset se demorou muito
@@ -7528,19 +7530,34 @@ function togglePdvF2Mode() {
   if (busca) { busca.focus(); busca.select(); }
 }
 
-function pdvBuscaKeydown(e) {
+async function pdvBuscaKeydown(e) {
   if (e.key === "F2") { e.preventDefault(); togglePdvF2Mode(); return; }
   if (e.key === "Escape" && _pdvF2Mode) { e.preventDefault(); togglePdvF2Mode(); return; }
   if (e.key === "Enter") {
     e.preventDefault();
-    const busca = (e.target.value || "").trim().toLowerCase();
+    const busca = (e.target.value || "").trim();
     if (!busca) return;
-    // Encontra o primeiro produto visível
+
+    // Se parece um código de barras (>=6 chars, sem espaço, só dígitos/letras/hífen),
+    // busca direto no banco antes de procurar nos cards visíveis
+    const pareceBarcode = busca.length >= 6 && !busca.includes(" ") && /^[\d\w\-]+$/.test(busca);
+    if (pareceBarcode) {
+      const produto = await buscarProdutoPorBarcode(busca);
+      if (produto) {
+        if (typeof adicionarItemPDV === "function") adicionarItemPDV(produto);
+        // Limpa o campo após adicionar
+        e.target.value = "";
+        filtrarPDV("");
+        return;
+      }
+    }
+
+    // Fallback: clica no primeiro card visível que bate com a busca
+    const buscaLow = busca.toLowerCase();
     const cards = document.querySelectorAll(".pdv-card");
     if (!cards.length) return;
     const primeiro = Array.from(cards).find(c =>
-      c.dataset.nome?.toLowerCase().includes(busca) ||
-      c.dataset.codigo?.toLowerCase().includes(busca)
+      c.title?.toLowerCase().includes(buscaLow)
     ) || cards[0];
     primeiro?.click();
   }
