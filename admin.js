@@ -1111,7 +1111,7 @@ async function aprovarCancelamento(pedidoId) {
     return;
 
   const user = await supa.auth.getUser();
-  const email = user?.data?.user?.email || "dono";
+  const email = user?.data?.user?.email || "dono" || "gerente";
 
   const { error } = await supa
     .from("pedidos")
@@ -1145,7 +1145,7 @@ async function aprovarCancelamento(pedidoId) {
 async function negarCancelamento(pedidoId) {
   const obs = prompt(t("prompt.negar_cancel")) || "";
   const user = await supa.auth.getUser();
-  const email = user?.data?.user?.email || "dono";
+  const email = user?.data?.user?.email || "dono" || "gerente";
 
   await supa
     .from("pedidos")
@@ -3203,12 +3203,30 @@ async function buscarProdutoPorBarcode(codigo) {
   });
 })();
 
+// Retorna true se algum filtro do painel de produtos está ativo
+function _ptFiltrosAtivos() {
+  const cat      = document.getElementById("pt-filtro-cat")?.value || "";
+  const estoque  = document.getElementById("pt-filtro-estoque")?.value || "";
+  const validade = document.getElementById("pt-filtro-validade")?.value || "";
+  const destaque = document.getElementById("pt-filtro-destaque")?.value || "";
+  const ordem    = document.getElementById("pt-filtro-ordem")?.value || "nome_az";
+  const busca    = (document.getElementById("pt-filtro-busca-rapida")?.value || "").trim();
+  const apenasEstoque = document.getElementById("pt-toggle-estoque")?.classList.contains("on");
+  return cat || estoque || validade || destaque || busca || apenasEstoque || (ordem && ordem !== "nome_az");
+}
+
 async function carregarProdutos() {
   const { data } = await supa.from("produtos").select("*").order("nome");
   _todosProdutos = data || [];
   _produtosMap = {};
   _todosProdutos.forEach(p => { _produtosMap[p.id] = p; });
-  renderizarCardsProdutos(_todosProdutos);
+
+  // Reaaplica filtros ativos se houver algum selecionado, senão renderiza tudo
+  if (_ptFiltrosAtivos()) {
+    ptAplicarFiltros();
+  } else {
+    renderizarCardsProdutos(_todosProdutos);
+  }
   atualizarStatsProdutos(_todosProdutos);
   // Só recarrega o select de categorias se o modal de produto estiver fechado
   const modalAberto =
@@ -3317,6 +3335,7 @@ function ptLimparFiltros() {
   if (ordem) ordem.value = "nome_az";
   const toggle = document.getElementById("pt-toggle-estoque");
   if (toggle) toggle.classList.remove("on");
+  ptBulkDesmarcarTodos();
   renderizarCardsProdutos(_todosProdutos);
 }
 
@@ -3346,15 +3365,50 @@ function renderizarCardsProdutos(lista) {
   // ── Manage table header visibility ─────────────────────────
   const header = document.getElementById("produtos-table-header");
 
+  // ── Barra de ações em massa ─────────────────────────────────
+  let barraAcoes = document.getElementById("pt-bulk-actions-bar");
+  if (!barraAcoes) {
+    barraAcoes = document.createElement("div");
+    barraAcoes.id = "pt-bulk-actions-bar";
+    barraAcoes.style.cssText = `
+      display:none; align-items:center; gap:10px; flex-wrap:wrap;
+      background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+      padding:8px 14px; margin-bottom:8px;
+      box-shadow:0 1px 4px rgba(0,0,0,0.06);
+    `;
+    barraAcoes.innerHTML = `
+      <span id="pt-bulk-count" style="font-size:0.82rem;font-weight:700;color:#334155"></span>
+      <button onclick="ptBulkPausar()" style="
+        padding:6px 14px;background:#f97316;color:#fff;border:none;border-radius:7px;
+        font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px">
+        <i class="fas fa-pause"></i> Pausar selecionados
+      </button>
+      <button onclick="ptBulkExcluir()" style="
+        padding:6px 14px;background:#ef4444;color:#fff;border:none;border-radius:7px;
+        font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px">
+        <i class="fas fa-trash"></i> Excluir selecionados
+      </button>
+      <button onclick="ptBulkDesmarcarTodos()" style="
+        padding:6px 10px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:7px;
+        font-size:0.8rem;cursor:pointer">
+        ✕ Desmarcar todos
+      </button>
+    `;
+    grid.parentNode.insertBefore(barraAcoes, grid);
+  }
+
   grid.innerHTML = "";
 
   if (!lista || lista.length === 0) {
     if (header) header.style.display = "none";
+    if (barraAcoes) barraAcoes.style.display = "none";
     grid.innerHTML =
       '<p style="color:#bbb;font-size:0.9rem;padding:20px 0">Nenhum produto encontrado.</p>';
     return;
   }
-  if (header) header.style.display = "";
+  if (header) {
+    header.style.display = "";
+  }
 
   const _TIPO_ICONS = {
     padrao: "📦", bebida: "🥤", lanche: "🍔", pizza: "🍕",
@@ -3408,7 +3462,16 @@ function renderizarCardsProdutos(lista) {
 
     const card = document.createElement("div");
     card.className = `produto-card${!p.ativo ? " pausado" : ""}`;
+    card.dataset.prodId = p.id;
+    card.style.gridTemplateColumns = "32px 2.8fr 90px 130px 100px 70px 120px";
     card.innerHTML = `
+      <!-- Col 0: Checkbox -->
+      <div style="display:flex;align-items:center;justify-content:center">
+        <input type="checkbox" class="pt-chk-produto"
+          data-id="${p.id}"
+          style="width:15px;height:15px;cursor:pointer;accent-color:#1a7a2e"
+          onchange="ptAtualizarBarraBulk()">
+      </div>
       <!-- Col 1: Produto -->
       <div class="produto-card-info">
         <div class="produto-card-img-wrap">${imgHtml}</div>
@@ -3456,6 +3519,120 @@ function renderizarCardsProdutos(lista) {
     `;
     grid.appendChild(card);
   });
+}
+
+// =========================================
+// BULK ACTIONS — Seleção e ações em massa
+// =========================================
+
+function ptAtualizarBarraBulk() {
+  const checkboxes = document.querySelectorAll(".pt-chk-produto");
+  const selecionados = document.querySelectorAll(".pt-chk-produto:checked");
+  const barra = document.getElementById("pt-bulk-actions-bar");
+  const chkTodos = document.getElementById("pt-chk-todos");
+
+  if (barra) {
+    if (selecionados.length > 0) {
+      barra.style.display = "flex";
+      const countEl = document.getElementById("pt-bulk-count");
+      if (countEl) countEl.textContent = `${selecionados.length} produto(s) selecionado(s)`;
+    } else {
+      barra.style.display = "none";
+    }
+  }
+
+  // Atualiza estado do checkbox "selecionar todos"
+  if (chkTodos) {
+    chkTodos.indeterminate = selecionados.length > 0 && selecionados.length < checkboxes.length;
+    chkTodos.checked = checkboxes.length > 0 && selecionados.length === checkboxes.length;
+  }
+
+  // Destaca visualmente os cards selecionados
+  document.querySelectorAll(".pt-chk-produto").forEach(chk => {
+    const card = chk.closest(".produto-card");
+    if (card) {
+      card.style.outline = chk.checked ? "2px solid #1a7a2e" : "";
+      card.style.background = chk.checked ? "#f0fdf4" : "";
+    }
+  });
+}
+
+function ptToggleSelecionarTodos(checked) {
+  document.querySelectorAll(".pt-chk-produto").forEach(chk => {
+    chk.checked = checked;
+  });
+  ptAtualizarBarraBulk();
+}
+
+function ptBulkDesmarcarTodos() {
+  document.querySelectorAll(".pt-chk-produto").forEach(chk => { chk.checked = false; });
+  const chkTodos = document.getElementById("pt-chk-todos");
+  if (chkTodos) { chkTodos.checked = false; chkTodos.indeterminate = false; }
+  ptAtualizarBarraBulk();
+}
+
+function _ptGetIdsSelecionados() {
+  return Array.from(document.querySelectorAll(".pt-chk-produto:checked"))
+    .map(chk => parseInt(chk.dataset.id))
+    .filter(Boolean);
+}
+
+async function ptBulkPausar() {
+  const ids = _ptGetIdsSelecionados();
+  if (!ids.length) return;
+
+  // Verifica estado atual dos selecionados para decidir a ação
+  const produtosSel = ids.map(id => _produtosMap[id]).filter(Boolean);
+  const algumAtivo = produtosSel.some(p => p.ativo);
+  const acao = algumAtivo ? "pausar" : "reativar";
+  const novoStatus = algumAtivo ? false : true;
+
+  if (!confirm(`Deseja ${acao} ${ids.length} produto(s) selecionado(s)?`)) return;
+
+  try {
+    const { error } = await supa
+      .from("produtos")
+      .update({ ativo: novoStatus })
+      .in("id", ids);
+
+    if (error) {
+      alert("❌ Erro: " + error.message);
+    } else {
+      const msg = novoStatus ? `✅ ${ids.length} produto(s) reativado(s)!` : `⏸️ ${ids.length} produto(s) pausado(s)!`;
+      if (typeof mostrarToast === "function") mostrarToast(msg, "success", 3000);
+      else alert(msg);
+      ptBulkDesmarcarTodos();
+      carregarProdutos();
+    }
+  } catch (e) {
+    alert("❌ Erro inesperado: " + e.message);
+  }
+}
+
+async function ptBulkExcluir() {
+  const ids = _ptGetIdsSelecionados();
+  if (!ids.length) return;
+
+  if (!confirm(`⚠️ ATENÇÃO: Excluir permanentemente ${ids.length} produto(s) selecionado(s)?\n\nEsta ação não pode ser desfeita.`)) return;
+
+  try {
+    const { error } = await supa
+      .from("produtos")
+      .delete()
+      .in("id", ids);
+
+    if (error) {
+      alert("❌ Erro ao excluir: " + error.message);
+    } else {
+      const msg = `🗑️ ${ids.length} produto(s) excluído(s) com sucesso!`;
+      if (typeof mostrarToast === "function") mostrarToast(msg, "success", 3000);
+      else alert(msg);
+      ptBulkDesmarcarTodos();
+      carregarProdutos();
+    }
+  } catch (e) {
+    alert("❌ Erro inesperado: " + e.message);
+  }
 }
 
 // Toggle destaque inline without opening modal

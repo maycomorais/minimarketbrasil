@@ -1102,6 +1102,11 @@
 
     <!-- ── Table header ── -->
     <div class="produtos-table-header" id="produtos-table-header">
+      <span id="pt-chk-todos-wrap" style="display:flex;align-items:center;justify-content:center">
+        <input type="checkbox" id="pt-chk-todos" title="Selecionar todos"
+          style="width:15px;height:15px;cursor:pointer;accent-color:#1a7a2e"
+          onchange="ptToggleSelecionarTodos(this.checked)">
+      </span>
       <span>Produto</span>
       <span>Preço</span>
       <span>Estoque</span>
