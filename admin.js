@@ -3795,18 +3795,24 @@ async function salvarProduto() {
     let emPromocao = false;
 
     if (document.getElementById("prod-promo-ativo")?.checked) {
-      const tipo = document.getElementById("prod-promo-tipo")?.value;
-      const valor = parseFloat(document.getElementById("prod-promo-valor")?.value) || 0;
-      if (valor > 0) {
-        emPromocao = true;
-        if (tipo === "percentual") {
-          // precoBase = preço promocional
-          precoOriginal = Math.round(precoBase / (1 - valor / 100));
-        } else { // fixo
-          precoOriginal = precoBase + valor;
-        }
+  const tipo = document.getElementById("prod-promo-tipo")?.value;
+  const valor = parseFloat(document.getElementById("prod-promo-valor")?.value) || 0;
+
+  if (valor > 0) {
+    emPromocao = true;
+    precoOriginal = precoBase; // guarda o preço original
+
+    if (tipo === "percent") {
+      if (valor >= 100) {
+        alert("⚠️ Desconto percentual inválido.");
+        return;
       }
+      precoBase = Math.round(precoBase * (1 - valor / 100)); // calcula o promocional
+    } else { // fixo
+      precoBase = Math.max(0, precoBase - valor); // subtrai o desconto fixo
     }
+  }
+}
     const dados = {
       nome: document.getElementById("prod-nome").value,
       descricao: document.getElementById("prod-desc").value,
@@ -3870,6 +3876,25 @@ async function salvarProduto() {
     btn.innerText = "Salvar";
     btn.disabled = false;
   }
+}
+
+// ── Máscara de preço em Guaranis (sem decimais) ───────────────
+function _mascaraGsAdmin(input) {
+  // Remove tudo que não for dígito
+  let raw = input.value.replace(/\D/g, "");
+
+  // Converte para número e formata com separador de milhar (ponto)
+  if (raw === "") {
+    input.value = "";
+    return;
+  }
+
+  const num = parseInt(raw, 10);
+  // Formato paraguaio: 1.000.000
+  input.value = num.toLocaleString("es-PY");
+
+  // Guarda o valor numérico puro num atributo para o salvarProduto ler corretamente
+  input.dataset.valorNumerico = num;
 }
 
 async function abrirModalProduto(produto = null, tipoInicial = null) {
