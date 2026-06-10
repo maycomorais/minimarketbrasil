@@ -508,9 +508,10 @@ async function _carregarFeaturesGlobais() {
     TABELA_FRETE_ADMIN = data.tabela_frete;
 }
 
-// ── Filtra formas de pagamento no PDV conforme features_ativas.pagamentos ──────
+// ── Filtra formas de pagamento no PDV conforme features_ativas.pagamentos_pdv ──
 function _aplicarFormasPagamentoPDV(features) {
-  const pags = features?.pagamentos;
+  // pagamentos_pdv tem prioridade; fallback para pagamentos (retrocompatibilidade)
+  const pags = features?.pagamentos_pdv ?? features?.pagamentos;
   const select = document.getElementById("balcao-pag");
   if (!select) return;
   Array.from(select.options).forEach((opt) => {
@@ -575,15 +576,22 @@ async function salvarFeatures() {
   document.querySelectorAll("[data-feat-func]").forEach((el) => {
     funcs[el.dataset.featFunc] = el.checked;
   });
-  const pagamentos = {};
-  document.querySelectorAll("[data-feat-pag]").forEach((el) => {
-    pagamentos[el.dataset.featPag] = el.checked;
+  const pagamentos_pdv = {};
+  document.querySelectorAll("[data-feat-pag-pdv]").forEach((el) => {
+    pagamentos_pdv[el.dataset.featPagPdv] = el.checked;
+  });
+  const pagamentos_app = {};
+  document.querySelectorAll("[data-feat-pag-app]").forEach((el) => {
+    pagamentos_app[el.dataset.featPagApp] = el.checked;
   });
   const features = {
     tabs,
     tipos_produto: tipos,
     funcionalidades: funcs,
-    pagamentos,
+    pagamentos_pdv,
+    pagamentos_app,
+    // mantém pagamentos legado igual ao PDV para retrocompatibilidade com clientes antigos
+    pagamentos: pagamentos_pdv,
   };
   const { error } = await supa
     .from("configuracoes")
@@ -591,6 +599,8 @@ async function salvarFeatures() {
     .gt("id", 0);
   if (error) return alert("Erro: " + error.message);
   FEATURES_ATIVAS = features;
+  // Aplica imediatamente no PDV (sem reload)
+  _aplicarFormasPagamentoPDV(features);
   alert(t("alert.features_salvas"));
 }
 
@@ -671,23 +681,41 @@ async function renderPainelFeatures() {
     )
     .join("");
 
-  const pags = f.pagamentos || {};
-  const chkPags = [
-    ["Efetivo", "💵 Efectivo/Dinheiro"],
-    ["Cartao", "💳 Tarjeta PY"],
-    ["CartaoBR", "💳🇧🇷 Cartão Brasileiro (R$)"],
-    ["Pix", "🟢 Pix (BR)"],
-    ["Transferencia", "🏦 Alias/Transferência PY"],
-    ["QrPy", "📱 QR Paraguay"],
-    ["Multipagamento", "🔀 Dividir Pagamento"],
-  ]
-    .map(
-      ([k, l]) =>
-        `<label style="display:flex;align-items:center;gap:8px;padding:6px;background:#f9f9f9;border-radius:6px">
-      <input type="checkbox" data-feat-pag="${k}" ${pags[k] !== false ? "checked" : ""} style="width:18px;height:18px">
-      <span>${l}</span></label>`,
-    )
-    .join("");
+  // ── Pagamentos PDV e APP separados ──────────────────────────────────────────
+  // pagamentos_pdv: prioridade; fallback para pagamentos legado
+  const pagsPDV = f.pagamentos_pdv ?? f.pagamentos ?? {};
+  // pagamentos_app: prioridade; fallback para pagamentos legado
+  const pagsAPP = f.pagamentos_app ?? f.pagamentos ?? {};
+
+  const METODOS_PAG = [
+    ["Efetivo",       "💵 Efectivo / Dinheiro"],
+    ["Cartao",        "💳 Tarjeta PY"],
+    ["CartaoBR",      "💳🇧🇷 Cartão Brasileiro (R$)"],
+    ["Pix",           "🟢 Pix (BR)"],
+    ["Transferencia", "🏦 Alias / Transferência PY"],
+    ["QrPy",          "📱 QR Paraguay"],
+    ["Multipagamento","🔀 Dividir Pagamento"],
+  ];
+
+  const chkPagsPDV = METODOS_PAG.map(([k, l]) =>
+    `<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;background:#f0f4ff;border-radius:6px;cursor:pointer;transition:background .15s">
+      <input type="checkbox" data-feat-pag-pdv="${k}"
+        ${pagsPDV[k] !== false ? "checked" : ""}
+        onchange="salvarFeaturesPagamentosInstant()"
+        style="width:18px;height:18px;accent-color:#2980b9;cursor:pointer">
+      <span style="font-size:0.88rem">${l}</span>
+    </label>`
+  ).join("");
+
+  const chkPagsAPP = METODOS_PAG.map(([k, l]) =>
+    `<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;background:#f0fff4;border-radius:6px;cursor:pointer;transition:background .15s">
+      <input type="checkbox" data-feat-pag-app="${k}"
+        ${pagsAPP[k] !== false ? "checked" : ""}
+        onchange="salvarFeaturesPagamentosInstant()"
+        style="width:18px;height:18px;accent-color:#27ae60;cursor:pointer">
+      <span style="font-size:0.88rem">${l}</span>
+    </label>`
+  ).join("");
 
   const html = `
     <div style="display:grid;gap:20px">
@@ -695,11 +723,39 @@ async function renderPainelFeatures() {
         <h4 style="margin-bottom:10px;color:#2c3e50">📂 Abas visíveis</h4>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">${chkTabs}</div>
       </div>
-      <div>
-        <h4 style="margin-bottom:10px;color:#2c3e50">💳 Formas de Pagamento</h4>
-        <p style="font-size:0.8rem;color:#888;margin-bottom:8px">Controla o que aparece no app do cliente <strong>e</strong> no PDV</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">${chkPags}</div>
+
+      <!-- ══ Formas de Pagamento — PDV e APP separados ═══════════════════════ -->
+      <div style="background:#fafbfc;border:1.5px solid #e0e0e0;border-radius:10px;padding:16px">
+        <h4 style="margin-bottom:4px;color:#2c3e50">💳 Formas de Pagamento</h4>
+        <p style="font-size:0.78rem;color:#888;margin-bottom:14px">
+          Alterações são salvas <strong>instantaneamente</strong> ao marcar/desmarcar.
+          O APP do cliente é atualizado em tempo real.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- PDV -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:1.1rem">🖥️</span>
+              <strong style="color:#2980b9;font-size:0.95rem">PDV / Balcão</strong>
+              <span style="font-size:0.72rem;color:#888;background:#e8f0fe;padding:2px 7px;border-radius:20px">admin</span>
+            </div>
+            <div style="display:grid;gap:6px">${chkPagsPDV}</div>
+          </div>
+          <!-- APP -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:1.1rem">📱</span>
+              <strong style="color:#27ae60;font-size:0.95rem">APP / Cardápio Online</strong>
+              <span style="font-size:0.72rem;color:#888;background:#e8f8ee;padding:2px 7px;border-radius:20px">cliente</span>
+            </div>
+            <div style="display:grid;gap:6px">${chkPagsAPP}</div>
+          </div>
+        </div>
+        <!-- Status de salvamento instantâneo -->
+        <div id="pag-save-status" style="margin-top:12px;height:24px;font-size:0.8rem;color:#27ae60;text-align:center;transition:opacity .4s;opacity:0"></div>
       </div>
+      <!-- ══════════════════════════════════════════════════════════════════ -->
+
       <div>
         <h4 style="margin-bottom:10px;color:#2c3e50">🏷️ Tipos de produto permitidos</h4>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">${chkTipos}</div>
@@ -713,6 +769,67 @@ async function renderPainelFeatures() {
   targets.forEach((el) => {
     el.innerHTML = html;
   });
+}
+
+// ── Salva apenas pagamentos_pdv e pagamentos_app — chamado pelo toggle instantâneo ──
+let _pagSaveDebounce = null;
+async function salvarFeaturesPagamentosInstant() {
+  if (perfilUsuario !== "adminMaster") return;
+
+  // Feedback visual imediato
+  const statusEl = document.getElementById("pag-save-status");
+  if (statusEl) {
+    statusEl.textContent = "⏳ Salvando...";
+    statusEl.style.color = "#e67e22";
+    statusEl.style.opacity = "1";
+  }
+
+  // Debounce de 300ms para não disparar múltiplas queries em cliques rápidos
+  clearTimeout(_pagSaveDebounce);
+  _pagSaveDebounce = setTimeout(async () => {
+    const pagamentos_pdv = {};
+    document.querySelectorAll("[data-feat-pag-pdv]").forEach((el) => {
+      pagamentos_pdv[el.dataset.featPagPdv] = el.checked;
+    });
+    const pagamentos_app = {};
+    document.querySelectorAll("[data-feat-pag-app]").forEach((el) => {
+      pagamentos_app[el.dataset.featPagApp] = el.checked;
+    });
+
+    // Merge no objeto de features atual, preservando tabs/tipos/funcs
+    const features = {
+      ...(FEATURES_ATIVAS || {}),
+      pagamentos_pdv,
+      pagamentos_app,
+      // mantém pagamentos legado igual ao PDV para clientes antigos
+      pagamentos: pagamentos_pdv,
+    };
+
+    const { error } = await supa
+      .from("configuracoes")
+      .update({ features_ativas: features })
+      .gt("id", 0);
+
+    if (statusEl) {
+      if (error) {
+        statusEl.textContent = "❌ Erro ao salvar: " + error.message;
+        statusEl.style.color = "#e74c3c";
+      } else {
+        statusEl.textContent = "✅ Salvo com sucesso!";
+        statusEl.style.color = "#27ae60";
+        setTimeout(() => {
+          if (statusEl) statusEl.style.opacity = "0";
+        }, 2500);
+      }
+      statusEl.style.opacity = "1";
+    }
+
+    if (!error) {
+      FEATURES_ATIVAS = features;
+      // Aplica imediatamente no PDV desta sessão
+      _aplicarFormasPagamentoPDV(features);
+    }
+  }, 300);
 }
 
 function iniciarRealtime() {

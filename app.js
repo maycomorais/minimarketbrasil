@@ -326,6 +326,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Restaura backup do carrinho APÓS o menu estar pronto (fix #13)
   restaurarCarrinhoBackup();
 
+  // 6. Inicia Realtime para atualizar formas de pagamento instantaneamente
+  _iniciarRealtimeConfiguracoes();
+
   const overlay = document.getElementById("loading-overlay");
   if (overlay) {
     overlay.style.opacity = "0";
@@ -390,24 +393,28 @@ async function carregarExtrasGlobais() {
 
 // ── Aplica visibilidade das formas de pagamento no checkout do cliente ──
 function _aplicarFormasPagamentoCliente(features) {
-  const pags = features?.pagamentos;
+  // pagamentos_app tem prioridade; fallback para pagamentos (retrocompatibilidade)
+  const pags = features?.pagamentos_app ?? features?.pagamentos;
   const select = document.getElementById("forma-pag");
   if (!select || !pags) return;
   Array.from(select.options).forEach((opt) => {
     if (!opt.value) return; // placeholder
-    const key = opt.value.toLowerCase();
-    // Mapeia os valores do select para as chaves de features.pagamentos
-    const mapa = {
-      efetivo: "efetivo",
-      pix: "pix",
-      transferencia: "alias",
-      cartao: "cartao",
-      qr_py: "qr_py",
-      multipagamento: "multipagamento",
+    // A chave no JSONB é o próprio opt.value (ex: "Efetivo", "Pix", "CartaoBR")
+    // Para retrocompatibilidade com o schema legado (chaves lowercase), verifica ambos
+    const legadoMapa = {
+      Efetivo:       "Efetivo",
+      Cartao:        "Cartao",
+      CartaoBR:      "CartaoBR",
+      Pix:           "Pix",
+      Transferencia: "Transferencia",
+      QrPy:          "QrPy",
+      Multipagamento:"Multipagamento",
     };
-    const featureKey = mapa[key] || key;
-    if (pags[featureKey] === false) {
+    const chave = legadoMapa[opt.value] || opt.value;
+    if (pags[chave] === false) {
       opt.style.display = "none";
+      // Se a opção escondida estava selecionada, reset para vazio
+      if (select.value === opt.value) select.value = "";
     } else {
       opt.style.display = "";
     }
@@ -3684,6 +3691,36 @@ let _trackingChannel = null; // canal Realtime (bônus)
 let _pollingTracker = null; // setInterval de 5s (garantia)
 let _lastTrackedSt = ""; // evita re-render sem mudança
 let _trackedId = null; // id do pedido em tracking
+
+// ── Realtime: ouve mudanças em configuracoes para atualizar formas de pagamento ──
+let _cfgChannel = null;
+function _iniciarRealtimeConfiguracoes() {
+  try {
+    if (_cfgChannel) {
+      _cfgChannel.unsubscribe();
+      _cfgChannel = null;
+    }
+    _cfgChannel = supa
+      .channel("cfg-pagamentos-app")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "configuracoes" },
+        (payload) => {
+          const novasFeatures = payload.new?.features_ativas;
+          if (novasFeatures) {
+            _aplicarFormasPagamentoCliente(novasFeatures);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          _cfgChannel = null;
+        }
+      });
+  } catch (e) {
+    /* Realtime indisponível — polling em verificarHorario() cobre */
+  }
+}
 
 const TRACKER_STEPS = {
   pendente: {
