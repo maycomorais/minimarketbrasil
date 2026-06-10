@@ -853,6 +853,11 @@
       <h3 data-i18n="fin.faturamento">Faturamento</h3>
       <div class="value" id="card-faturamento">Gs 0</div>
     </div>
+    <div class="kpi-card" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border-left:4px solid #2e7d32">
+      <h3 style="color:#1b5e20">💰 Lucro s/ Vendas</h3>
+      <div class="value" id="card-lucro-vendas" style="color:#2e7d32">Gs 0</div>
+      <div id="card-lucro-vendas-pct" style="font-size:0.75rem;color:#388e3c;margin-top:2px;font-weight:600">— markup</div>
+    </div>
     <div class="kpi-card">
       <h3 data-i18n="fin.custo_moto">Custo Entregas</h3>
       <div class="value" id="card-custo-moto">Gs 0</div>
@@ -2013,6 +2018,37 @@
     </div><!-- /main-content -->
 
 
+    <!-- Funções inline para campos de preço — definidas aqui para garantir disponibilidade antes do admin.js -->
+    <script>
+      function _mascaraGsAdmin(input) {
+        var raw = input.value.replace(/\D/g, "");
+        if (raw === "") { input.value = ""; delete input.dataset.valorNumerico; return; }
+        var num = parseInt(raw, 10);
+        input.value = num.toLocaleString("es-PY");
+        input.dataset.valorNumerico = String(num);
+      }
+      function _calcularMarkupModal() {
+        var elV = document.getElementById("prod-preco");
+        var elC = document.getElementById("prod-preco-compra");
+        var elP = document.getElementById("prod-markup-preview");
+        if (!elV || !elC || !elP) return;
+        var venda  = parseInt(elV.dataset.valorNumerico  || elV.value.replace(/\D/g,"")  || "0", 10);
+        var compra = parseInt(elC.dataset.valorNumerico || elC.value.replace(/\D/g,"") || "0", 10);
+        if (!compra || compra <= 0) { elP.textContent = ""; return; }
+        if (!venda  || venda  <= 0) { elP.style.color = "#e74c3c"; elP.textContent = "⚠️ Informe o preço de venda"; return; }
+        var lucro      = venda - compra;
+        var markupPct  = Math.round(((venda - compra) / compra) * 100);
+        var margemPct  = Math.round(((venda - compra) / venda)  * 100);
+        if (lucro < 0) {
+          elP.style.color = "#e74c3c";
+          elP.textContent = "❌ Prejuízo de Gs " + Math.abs(lucro).toLocaleString("es-PY");
+        } else {
+          elP.style.color = markupPct >= 30 ? "#16a34a" : "#d97706";
+          elP.textContent = "📈 Markup " + markupPct + "% · Margem " + margemPct + "% · +Gs " + lucro.toLocaleString("es-PY");
+        }
+      }
+    </script>
+
     <div id="modal-produto" class="modal-overlay">
       <div class="modal-content modal-produto-content">
         <div class="modal-produto-header">
@@ -2052,20 +2088,29 @@
             Usado para busca rápida no PDV via leitor ou câmera
           </small>
         </div>
-        <div class="form-group" style="display: flex; gap: 10px">
-          <div id="box-prod-preco" style="flex: 1">
-            <label>Preço base (Gs)</label>
-            <input type="text" id="prod-preco" class="form-control"
-              inputmode="numeric" data-mask="gs" autocomplete="off"
-              placeholder="0"
-              oninput="_mascaraGsAdmin(this); vcAtualizarPreviewModal(this.value)" />
-            <!-- Preview dual-currency -->
-            <div id="vc-preview-modal" style="font-size:0.78rem;color:#2980b9;margin-top:4px;min-height:18px"></div>
+        <div class="form-group">
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div id="box-prod-preco" style="flex:1">
+              <label>Preço de venda (Gs)</label>
+              <input type="text" id="prod-preco" class="form-control"
+                inputmode="numeric" data-mask="gs" autocomplete="off"
+                placeholder="0"
+                oninput="_mascaraGsAdmin(this); vcAtualizarPreviewModal(this.value); _calcularMarkupModal()" />
+              <div id="vc-preview-modal" style="font-size:0.78rem;color:#2980b9;margin-top:4px;min-height:16px"></div>
+            </div>
+            <div style="flex:1">
+              <label>Preço de compra (Gs) <small style="color:#888;font-weight:normal">custo</small></label>
+              <input type="text" id="prod-preco-compra" class="form-control"
+                inputmode="numeric" data-mask="gs" autocomplete="off"
+                placeholder="0"
+                oninput="_mascaraGsAdmin(this); _calcularMarkupModal()" />
+              <div id="prod-markup-preview" style="font-size:0.78rem;margin-top:4px;min-height:16px;font-weight:600"></div>
+            </div>
           </div>
-          <div style="flex: 1">
-            <label>Categoria</label>
-            <select id="prod-cat" class="form-control" onchange="onCatChange()"></select>
-          </div>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="prod-cat" class="form-control" onchange="onCatChange()"></select>
         </div>
         <div class="form-group" id="box-subcategoria" style="display:none">
           <label>Subcategoria <small style="color:#888">(opcional)</small></label>

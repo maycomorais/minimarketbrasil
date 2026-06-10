@@ -1963,13 +1963,10 @@ async function calcularFinanceiro() {
     }
   });
 
-  const qtdMotoboyUnicos = Object.keys(motoMap).filter(n => n !== "Sem Motoboy").length;
-  custoEntregas += (AJUDA_COMBUSTIVEL || 0) * qtdMotoboyUnicos;
-
-  // ── Lucro sobre Vendas (usando preco_compra cadastrado nos produtos) ──
+  // ── Lucro sobre Vendas (usando preco_compra dos produtos) ─
   let lucroBrutoVendas = 0;
-  let markupMedioVendas = null;
   try {
+    // Coleta IDs únicos de produtos nos pedidos do período
     const prodIdsSet = new Set();
     peds.forEach(p => {
       (p.itens || []).forEach(i => {
@@ -1982,11 +1979,12 @@ async function calcularFinanceiro() {
     if (prodIds.length > 0) {
       const { data: prods } = await supa
         .from("produtos")
-        .select("id, preco_compra")
+        .select("id, preco, preco_compra")
         .in("id", prodIds);
-      (prods || []).forEach(pr => { if (pr.preco_compra) precosCompra[pr.id] = pr.preco_compra; });
+      (prods || []).forEach(pr => {
+        precosCompra[pr.id] = pr.preco_compra || 0;
+      });
     }
-    let custoTotal = 0;
     peds.forEach(p => {
       (p.itens || []).forEach(i => {
         const pid = Number(i.produto_id || i.id || i.pid || 0);
@@ -1995,12 +1993,16 @@ async function calcularFinanceiro() {
         const precoCompra = precosCompra[pid] || 0;
         if (precoVenda > 0 && precoCompra > 0) {
           lucroBrutoVendas += (precoVenda - precoCompra) * qtd;
-          custoTotal       += precoCompra * qtd;
         }
       });
     });
-    if (custoTotal > 0) markupMedioVendas = Math.round((lucroBrutoVendas / custoTotal) * 100);
   } catch(e) { console.warn("Erro calcular lucro vendas:", e); }
+  const markupMedioVendas = faturamento > 0 && lucroBrutoVendas > 0
+    ? Math.round((lucroBrutoVendas / (faturamento - lucroBrutoVendas)) * 100)
+    : null;
+
+  const qtdMotoboyUnicos = Object.keys(motoMap).filter(n => n !== "Sem Motoboy").length;
+  custoEntregas += (AJUDA_COMBUSTIVEL || 0) * qtdMotoboyUnicos;
 
   let totalSaidas = 0, totalEntradas = 0, totalSangria = 0;
   (caixa || []).forEach((c) => {
@@ -2024,13 +2026,12 @@ async function calcularFinanceiro() {
   const elLvPct = document.getElementById("card-lucro-vendas-pct");
   if (elLvPct) {
     if (lucroBrutoVendas > 0 && markupMedioVendas !== null) {
-      elLvPct.style.color = "#388e3c";
       elLvPct.textContent = `markup médio ${markupMedioVendas}%`;
     } else if (lucroBrutoVendas > 0) {
       elLvPct.textContent = "com base nos custos";
     } else {
-      elLvPct.style.color = "#9ca3af";
       elLvPct.textContent = "cadastre o preço de compra nos produtos";
+      elLvPct.style.color = "#9ca3af";
     }
   }
   setV("total-pix",         fmt(totalPix));
@@ -3838,10 +3839,8 @@ async function salvarProduto() {
       return;
     }
 
-    // Preço base — usa dataset.valorNumerico (setado pela máscara) para evitar que
-    // parseInt("12.000") retorne 12 ao encontrar o ponto separador de milhar paraguaio
-    const _precoEl = document.getElementById("prod-preco");
-    let precoBase = parseInt(_precoEl?.dataset?.valorNumerico || (_precoEl?.value || "").replace(/\D/g, "") || "0", 10) || 0;
+    // Preço base — lê o campo principal; sobrescreve se for Venda por Kg
+    let precoBase = parseInt(document.getElementById("prod-preco")?.value) || 0;
     if (document.getElementById("prod-venda-kg")?.checked) {
       const pkgVal = parseFloat(document.getElementById("prod-preco-kg")?.value) || 0;
       if (pkgVal > 0) precoBase = pkgVal;
@@ -3899,8 +3898,7 @@ async function salvarProduto() {
       preco_compra: (() => {
         const el = document.getElementById("prod-preco-compra");
         if (!el) return null;
-        const raw = el.dataset.valorNumerico || (el.value || "").replace(/\D/g, "") || "0";
-        const v = parseInt(raw, 10);
+        const v = parseInt(el.dataset.valorNumerico || el.value.replace(/\D/g,"") || 0);
         return v > 0 ? v : null;
       })(),
       // ── Perecível ─────────────────────────────────────────
@@ -3950,7 +3948,6 @@ function _mascaraGsAdmin(input) {
   // Converte para número e formata com separador de milhar (ponto)
   if (raw === "") {
     input.value = "";
-    delete input.dataset.valorNumerico;
     return;
   }
 
@@ -3959,30 +3956,32 @@ function _mascaraGsAdmin(input) {
   input.value = num.toLocaleString("es-PY");
 
   // Guarda o valor numérico puro num atributo para o salvarProduto ler corretamente
-  input.dataset.valorNumerico = String(num);
+  input.dataset.valorNumerico = num;
 }
 
 // ── Calcula e exibe o markup no modal de produto ──────────────
-// (também definida inline no HTML para garantir disponibilidade imediata)
 function _calcularMarkupModal() {
   const elVenda   = document.getElementById("prod-preco");
   const elCompra  = document.getElementById("prod-preco-compra");
   const elPreview = document.getElementById("prod-markup-preview");
   if (!elVenda || !elCompra || !elPreview) return;
 
-  const venda  = parseInt(elVenda.dataset.valorNumerico  || (elVenda.value  || "").replace(/\D/g, "")  || "0", 10);
-  const compra = parseInt(elCompra.dataset.valorNumerico || (elCompra.value || "").replace(/\D/g, "") || "0", 10);
+  const venda  = parseInt((elVenda.dataset.valorNumerico  || elVenda.value.replace(/\D/g,""))  || 0);
+  const compra = parseInt((elCompra.dataset.valorNumerico || elCompra.value.replace(/\D/g,"")) || 0);
 
-  if (!compra || compra <= 0) { elPreview.textContent = ""; return; }
-  if (!venda  || venda  <= 0) {
+  if (!compra || compra <= 0) {
+    elPreview.textContent = "";
+    return;
+  }
+  if (!venda || venda <= 0) {
     elPreview.style.color = "#e74c3c";
     elPreview.textContent = "⚠️ Informe o preço de venda";
     return;
   }
 
-  const lucroGs   = venda - compra;
+  const lucroGs  = venda - compra;
   const markupPct = Math.round(((venda - compra) / compra) * 100);
-  const margemPct = Math.round(((venda - compra) / venda)  * 100);
+  const margemPct = Math.round(((venda - compra) / venda) * 100);
 
   if (lucroGs < 0) {
     elPreview.style.color = "#e74c3c";
@@ -4050,12 +4049,7 @@ async function abrirModalProduto(produto = null, tipoInicial = null) {
     document.getElementById("prod-id").value = produto.id;
     document.getElementById("prod-nome").value = produto.nome;
     document.getElementById("prod-desc").value = produto.descricao || "";
-    const _pvendaEl = document.getElementById("prod-preco");
-    if (_pvendaEl) {
-      const pv = produto.preco || 0;
-      _pvendaEl.value = pv > 0 ? pv.toLocaleString("es-PY") : "";
-      _pvendaEl.dataset.valorNumerico = String(pv);
-    }
+    document.getElementById("prod-preco").value = produto.preco;
     document.getElementById("prod-img").value = produto.imagem_url || "";
     document.getElementById("prod-somente-balcao").checked =
       produto.somente_balcao || false;
@@ -4064,13 +4058,8 @@ async function abrirModalProduto(produto = null, tipoInicial = null) {
     const _pcEl = document.getElementById("prod-preco-compra");
     if (_pcEl) {
       const pc = produto.preco_compra || 0;
-      if (pc > 0) {
-        _pcEl.value = pc.toLocaleString("es-PY");
-        _pcEl.dataset.valorNumerico = String(pc);
-      } else {
-        _pcEl.value = "";
-        delete _pcEl.dataset.valorNumerico;
-      }
+      _pcEl.value = pc > 0 ? pc.toLocaleString("es-PY") : "";
+      if (pc > 0) _pcEl.dataset.valorNumerico = pc;
     }
     _calcularMarkupModal();
 
