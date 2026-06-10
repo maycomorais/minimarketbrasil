@@ -1,146 +1,178 @@
 // ==========================================
 // 1. CONFIGURAÇÕES & DADOS GERAIS
 // ==========================================
-const FONE_LOJA = '595984692537'  
-const COORD_LOJA = { lat: -25.2345649, lng: -57.5378941}
-let COTACAO_REAL = 1100;
+let FONE_LOJA = "";
+let COORD_LOJA = { lat: 0, lng: 0 };
+let COTACAO_REAL = "";
 let autoConfirmTimer = null;
 
 // DADOS DE PAGAMENTO (Pix e Alias)
-const CHAVE_PIX = 'thomazs719@gmail.com';
-const NOME_PIX = 'Thomaz Victor Sousa dos Anjos';
-const DADOS_ALIAS = '595981279380';         // Transferência Banco Ueno
-const ALIAS_PY = 'Thomaz Victor Sousa dos Anjos';  // Titular Banco Ueno
+let CHAVE_PIX = "";
+let NOME_PIX = "";
+let DADOS_ALIAS = ""; // Transferência Banco Ueno
+let ALIAS_PY = ""; // Titular Banco Ueno
+let QR_ALIAS_URL = ""; // QR Code Alias
+let QR_PY_URL = ""; // QR Code Paraguay
+let WHATSAPP_LOJA_APP = ""; // WhatsApp da loja (dígitos)
+let NOME_RESTAURANTE_APP = ""; // Nome da loja para mensagem WhatsApp
+let LIMITE_DISTANCIA_KM = null; // Limite de distância para delivery
+let TAXA_DEBITO_BR = 0; // Taxa cartão débito (%)
+let TAXA_CREDITO_BR = 0; // Taxa cartão crédito (%)
+
+async function carregarConfiguracoesLoja() {
+  const { data, error } = await supa
+    .from("configuracoes")
+    .select(
+      "whatsapp_loja, telefone_loja, coord_lat, coord_lng, chave_pix, nome_pix, dados_alias, nome_alias, nome_restaurante, cotacao_real, limite_distancia_km"
+    )
+    .maybeSingle();
+
+  if (!data || error) return;
+
+  if (data.whatsapp_loja)  FONE_LOJA   = data.whatsapp_loja;
+  if (data.telefone_loja && !FONE_LOJA) FONE_LOJA = data.telefone_loja;
+  if (data.coord_lat)      COORD_LOJA  = { lat: parseFloat(data.coord_lat), lng: parseFloat(data.coord_lng) };
+  if (data.chave_pix)      CHAVE_PIX   = data.chave_pix;
+  if (data.nome_pix)       NOME_PIX    = data.nome_pix;
+  if (data.dados_alias)    DADOS_ALIAS = data.dados_alias;
+  if (data.nome_alias)     ALIAS_PY    = data.nome_alias;
+  // Cotação precisa estar pronta ANTES de renderMenu para exibir preço em R$
+  if (data.cotacao_real)   COTACAO_REAL = Number(data.cotacao_real);
+  // Limite de distância precisa estar pronto antes do calcularFrete
+  if (data.limite_distancia_km != null)
+    LIMITE_DISTANCIA_KM = parseFloat(data.limite_distancia_km) || null;
+}
 
 function iniciarTimerAutoConfirmacao(pedidoId) {
-    // 4 horas em milissegundos
-    const QUATRO_HORAS = 4 * 60 * 60 * 1000;
-    
-    // Cancela timer anterior se existir
-    if (autoConfirmTimer) {
-        clearTimeout(autoConfirmTimer);
-    }
-    
-    // Inicia novo timer
-    autoConfirmTimer = setTimeout(async () => {
-        console.log('⏰ 4 horas passadas, confirmando entrega automaticamente...');
-        await confirmarEntregaAutomatica(pedidoId);
-    }, QUATRO_HORAS);
-    
-    // Salva timestamp no localStorage para persistir entre reloads
-    const agora = new Date().getTime();
-    const tempoExpiracao = agora + QUATRO_HORAS;
-    localStorage.setItem('locanda_confirmExpiry_' + pedidoId, tempoExpiracao);
-    
-    console.log('⏰ Timer de auto-confirmação iniciado para 4 horas');
+  // 4 horas em milissegundos
+  const QUATRO_HORAS = 4 * 60 * 60 * 1000;
+
+  // Cancela timer anterior se existir
+  if (autoConfirmTimer) {
+    clearTimeout(autoConfirmTimer);
+  }
+
+  // Inicia novo timer
+  autoConfirmTimer = setTimeout(async () => {
+    console.log("⏰ 4 horas passadas, confirmando entrega automaticamente...");
+    await confirmarEntregaAutomatica(pedidoId);
+  }, QUATRO_HORAS);
+
+  // Salva timestamp no localStorage para persistir entre reloads
+  const agora = new Date().getTime();
+  const tempoExpiracao = agora + QUATRO_HORAS;
+  localStorage.setItem("locanda_confirmExpiry_" + pedidoId, tempoExpiracao);
+
+  console.log("⏰ Timer de auto-confirmação iniciado para 4 horas");
 }
 
 // ===== FUNÇÃO PARA RESTAURAR TIMER APÓS RELOAD =====
 function restaurarTimerSeNecessario() {
-    const pedidoId = localStorage.getItem('locanda_pedido_id');
-    if (!pedidoId) return;
-    
-    const tempoExpiracao = localStorage.getItem('locanda_confirmExpiry_' + pedidoId);
-    if (!tempoExpiracao) return;
-    
-    const agora = new Date().getTime();
-    const tempoRestante = parseInt(tempoExpiracao) - agora;
-    
-    if (tempoRestante > 0) {
-        // Ainda há tempo restante
-        console.log('⏰ Restaurando timer de auto-confirmação...');
-        autoConfirmTimer = setTimeout(async () => {
-            await confirmarEntregaAutomatica(pedidoId);
-        }, tempoRestante);
-    } else {
-        // Tempo já expirou, confirmar agora
-        console.log('⏰ Tempo expirado, confirmando agora...');
-        confirmarEntregaAutomatica(parseInt(pedidoId));
-    }
+  const pedidoId = localStorage.getItem("locanda_pedido_id");
+  if (!pedidoId) return;
+
+  const tempoExpiracao = localStorage.getItem(
+    "locanda_confirmExpiry_" + pedidoId,
+  );
+  if (!tempoExpiracao) return;
+
+  const agora = new Date().getTime();
+  const tempoRestante = parseInt(tempoExpiracao) - agora;
+
+  if (tempoRestante > 0) {
+    // Ainda há tempo restante
+    console.log("⏰ Restaurando timer de auto-confirmação...");
+    autoConfirmTimer = setTimeout(async () => {
+      await confirmarEntregaAutomatica(pedidoId);
+    }, tempoRestante);
+  } else {
+    // Tempo já expirou, confirmar agora
+    console.log("⏰ Tempo expirado, confirmando agora...");
+    confirmarEntregaAutomatica(parseInt(pedidoId));
+  }
 }
 
 // ===== CONFIRMAÇÃO AUTOMÁTICA (4 HORAS) =====
 async function confirmarEntregaAutomatica(pedidoId) {
-    try {
-        const { error } = await supa
-            .from('pedidos')
-            .update({ 
-                status: 'entregue',
-                tempo_entregue: new Date().toISOString()
-            })
-            .eq('id', parseInt(pedidoId));  // parseInt garante que não é string
-        
-        if (error) throw error;
-        
-        console.log('✅ Entrega confirmada automaticamente após 4 horas');
-        
-        // Limpa dados locais
-        localStorage.removeItem('locanda_confirmExpiry_' + pedidoId);
-        fecharTracker();
-        
-        // Mostra notificação
-        if (Notification.permission === 'granted') {
-            new Notification('Pedido Entregue ✅', {
-                body: 'Sua entrega foi confirmada automaticamente. Obrigado!'
-            });
-        }
-    } catch (err) {
-        console.error('Erro ao confirmar entrega automática:', err);
+  try {
+    const { error } = await supa
+      .from("pedidos")
+      .update({
+        status: "entregue",
+        tempo_entregue: new Date().toISOString(),
+      })
+      .eq("id", parseInt(pedidoId)); // parseInt garante que não é string
+
+    if (error) throw error;
+
+    console.log("✅ Entrega confirmada automaticamente após 4 horas");
+
+    // Limpa dados locais
+    localStorage.removeItem("locanda_confirmExpiry_" + pedidoId);
+    fecharTracker();
+
+    // Mostra notificação
+    if (Notification.permission === "granted") {
+      new Notification("Pedido Entregue ✅", {
+        body: "Sua entrega foi confirmada automaticamente. Obrigado!",
+      });
     }
+  } catch (err) {
+    console.error("Erro ao confirmar entrega automática:", err);
+  }
 }
 
 // ===== CONFIRMAÇÃO MANUAL (CLIENTE) =====
 async function confirmarEntregaCliente() {
-    const pedidoId = localStorage.getItem('locanda_pedido_id');
-    if (!pedidoId) {
-        alert('Erro: Pedido não encontrado');
-        return;
+  const pedidoId = localStorage.getItem("locanda_pedido_id");
+  if (!pedidoId) {
+    alert("Erro: Pedido não encontrado");
+    return;
+  }
+
+  if (!confirm("Confirmar que você recebeu o pedido?")) {
+    return;
+  }
+
+  try {
+    const { error } = await supa
+      .from("pedidos")
+      .update({
+        status: "entregue",
+        tempo_entregue: new Date().toISOString(),
+      })
+      .eq("id", parseInt(pedidoId)); // parseInt garante tipo correto
+
+    if (error) throw error;
+
+    console.log("✅ Entrega confirmada pelo cliente");
+
+    // Cancela timer automático
+    if (autoConfirmTimer) {
+      clearTimeout(autoConfirmTimer);
     }
-    
-    if (!confirm('Confirmar que você recebeu o pedido?')) {
-        return;
-    }
-    
-    try {
-        const { error } = await supa
-            .from('pedidos')
-            .update({ 
-                status: 'entregue',
-                tempo_entregue: new Date().toISOString()
-            })
-            .eq('id', parseInt(pedidoId));  // parseInt garante tipo correto
-        
-        if (error) throw error;
-        
-        console.log('✅ Entrega confirmada pelo cliente');
-        
-        // Cancela timer automático
-        if (autoConfirmTimer) {
-            clearTimeout(autoConfirmTimer);
-        }
-        localStorage.removeItem('locanda_confirmExpiry_' + pedidoId);
-        
-        // Atualiza UI
-        mostrarMensagemEntregaConfirmada();
-        
-        // Fecha tracker após 3 segundos
-        setTimeout(() => {
-            fecharTracker();
-        }, 3000);
-        
-    } catch (err) {
-        console.error('Erro ao confirmar entrega:', err);
-        alert('Erro ao confirmar entrega. Tente novamente.');
-    }
+    localStorage.removeItem("locanda_confirmExpiry_" + pedidoId);
+
+    // Atualiza UI
+    mostrarMensagemEntregaConfirmada();
+
+    // Fecha tracker após 3 segundos
+    setTimeout(() => {
+      fecharTracker();
+    }, 3000);
+  } catch (err) {
+    console.error("Erro ao confirmar entrega:", err);
+    alert("Erro ao confirmar entrega. Tente novamente.");
+  }
 }
 
 // ===== MOSTRAR MENSAGEM DE CONFIRMAÇÃO =====
 function mostrarMensagemEntregaConfirmada() {
-    const tracker = document.getElementById('pedido-tracker');
-    if (!tracker) return;
-    
-    // Atualiza conteúdo do tracker
-    tracker.innerHTML = `
+  const tracker = document.getElementById("pedido-tracker");
+  if (!tracker) return;
+
+  // Atualiza conteúdo do tracker
+  tracker.innerHTML = `
         <div style="text-align:center; padding:20px;">
             <div style="font-size:3rem; margin-bottom:10px;">✅</div>
             <div style="font-weight:700; font-size:1.2rem; color:#27ae60; margin-bottom:5px;">
@@ -157,67 +189,76 @@ function mostrarMensagemEntregaConfirmada() {
 // SUBSTITUA a função mostrarTracker() por esta versão atualizada:
 
 async function mostrarTracker(status, uidPedido) {
-    // Fix #9: busca dados do motoboy do banco antes de atualizar o visual
-    let motoboy = null;
-    try {
-        const pedidoId = localStorage.getItem('locanda_pedido_id');
-        if (pedidoId && (status === 'saiu_entrega' || status === 'entregue')) {
-            const { data: p } = await supa
-                .from('pedidos')
-                .select('motoboy_id')
-                .eq('id', pedidoId)
-                .single();
-            if (p && p.motoboy_id) {
-                const { data: m } = await supa
-                    .from('motoboys')
-                    .select('nome, telefone')
-                    .eq('id', p.motoboy_id)
-                    .single();
-                motoboy = m || null;
-            }
-        }
-    } catch (_) { /* falha silenciosa */ }
+  // Fix #9: busca dados do motoboy do banco antes de atualizar o visual
+  let motoboy = null;
+  try {
+    const pedidoId = localStorage.getItem("locanda_pedido_id");
+    if (pedidoId && (status === "saiu_entrega" || status === "entregue")) {
+      const { data: p } = await supa
+        .from("pedidos")
+        .select("motoboy_id")
+        .eq("id", pedidoId)
+        .single();
+      if (p && p.motoboy_id) {
+        const { data: m } = await supa
+          .from("motoboys")
+          .select("nome, telefone")
+          .eq("id", p.motoboy_id)
+          .single();
+        motoboy = m || null;
+      }
+    }
+  } catch (_) {
+    /* falha silenciosa */
+  }
 
-    atualizarTrackingVisual(status, motoboy);
-    
-    const card = document.getElementById('track-order-card');
-    if (card) card.style.display = 'block';
-    
-    const tn = document.getElementById('track-numero');
-    if (tn) tn.textContent = uidPedido;
-    
-    const tf = document.getElementById('track-form');
-    const tr = document.getElementById('track-result');
-    if (tf) tf.style.display = 'none';
-    if (tr) tr.style.display = 'block';
+  atualizarTrackingVisual(status, motoboy);
 
-    // Botão confirmar entrega se saiu para entrega
-    const pedidoId = localStorage.getItem('locanda_pedido_id');
-    if (status === 'saiu_entrega' && pedidoId) {
-        const tr2 = document.getElementById('track-result');
-        if (tr2 && !document.getElementById('btn-confirmar-entrega')) {
-            tr2.insertAdjacentHTML('beforeend', `
+  const card = document.getElementById("track-order-card");
+  if (card) card.style.display = "block";
+
+  const tn = document.getElementById("track-numero");
+  if (tn) tn.textContent = uidPedido;
+
+  const tf = document.getElementById("track-form");
+  const tr = document.getElementById("track-result");
+  if (tf) tf.style.display = "none";
+  if (tr) tr.style.display = "block";
+
+  // Botão confirmar entrega se saiu para entrega
+  const pedidoId = localStorage.getItem("locanda_pedido_id");
+  if (status === "saiu_entrega" && pedidoId) {
+    const tr2 = document.getElementById("track-result");
+    if (tr2 && !document.getElementById("btn-confirmar-entrega")) {
+      tr2.insertAdjacentHTML(
+        "beforeend",
+        `
                 <button id="btn-confirmar-entrega" onclick="confirmarEntregaCliente()" 
                         style="width:100%; margin-top:12px; padding:12px; background:#27ae60; color:white; 
                                border:none; border-radius:8px; font-weight:600; cursor:pointer; font-size:1rem;">
                     ✅ Confirmar Recebimento
                 </button>
-            `);
-        }
-        const tempoExpiracao = localStorage.getItem('locanda_confirmExpiry_' + pedidoId);
-        if (!tempoExpiracao) iniciarTimerAutoConfirmacao(pedidoId);
+            `,
+      );
     }
+    const tempoExpiracao = localStorage.getItem(
+      "locanda_confirmExpiry_" + pedidoId,
+    );
+    if (!tempoExpiracao) iniciarTimerAutoConfirmacao(pedidoId);
+  }
 
-    if (status === 'entregue') {
-        mostrarMensagemEntregaConfirmada();
-        if (autoConfirmTimer) clearTimeout(autoConfirmTimer);
-        localStorage.removeItem('locanda_confirmExpiry_' + pedidoId);
-    }
+  if (status === "entregue") {
+    mostrarMensagemEntregaConfirmada();
+    if (autoConfirmTimer) clearTimeout(autoConfirmTimer);
+    localStorage.removeItem("locanda_confirmExpiry_" + pedidoId);
+  }
 }
 
 // Validação de segurança do Supabase
-if (typeof supa === 'undefined') {
-  console.error('ERRO: O arquivo supabaseClient.js não foi carregado antes do app.js');
+if (typeof supa === "undefined") {
+  console.error(
+    "ERRO: O arquivo supabaseClient.js não foi carregado antes do app.js",
+  );
   // Não bloqueamos o app, mas avisamos no console
 }
 
@@ -228,8 +269,10 @@ let carrinho = [];
 let freteCalculado = 0;
 let freteMotoboy = 0; // Valor pago ao motoboy (da tabela de frete)
 let localCliente = null;
-let modoEntrega = 'delivery';
-let prodAtual = null, optAtual = null, qtd = 1;
+let modoEntrega = "delivery";
+let prodAtual = null,
+  optAtual = null,
+  qtd = 1;
 let itensMontagem = {};
 let cupomAplicado = null;
 let EXTRAS_GLOBAIS = []; // Adicionais que aparecem em TODOS os produtos
@@ -259,7 +302,9 @@ let MENU = {
 // ==========================================
 // 3. INICIALIZAÇÃO
 // ==========================================
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
+
+  await carregarConfiguracoesLoja();
   // 1. Carrega dados salvos (Nome, Tel, Último Pedido)
   carregarDadosLocal();
 
@@ -268,24 +313,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 3. Verifica Horário de Funcionamento e Banner
   await verificarHorario();
-  
+
   // 4. Restaura tracking se houver pedido ativo
   restaurarTrackingSeExistir();
 
   // Restaura timer se página foi recarregada durante entrega
   restaurarTimerSeNecessario();
-  
+
   // 5. Carrega extras globais (adicionais que aparecem em todos os produtos)
   await carregarExtrasGlobais();
 
   // Restaura backup do carrinho APÓS o menu estar pronto (fix #13)
   restaurarCarrinhoBackup();
 
-  const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-      overlay.style.opacity = '0';
-      setTimeout(() => { overlay.style.display = 'none'; }, 300);
-    }
+  const overlay = document.getElementById("loading-overlay");
+  if (overlay) {
+    overlay.style.opacity = "0";
+    setTimeout(() => {
+      overlay.style.display = "none";
+    }, 300);
+  }
 });
 
 // Carrega os extras globais da tabela configuracoes
@@ -293,31 +340,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function carregarExtrasGlobais() {
   try {
     // Tenta buscar com a coluna extras_globais
-    const { data, error } = await supa.from('configuracoes').select('extras_globais').single();
+    const { data, error } = await supa
+      .from("configuracoes")
+      .select("extras_globais")
+      .single();
 
     // Se der erro de coluna não encontrada, ignora silenciosamente
     if (error) {
-      if (error.message && error.message.includes('extras_globais')) {
-        console.log('ℹ️ Coluna extras_globais não existe no banco. Usando array vazio.');
-      } else if (error.code === 'PGRST204' || error.code === '42703') {
+      if (error.message && error.message.includes("extras_globais")) {
+        console.log(
+          "ℹ️ Coluna extras_globais não existe no banco. Usando array vazio.",
+        );
+      } else if (error.code === "PGRST204" || error.code === "42703") {
         // Código de erro do PostgREST para coluna não encontrada
-        console.log('ℹ️ Coluna extras_globais não existe no banco. Usando array vazio.');
+        console.log(
+          "ℹ️ Coluna extras_globais não existe no banco. Usando array vazio.",
+        );
       } else {
-        console.warn('Erro ao carregar extras globais:', error.message);
+        console.warn("Erro ao carregar extras globais:", error.message);
       }
       EXTRAS_GLOBAIS = [];
       return;
     }
 
-    if (data && Array.isArray(data.extras_globais) && data.extras_globais.length > 0) {
+    if (
+      data &&
+      Array.isArray(data.extras_globais) &&
+      data.extras_globais.length > 0
+    ) {
       EXTRAS_GLOBAIS = data.extras_globais;
-      console.log('✅ Extras globais carregados:', EXTRAS_GLOBAIS.length, 'itens');
+      console.log(
+        "✅ Extras globais carregados:",
+        EXTRAS_GLOBAIS.length,
+        "itens",
+      );
     } else {
       EXTRAS_GLOBAIS = [];
     }
   } catch (e) {
     // Coluna ainda não existe no banco — ignora silenciosamente
-    console.log('ℹ️ Extras globais não disponíveis:', e.message);
+    console.log("ℹ️ Extras globais não disponíveis:", e.message);
     EXTRAS_GLOBAIS = [];
   }
 }
@@ -326,56 +388,65 @@ async function carregarExtrasGlobais() {
 // 4. FUNÇÕES DE BANCO DE DADOS E MENU
 // ==========================================
 
+// ── Aplica visibilidade das formas de pagamento no checkout do cliente ──
+function _aplicarFormasPagamentoCliente(features) {
+  const pags = features?.pagamentos;
+  const select = document.getElementById("forma-pag");
+  if (!select || !pags) return;
+  Array.from(select.options).forEach((opt) => {
+    if (!opt.value) return; // placeholder
+    const key = opt.value.toLowerCase();
+    // Mapeia os valores do select para as chaves de features.pagamentos
+    const mapa = {
+      efetivo: "efetivo",
+      pix: "pix",
+      transferencia: "alias",
+      cartao: "cartao",
+      qr_py: "qr_py",
+      multipagamento: "multipagamento",
+    };
+    const featureKey = mapa[key] || key;
+    if (pags[featureKey] === false) {
+      opt.style.display = "none";
+    } else {
+      opt.style.display = "";
+    }
+  });
+}
+
 // Verifica Horário e Atualiza Banner
 async function verificarHorario() {
-  const { data } = await supa.from('configuracoes').select('*').single();
+  const { data } = await supa.from("configuracoes").select("*").maybeSingle();
   if (!data) return;
 
   if (data.cotacao_real) COTACAO_REAL = data.cotacao_real;
-  if (data.tabela_frete && Array.isArray(data.tabela_frete)) TABELA_FRETE = data.tabela_frete;
+  if (data.tabela_frete && Array.isArray(data.tabela_frete))
+    TABELA_FRETE = data.tabela_frete;
+  if (data.limite_distancia_km != null)
+    LIMITE_DISTANCIA_KM = parseFloat(data.limite_distancia_km) || null;
+  // Aplica visibilidade das formas de pagamento conforme configuração
+  _aplicarFormasPagamentoCliente(data.features_ativas);
+  if (data.taxa_debito != null) TAXA_DEBITO_BR = Number(data.taxa_debito);
+  if (data.taxa_credito != null) TAXA_CREDITO_BR = Number(data.taxa_credito);
 
-  // Fix #73: se admin fechou delivery manualmente, força loja fechada
-  if (data.delivery_aberto === false) {
-    const badge = document.querySelector('.badge-status');
-    if (badge) {
-      const lang = localStorage.getItem('language') || 'es';
-      const fechados = { es:'Cerrado', pt:'Fechado', en:'Closed', de:'Geschlossen' };
-      badge.innerText = fechados[lang] || 'Cerrado';
-      badge.classList.remove('open');
-      badge.classList.add('closed');
-    }
-    if (data.aviso_delivery) {
-      let aviso = document.getElementById('aviso-delivery-admin');
-      if (!aviso) {
-        aviso = document.createElement('div');
-        aviso.id = 'aviso-delivery-admin';
-        aviso.style.cssText = 'background:#fff3cd;border:1.5px solid #f0a500;border-radius:10px;padding:12px 16px;margin:12px 20px;font-size:0.9rem;font-weight:600;color:#856404;text-align:center';
-        const nav = document.getElementById('category-nav');
-        if (nav && nav.parentElement) nav.parentElement.insertBefore(aviso, nav);
-      }
-      aviso.textContent = '⚠️ ' + data.aviso_delivery;
-      aviso.style.display = 'block';
-    }
-    return; // loja forçada fechada — encerra verificação
-  }
-
-  // Fix #74: extensão temporária de horário configurada pelo admin
-  if (data.horario_extra_hoje) {
-    const hoje = new Date().toISOString().split('T')[0];
-    if (data.horario_extra_hoje.data === hoje && data.horario_extra_hoje.minutos > 0) {
-      EXTENSAO_HORARIO_TEMP = data.horario_extra_hoje.minutos;
-    }
-  }
+  // ── Dados de pagamento do banco ────────────────────────────────
+  if (data.chave_pix) CHAVE_PIX = data.chave_pix;
+  if (data.nome_pix) NOME_PIX = data.nome_pix;
+  if (data.dados_alias) DADOS_ALIAS = data.dados_alias;
+  if (data.nome_alias) ALIAS_PY = data.nome_alias;
+  if (data.alias_qr_url) QR_ALIAS_URL = data.alias_qr_url;
+  if (data.qr_py_url) QR_PY_URL = data.qr_py_url;
+  if (data.whatsapp_loja) WHATSAPP_LOJA_APP = data.whatsapp_loja;
 
   const agora = new Date();
   const horaAtual = agora.getHours() * 60 + agora.getMinutes();
   // 0=Dom,1=Seg...6=Sab → mapeia para as chaves do objeto
-  const diaKeys = ['dom','seg','ter','qua','qui','sex','sab'];
+  const diaKeys = ["dom", "seg", "ter", "qua", "qui", "sex", "sab"];
   const diaKey = diaKeys[agora.getDay()];
 
   function horaParaMin(str) {
     if (!str) return null;
-    const [h, m] = str.split(':').map(Number);
+    const [h, m] = str.split(":").map(Number);
     return h * 60 + m;
   }
 
@@ -394,70 +465,119 @@ async function verificarHorario() {
     const hs = data.horarios_semanais;
     if (hs && hs[diaKey]) {
       const diaConfig = hs[diaKey];
-      if (!diaConfig.fechado && diaConfig.turnos && diaConfig.turnos.length > 0) {
-        estaAberto = diaConfig.turnos.some(turnoAtivo);
-      }
-    } else {
-      // Fallback: se não houver grade configurada, usa os campos antigos
-      const abre = horaParaMin(data.hora_abertura || '18:00');
-      const fecha = horaParaMin(data.hora_fechamento || '23:59');
-      if (abre !== null && fecha !== null) {
-        if (fecha < abre) estaAberto = horaAtual >= abre || horaAtual < fecha;
-        else estaAberto = horaAtual >= abre && horaAtual < fecha;
-      }
-    }
-  }
 
-  const badge = document.querySelector('.badge-status');
-  if(badge) {
-      // Obtém o idioma atual para traduzir Aberto/Fechado
-      const lang = localStorage.getItem('language') || 'es';
-      const textos = {
-        es: { aberto: 'Abierto', fechado: 'Cerrado' },
-        pt: { aberto: 'Aberto', fechado: 'Fechado' },
-        en: { aberto: 'Open', fechado: 'Closed' },
-        de: { aberto: 'Geöffnet', fechado: 'Geschlossen' }
-      };
-      const t = textos[lang] || textos.es;
-      
-      if (estaAberto) {
-        badge.innerText = t.aberto;
-        badge.classList.remove('closed');
-        badge.classList.add('open');
+      // Dia explicitamente fechado na grade
+      if (diaConfig.fechado) {
+        estaAberto = false;
       } else {
-        badge.innerText = t.fechado;
-        badge.classList.remove('open');
-        badge.classList.add('closed');
-      }
-  }
+        // Filtra turnos válidos (exclui {abre:"", fecha:""})
+        const turnosValidos = (diaConfig.turnos || []).filter(
+          (t) => t.abre && t.fecha,
+        );
 
-  // Atualiza Banner Promocional — Fix #48: atribui onclick nos imgs, não no container
-  if (data.banner_imagem && data.banner_produto_id) {
-    const img1 = document.getElementById('banner-img-1');
-    if (img1) {
-      img1.src = data.banner_imagem;
-      img1.onclick = function () { clicarBanner(data.banner_produto_id); };
+        if (turnosValidos.length > 0) {
+          // Há turnos configurados → segue o horário
+          estaAberto = turnosValidos.some(turnoAtivo);
+        } else {
+          // Dia não está fechado mas não tem horário definido → considera aberto
+          estaAberto = true;
+        }
+      }
+    } else if (hs && Object.keys(hs).length > 0) {
+      // Grade existe mas não tem entrada para hoje → aberto
+      estaAberto = true;
+    } else {
+      // Sem grade configurada → loja_aberta=true é suficiente para abrir
+      estaAberto = true;
     }
   }
-  // banner-img-2 mantém clique padrão desabilitado até ser configurado no admin
-  
-  // Aplica personalização visual se existir
-  if (data.nome_loja) {
-    const h1 = document.querySelector('.store-details h1');
-    if(h1) h1.textContent = data.nome_loja;
-    
-    // Atualiza o título da página também
-    document.title = `${data.nome_loja} - Delivery`;
+
+  const badge = document.querySelector(".badge-status");
+  if (badge) {
+    // Obtém o idioma atual para traduzir Aberto/Fechado
+    const lang = localStorage.getItem("language") || "es";
+    const textos = {
+      es: { aberto: "Abierto", fechado: "Cerrado" },
+      pt: { aberto: "Aberto", fechado: "Fechado" },
+      en: { aberto: "Open", fechado: "Closed" },
+      de: { aberto: "Geöffnet", fechado: "Geschlossen" },
+    };
+    const t = textos[lang] || textos.es;
+
+    if (estaAberto) {
+      badge.innerText = t.aberto;
+      badge.classList.remove("closed");
+      badge.classList.add("open");
+    } else {
+      badge.innerText = t.fechado;
+      badge.classList.remove("open");
+      badge.classList.add("closed");
+    }
   }
-  
+
+  // Atualiza Banners Promocionais (banner 1 e banner 2)
+  const bannerImgs = [
+    document.getElementById("banner1-img") ||
+      document.querySelectorAll(".banner-track img")[0],
+    document.getElementById("banner2-img") ||
+      document.querySelectorAll(".banner-track img")[1],
+  ];
+
+  // Banner 1
+  if (data.banner_imagem && data.banner_produto_id && bannerImgs[0]) {
+    bannerImgs[0].src = data.banner_imagem;
+    bannerImgs[0].style.display = "block";
+    bannerImgs[0].style.cursor = "pointer";
+    bannerImgs[0].onclick = function () {
+      clicarBanner(data.banner_produto_id);
+    };
+  } else if (bannerImgs[0] && !data.banner_imagem) {
+    bannerImgs[0].style.display = "none";
+  }
+
+  // Banner 2
+  if (data.banner2_imagem && data.banner2_produto_id && bannerImgs[1]) {
+    bannerImgs[1].src = data.banner2_imagem;
+    bannerImgs[1].style.display = "block";
+    bannerImgs[1].style.cursor = "pointer";
+    bannerImgs[1].onclick = function () {
+      clicarBanner(data.banner2_produto_id);
+    };
+  } else if (bannerImgs[1] && !data.banner2_imagem) {
+    bannerImgs[1].style.display = "none";
+  }
+
+  // Atualiza nome da loja no header
+  const nomeVal = data.nome_restaurante || data.nome_loja || "";
+  NOME_RESTAURANTE_APP = nomeVal; // ← torna disponível para mensagem WhatsApp
+  const nomeEl = document.getElementById("nome-loja-app");
+  if (nomeEl && nomeVal) {
+    nomeEl.textContent = nomeVal;
+    document.title = nomeVal + " — Delivery";
+  }
+
+  // Coordenadas da loja (para cálculo de frete)
+  if (data.coord_lat && data.coord_lng) {
+    COORD_LOJA.lat = parseFloat(data.coord_lat) || 0;
+    COORD_LOJA.lng = parseFloat(data.coord_lng) || 0;
+  }
+
+  // Logo
+  const logoEl = document.getElementById("logo-app");
+  const logoUrl = data.logo_url || data.icone_url || "";
+  if (logoEl && logoUrl) {
+    logoEl.src = logoUrl;
+    logoEl.style.display = "block";
+    logoEl.style.objectFit = "contain";
+    logoEl.style.width = "44px";
+    logoEl.style.height = "44px";
+    logoEl.style.borderRadius = "50%";
+    logoEl.style.filter = "none";
+    logoEl.style.webkitFilter = "none";
+  }
+
   if (data.cor_primaria) {
-    document.documentElement.style.setProperty('--primary', data.cor_primaria);
-  }
-  
-  if (data.icone_url) {
-    document.querySelectorAll('.logo-area img, link[rel="apple-touch-icon"]').forEach(img => {
-      img.src = data.icone_url;
-    });
+    document.documentElement.style.setProperty("--primary", data.cor_primaria);
   }
 }
 
@@ -466,8 +586,8 @@ async function verificarHorario() {
 // ── Verifica se a loja está aberta para receber pedidos agora ─────────────
 // Retorna { aberto: true/false, proximoDia: string|null }
 function verificarLojaAbertaParaPedido() {
-  const badge = document.querySelector('.badge-status');
-  const estaAberto = badge && badge.classList.contains('open');
+  const badge = document.querySelector(".badge-status");
+  const estaAberto = badge && badge.classList.contains("open");
   // Se não conseguiu determinar pelo badge, assume aberto (evita bloquear por engano)
   if (!badge) return { aberto: true, proximoDia: null };
   return { aberto: estaAberto, proximoDia: null };
@@ -475,69 +595,81 @@ function verificarLojaAbertaParaPedido() {
 
 // ── Mostra alerta quando a loja está fechada ──────────────────────────────
 function mostrarAlertaLojaFechada(proximoDia) {
-  const lang = localStorage.getItem('language') || 'es';
+  const lang = localStorage.getItem("language") || "es";
   const msgs = {
-    es: 'El local está cerrado en este momento. Por favor intente más tarde.',
-    pt: 'A loja está fechada no momento. Por favor tente mais tarde.',
-    en: 'The store is currently closed. Please try again later.',
-    de: 'Das Geschäft ist derzeit geschlossen. Bitte versuchen Sie es später.'
+    es: "El local está cerrado en este momento. Por favor intente más tarde.",
+    pt: "A loja está fechada no momento. Por favor tente mais tarde.",
+    en: "The store is currently closed. Please try again later.",
+    de: "Das Geschäft ist derzeit geschlossen. Bitte versuchen Sie es später.",
   };
   alert(msgs[lang] || msgs.es);
 }
 
 // ── Mostra badge de agendamento no checkout ───────────────────────────────
 function mostrarIndicadorAgendamento() {
-  let indicador = document.getElementById('indicador-agendamento');
+  let indicador = document.getElementById("indicador-agendamento");
   if (indicador) return; // Já existe
 
-  indicador = document.createElement('div');
-  indicador.id = 'indicador-agendamento';
+  indicador = document.createElement("div");
+  indicador.id = "indicador-agendamento";
   indicador.style.cssText = [
-    'background:#fff3cd;border:1.5px solid #f0a500;border-radius:8px',
-    'padding:10px 14px;font-size:0.85rem;font-weight:600;color:#856404',
-    'margin-bottom:10px;display:flex;align-items:center;gap:8px'
-  ].join(';');
-  indicador.innerHTML = `📅 Pedido agendado${DATA_AGENDAMENTO ? ` para ${DATA_AGENDAMENTO}` : ''}`;
+    "background:#fff3cd;border:1.5px solid #f0a500;border-radius:8px",
+    "padding:10px 14px;font-size:0.85rem;font-weight:600;color:#856404",
+    "margin-bottom:10px;display:flex;align-items:center;gap:8px",
+  ].join(";");
+  indicador.innerHTML = `📅 Pedido agendado${DATA_AGENDAMENTO ? ` para ${DATA_AGENDAMENTO}` : ""}`;
 
-  const lista = document.getElementById('carrinho-lista');
+  const lista = document.getElementById("carrinho-lista");
   if (lista && lista.parentElement) {
     lista.parentElement.insertBefore(indicador, lista);
   }
 }
 
 async function renderMenu() {
-  const nav = document.getElementById('category-nav');
-  const content = document.getElementById('menu-content');
-  
-  if(!nav || !content) return;
-  
-  
-  nav.innerHTML = '';
-  content.innerHTML = '';
+  const nav = document.getElementById("category-nav");
+  const content = document.getElementById("menu-content");
+
+  if (!nav || !content) return;
+
+  nav.innerHTML = "";
+  content.innerHTML = "";
 
   // Busca Categorias, Subcategorias e Produtos ativos
-  const { data: categsDb } = await supa.from('categorias').select('*').eq('ativo', true).order('ordem');
+  const { data: categsDb } = await supa
+    .from("categorias")
+    .select("*")
+    .eq("ativo", true)
+    .order("ordem");
   let subcatsDb = [];
   try {
-    const { data: _subs } = await supa.from('subcategorias').select('*').order('categoria_slug,ordem');
+    const { data: _subs } = await supa
+      .from("subcategorias")
+      .select("*")
+      .order("categoria_slug,ordem");
     subcatsDb = _subs || [];
-  } catch (_) { subcatsDb = []; }
-  const { data: produtos } = await supa.from('produtos').select('*')
-      .eq('ativo', true)
-      .eq('pausado', false)
-      .or('somente_balcao.is.null,somente_balcao.eq.false');
+  } catch (_) {
+    subcatsDb = [];
+  }
+  const { data: produtos } = await supa
+    .from("produtos")
+    .select("*")
+    .eq("ativo", true)
+    .order("categoria_slug", { ascending: true })
+    .order("ordem", { ascending: true })
+    .limit(5000);
 
   if (!produtos || !categsDb) {
-    console.error('Erro ao carregar menu do banco');
-    
+    console.error("Erro ao carregar menu do banco");
     return;
   }
+
+  // Diagnóstico removido — campo confirmado: 'destaque' no banco
 
   const subcats = subcatsDb || [];
 
   // Monta mapa: categoria_slug -> lista de subcategorias
   const subcatPorCat = {};
-  subcats.forEach(s => {
+  subcats.forEach((s) => {
     if (!subcatPorCat[s.categoria_slug]) subcatPorCat[s.categoria_slug] = [];
     subcatPorCat[s.categoria_slug].push(s);
   });
@@ -547,32 +679,51 @@ async function renderMenu() {
   const prodPorSubcat = {};
   const prodSemSubcat = {};
 
+  // Mapas globais para acesso por categoria (usados na paginação lazy)
+  window._PROD_POR_SUBCAT = {};
+  window._PROD_SEM_SUBCAT = {};
+  window._SUBCATS = subcats;
+  window._SUBCATPORCAT = {};
+  subcats.forEach((s) => {
+    if (!window._SUBCATPORCAT[s.categoria_slug]) window._SUBCATPORCAT[s.categoria_slug] = [];
+    window._SUBCATPORCAT[s.categoria_slug].push(s);
+  });
+
   produtos.forEach((p) => {
-    const cat = p.categoria_slug;
-    const sub = p.subcategoria_slug;
+    const cat = p.categoria_slug || ""; // garante string, nunca null
+    const sub = p.subcategoria_slug || null;
     const item = {
       id: p.id,
       nome: p.nome,
       desc: p.descricao,
       preco: p.preco,
+      preco_original: p.preco_original || null,
+      em_promocao: !!(p.em_promocao || p.promo_ativo),
+      em_destaque: !!(p.destaque || p.em_destaque || p.featured),
       img: p.imagem_url,
       montagem: p.montagem_config,
       e_montavel: p.e_montavel,
       subcategoria_slug: sub || null,
-      categoria_slug: cat || '',
+      categoria_slug: cat || "",
     };
 
     if (sub) {
       if (!prodPorSubcat[sub]) prodPorSubcat[sub] = [];
       prodPorSubcat[sub].push(item);
+      if (!window._PROD_POR_SUBCAT[sub]) window._PROD_POR_SUBCAT[sub] = [];
+      window._PROD_POR_SUBCAT[sub].push(item);
     } else {
       if (!prodSemSubcat[cat]) prodSemSubcat[cat] = [];
       prodSemSubcat[cat].push(item);
+      if (!window._PROD_SEM_SUBCAT[cat]) window._PROD_SEM_SUBCAT[cat] = [];
+      window._PROD_SEM_SUBCAT[cat].push(item);
     }
 
     // Mantém MENU global para compatibilidade com outros lugares do código
-    if (!MENU[cat]) MENU[cat] = [];
-    MENU[cat].push(item);
+    if (cat) { // só adiciona se tiver slug válido
+      if (!MENU[cat]) MENU[cat] = [];
+      MENU[cat].push(item);
+    }
   });
 
   // Filtro de horário
@@ -581,14 +732,16 @@ async function renderMenu() {
 
   function categoriaVisivel(cat) {
     if (Array.isArray(cat.dias_semana) && cat.dias_semana.length > 0) {
-      const mapa = { dom:0, seg:1, ter:2, qua:3, qui:4, sex:5, sab:6 };
+      const mapa = { dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6 };
       const diaAtual = agora.getDay();
-      const diasNum = cat.dias_semana.map(d => mapa[d]).filter(n => n !== undefined);
+      const diasNum = cat.dias_semana
+        .map((d) => mapa[d])
+        .filter((n) => n !== undefined);
       if (!diasNum.includes(diaAtual)) return false;
     }
     if (!cat.hora_inicio || !cat.hora_fim) return true;
-    const [hI, mI] = cat.hora_inicio.split(':').map(Number);
-    const [hF, mF] = cat.hora_fim.split(':').map(Number);
+    const [hI, mI] = cat.hora_inicio.split(":").map(Number);
+    const [hF, mF] = cat.hora_fim.split(":").map(Number);
     const inicio = hI * 60 + mI;
     const fim = hF * 60 + mF;
     if (fim < inicio) return minAgora >= inicio || minAgora <= fim;
@@ -596,135 +749,628 @@ async function renderMenu() {
   }
 
   function renderProdutoDiv(item) {
-    const img = item.img || 'https://cdn-icons-png.flaticon.com/512/2252/2252075.png';
+    const img = item.img || "";
     let cfg = item.montagem;
-    if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch (_) { cfg = null; } }
-    const tipo = (cfg && !Array.isArray(cfg) && cfg.__tipo) ? cfg.__tipo : (item.e_montavel ? 'montavel' : 'padrao');
+    if (typeof cfg === "string") {
+      try { cfg = JSON.parse(cfg); } catch (_) { cfg = null; }
+    }
+    const tipo =
+      cfg && !Array.isArray(cfg) && cfg.__tipo
+        ? cfg.__tipo
+        : item.e_montavel ? "montavel" : "padrao";
 
-    let precoLabel = `Gs ${item.preco.toLocaleString('es-PY')}`;
-    if (tipo === 'variacoes' && cfg && cfg.variacoes && cfg.variacoes.length > 0) {
-      const precos = cfg.variacoes.map(v => v.preco || 0).filter(p => p > 0);
+    // ── Pricing label ──────────────────────────────────────────
+    let precoLabel = "";
+    let discountBadge = "";
+    const _brl = (gs) =>
+      COTACAO_REAL > 0
+        ? `<div class="prod-price-brl">≈ R$ ${(gs / COTACAO_REAL).toFixed(2)}</div>`
+        : "";
+
+    if (item.em_promocao && item.preco_original && item.preco_original > item.preco) {
+      const pct = Math.round(100 - (item.preco / item.preco_original) * 100);
+      discountBadge = `<span class="prod-badge-discount">-${pct}%</span>`;
+      precoLabel = `
+        <div class="prod-promo-row">
+          <span class="prod-price-old">Gs ${item.preco_original.toLocaleString("es-PY")}</span>
+          <span class="prod-price-promo-label">Promo Gs ${item.preco.toLocaleString("es-PY")}</span>
+        </div>
+        ${_brl(item.preco)}`;
+    } else if (tipo === "variacoes" && cfg && cfg.variacoes && cfg.variacoes.length > 0) {
+      const precos = cfg.variacoes.map((v) => v.preco || 0).filter((p) => p > 0);
       if (precos.length > 0) {
         const min = Math.min(...precos);
-        precoLabel = `<span style="font-size:0.72rem;font-weight:500;opacity:0.7">A partir de</span> Gs ${min.toLocaleString('es-PY')}`;
+        precoLabel = `<div class="prod-price" style="font-size:0.78rem;"><span style="font-size:0.68rem;font-weight:500;opacity:0.7">A partir de</span><br>Gs ${min.toLocaleString("es-PY")}</div>${_brl(min)}`;
+      } else {
+        precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div>${_brl(item.preco)}`;
       }
+    } else {
+      precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div>${_brl(item.preco)}`;
     }
 
-    const div = document.createElement('div');
-    div.className = 'product-item';
-    div.onclick = function() { abrirModal(item); };
+    // ── Destaque badge — estilo referência (☆ verde) ──────────────
+    const destaqueBadge = item.em_destaque
+      ? `<span class="prod-badge-destaque">☆ Destaque</span>`
+      : "";
+
+    // ── Image section ──────────────────────────────────────────
+    const imgHtml = img
+      ? `<img src="${img}" class="prod-img" loading="lazy" onerror="this.style.display='none'">`
+      : `<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:2.5rem;background:#f5f5f5;">🛒</div>`;
+
+    const div = document.createElement("div");
+    div.className = "product-item" + (item.em_promocao ? " product-item--promo" : "");
+    div.onclick = function () { abrirModal(item); };
     div.innerHTML = `
-        <div class="prod-info">
-            <div class="prod-title">${item.nome}</div>
-            <div class="prod-desc">${item.desc || ''}</div>
-            <div class="prod-price">${precoLabel}</div>
-        </div>
-        <img src="${img}" class="prod-img">
+      <div class="prod-img-container">
+        ${imgHtml}
+        ${destaqueBadge}
+        ${discountBadge}
+        <button class="prod-btn-fav" onclick="event.stopPropagation();this.classList.toggle('active');this.textContent=this.classList.contains('active')?'❤️':'🤍'" title="Favoritar">🤍</button>
+      </div>
+      <div class="prod-info">
+        <div class="prod-title">${item.nome}</div>
+        ${precoLabel}
+      </div>
+      <button class="prod-btn-add" onclick="event.stopPropagation();abrirModal(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+        <i class="fas fa-shopping-cart" style="font-size:0.8rem;"></i> Comprar
+      </button>
     `;
     return div;
   }
 
-  // Constrói o HTML por categoria
+  // ── Wrapper: create or reuse grid container ─────────────────
+  function getOrCreateGrid(parent) {
+    let grid = parent.querySelector(".products-grid:last-child");
+    if (!grid) {
+      grid = document.createElement("div");
+      grid.className = "products-grid";
+      parent.appendChild(grid);
+    }
+    return grid;
+  }
+
+  function appendToSection(section, item) {
+    // Find last grid or create one
+    const children = section.childNodes;
+    let lastGrid = null;
+    for (let i = children.length - 1; i >= 0; i--) {
+      if (children[i].classList && children[i].classList.contains("products-grid")) {
+        lastGrid = children[i]; break;
+      }
+    }
+    if (!lastGrid) {
+      lastGrid = document.createElement("div");
+      lastGrid.className = "products-grid";
+      section.appendChild(lastGrid);
+    }
+    lastGrid.appendChild(renderProdutoDiv(item));
+  }
+
+  // Expõe renderCategoriaSectionContent para uso em filtrarProdutos (busca global)
+  window._renderCatContent = renderCategoriaSectionContent;
+
+  // ── Constante de paginação ──────────────────────────────────────
+  const PAGE_SIZE = 20;
+
+  // ── Helper: renderiza controle de paginação ──────────────────────
+  function renderPaginacao(container, todosItens, offset, renderFn) {
+    // Remove paginação anterior se existir
+    const oldPag = container.querySelector(".pagination-ctrl");
+    if (oldPag) oldPag.remove();
+
+    const total = todosItens.length;
+    if (total <= PAGE_SIZE) return; // não precisa de paginação
+
+    const hasPrev = offset > 0;
+    const hasNext = offset + PAGE_SIZE < total;
+    const paginaAtual = Math.floor(offset / PAGE_SIZE) + 1;
+    const totalPaginas = Math.ceil(total / PAGE_SIZE);
+
+    const ctrl = document.createElement("div");
+    ctrl.className = "pagination-ctrl";
+    ctrl.innerHTML = `
+      <div class="pagination-info">${paginaAtual} / ${totalPaginas} &nbsp;·&nbsp; ${total} itens</div>
+      <div class="pagination-btns">
+        <button class="pag-btn" ${!hasPrev ? "disabled" : ""} data-dir="prev">← Anterior</button>
+        <button class="pag-btn primary" ${!hasNext ? "disabled" : ""} data-dir="next">Próximos →</button>
+      </div>`;
+
+    ctrl.querySelector("[data-dir='prev']").onclick = () => {
+      renderFn(container, todosItens, offset - PAGE_SIZE);
+    };
+    ctrl.querySelector("[data-dir='next']").onclick = () => {
+      renderFn(container, todosItens, offset + PAGE_SIZE);
+      // Scroll suave ao topo da seção
+      container.closest("section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    container.appendChild(ctrl);
+  }
+
+  // ── Renderiza página de itens dentro de um grid ──────────────────
+  function renderPaginaItens(parentSection, todosItens, offset) {
+    // Limpa conteúdo paginável (grids + paginação, mas mantém subtítulos fixos)
+    parentSection.querySelectorAll(".products-grid, .pagination-ctrl").forEach(el => el.remove());
+
+    const slice = todosItens.slice(offset, offset + PAGE_SIZE);
+    const grid = document.createElement("div");
+    grid.className = "products-grid";
+    slice.forEach((item) => grid.appendChild(renderProdutoDiv(item)));
+    parentSection.appendChild(grid);
+
+    renderPaginacao(parentSection, todosItens, offset, renderPaginaItens);
+  }
+
+  // ── Renderiza seção de categoria com subcategorias e paginação ──────
+  function renderCategoriaSectionContent(section, key) {
+    // Limpa conteúdo dinâmico anterior
+    section.querySelectorAll(".products-grid, .pagination-ctrl, .subcat-title, .subcat-group").forEach(el => el.remove());
+
+    const subcatsDessaCat = window._SUBCATPORCAT[key] || [];
+    const temSubcats = subcatsDessaCat.length > 0;
+
+    if (!temSubcats) {
+      const allItems = (window._PROD_SEM_SUBCAT[key] || []).concat(
+        Object.keys(window._PROD_POR_SUBCAT)
+          .filter((k) => window._SUBCATS.find((s) => s.slug === k && s.categoria_slug === key))
+          .flatMap((k) => window._PROD_POR_SUBCAT[k] || [])
+      );
+      renderPaginaItens(section, allItems, 0);
+    } else {
+      // Produtos sem subcategoria
+      const semSub = window._PROD_SEM_SUBCAT[key] || [];
+      if (semSub.length > 0) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "subcat-group";
+        section.appendChild(wrapper);
+        renderPaginaItens(wrapper, semSub, 0);
+      }
+
+      // Grupos por subcategoria
+      subcatsDessaCat.forEach((subcat) => {
+        const itensSub = window._PROD_POR_SUBCAT[subcat.slug] || [];
+        if (itensSub.length === 0) return;
+
+        const subtitulo = document.createElement("div");
+        subtitulo.className = "subcat-title";
+        subtitulo.innerText = subcat.nome_exibicao;
+        section.appendChild(subtitulo);
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "subcat-group";
+        section.appendChild(wrapper);
+        renderPaginaItens(wrapper, itensSub, 0);
+      });
+    }
+  }
+
+  // ── Renderiza página de destaques ────────────────────────────────
+  function renderPaginaDestaques(container, destaques, offset) {
+    container.querySelectorAll(".products-grid, .pagination-ctrl").forEach(el => el.remove());
+
+    const slice = destaques.slice(offset, offset + PAGE_SIZE);
+    const grid = document.createElement("div");
+    grid.className = "products-grid";
+    slice.forEach((item) => grid.appendChild(renderProdutoDiv(item)));
+    container.appendChild(grid);
+
+    renderPaginacao(container, destaques, offset, renderPaginaDestaques);
+  }
+
+  // ── 1. Seção DESTAQUES — busca direta dos itens já mapeados ──────────────
+  // Tenta primeiro pelos mapas globais; se vazio, faz query direta ao banco
+  let todosDestaques = Object.values(window._PROD_SEM_SUBCAT)
+    .flat()
+    .concat(Object.values(window._PROD_POR_SUBCAT).flat())
+    .filter((item) => item.em_destaque === true);
+
+  // Fallback: se mapas não encontraram destaques, consulta o banco diretamente
+  if (todosDestaques.length === 0) {
+    try {
+      const { data: destaquesDb } = await supa
+        .from("produtos")
+        .select("id, nome, descricao, preco, preco_original, em_promocao, imagem_url, categoria_slug, subcategoria_slug, e_montavel, montagem_config, destaque")
+        .eq("ativo", true)
+        .eq("destaque", true);
+
+      if (destaquesDb && destaquesDb.length > 0) {
+        todosDestaques = destaquesDb.map((p) => ({
+          id: p.id,
+          nome: p.nome,
+          desc: p.descricao,
+          preco: p.preco,
+          preco_original: p.preco_original || null,
+          em_promocao: !!p.em_promocao,
+          em_destaque: true,
+          img: p.imagem_url,
+          montagem: p.montagem_config,
+          e_montavel: p.e_montavel,
+          subcategoria_slug: p.subcategoria_slug || null,
+          categoria_slug: p.categoria_slug || "",
+        }));
+        console.log(`✅ Destaques via query direta: ${todosDestaques.length}`);
+      }
+    } catch (e) {
+      console.warn("Erro ao buscar destaques:", e);
+    }
+  }
+
+  console.log(`✅ Destaques encontrados: ${todosDestaques.length} (campo 'destaque' no banco)`);
+
+  const temDestaques = todosDestaques.length > 0;
+
+  if (temDestaques) {
+    // Pill de destaques
+    const pillDest = document.createElement("button");
+    pillDest.className = "cat-pill active";
+    pillDest.id = "pill-destaques";
+    pillDest.innerHTML = `<span class="cat-pill-icon">⭐</span>Destaques`;
+    pillDest.onclick = () => {
+      document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
+      pillDest.classList.add("active");
+      // Mostra seção de destaques e oculta todas as categorias
+      const sd = document.getElementById("sec-destaques");
+      if (sd) sd.style.display = "";
+      document.querySelectorAll("#menu-content > section[data-cat]").forEach((s) => s.style.display = "none");
+      sd?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    nav.appendChild(pillDest);
+
+    // Seção destaques
+    const secDest = document.createElement("section");
+    secDest.id = "sec-destaques";
+    secDest.innerHTML = `
+      <div class="section-title-row">
+        <h2 class="section-title"><span>⭐</span> Destaques</h2>
+      </div>`;
+    renderPaginaDestaques(secDest, todosDestaques, 0);
+    content.appendChild(secDest);
+  }
+
+  // ── 2. Categorias — seções ocultas, reveladas ao clicar na pill ──
+  let primeiraCategoria = null; // usado como fallback se não houver destaques
+
+  // Slugs já criados pelas categorias do banco (evita duplicatas no fallback)
+  const keysJaCriadas = new Set();
+
   categsDb.forEach((cat) => {
     if (!categoriaVisivel(cat)) return;
     const key = cat.slug;
     const todosOsProdutos = MENU[key];
     if (!todosOsProdutos || todosOsProdutos.length === 0) return;
 
+    keysJaCriadas.add(key);
+
     // Pill de navegação
-    const pill = document.createElement('button');
-    pill.className = 'cat-pill';
-    pill.innerText = cat.nome_exibicao;
+    const pill = document.createElement("button");
+    pill.className = "cat-pill";
+    pill.dataset.catKey = key;
+    const catIcon2 = cat.icone || cat.emoji || "";
+    const nomeExibir = cat.nome_exibicao || cat.nome || key.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+pill.innerHTML = catIcon2
+  ? `<span class="cat-pill-icon">${catIcon2}</span>${nomeExibir}`
+  : nomeExibir;
     pill.onclick = () => {
-      document.querySelectorAll('.cat-pill').forEach((p) => p.classList.remove('active'));
-      pill.classList.add('active');
-      document.getElementById(key).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+
+      const sec = document.getElementById(key);
+      if (!sec) return;
+
+      // Lazy: renderiza o conteúdo da categoria apenas na 1ª vez
+      if (!sec.dataset.loaded) {
+        sec.dataset.loaded = "1";
+        renderCategoriaSectionContent(sec, key);
+      }
+
+      // Oculta seção de destaques e exibe só a categoria selecionada
+      const sd = document.getElementById("sec-destaques");
+      if (sd) sd.style.display = "none";
+      document.querySelectorAll("#menu-content > section[data-cat]").forEach((s) => {
+        s.style.display = s.id === key ? "" : "none";
+      });
+
+      sec.scrollIntoView({ behavior: "smooth", block: "start" });
     };
     nav.appendChild(pill);
 
-    // Seção da categoria
-    const section = document.createElement('section');
+    // Seção da categoria (inicialmente oculta se houver destaques, visível se não houver)
+    const section = document.createElement("section");
     section.id = key;
-    section.innerHTML = `<h2 class="section-title">${cat.nome_exibicao}</h2>`;
-
-    const subcatsDessaCat = subcatPorCat[key] || [];
-    const temSubcats = subcatsDessaCat.length > 0;
-
-    if (!temSubcats) {
-      // Sem subcategorias: renderiza tudo direto
-      (prodSemSubcat[key] || []).concat(Object.keys(prodPorSubcat)
-        .filter(k => subcats.find(s => s.slug === k && s.categoria_slug === key))
-        .flatMap(k => prodPorSubcat[k] || [])
-      ).forEach(item => section.appendChild(renderProdutoDiv(item)));
-    } else {
-      // Produtos sem subcategoria (aparecem primeiro, sem título de grupo)
-      const semSub = prodSemSubcat[key] || [];
-      semSub.forEach(item => section.appendChild(renderProdutoDiv(item)));
-
-      // Grupos por subcategoria
-      subcatsDessaCat.forEach(subcat => {
-        const itensSub = prodPorSubcat[subcat.slug] || [];
-        if (itensSub.length === 0) return; // Oculta subcategoria vazia
-
-        const subtitulo = document.createElement('div');
-        subtitulo.className = 'subcat-title';
-        subtitulo.innerText = subcat.nome_exibicao;
-        section.appendChild(subtitulo);
-
-        itensSub.forEach(item => section.appendChild(renderProdutoDiv(item)));
-      });
-    }
+    section.dataset.cat = key;
+    section.style.display = "none"; // sempre oculta inicialmente
+    const catIcon = cat.icone || cat.emoji || "";
+    section.innerHTML = `
+      <div class="section-title-row">
+        <h2 class="section-title">${catIcon ? `<span>${catIcon}</span>` : ""} ${nomeExibir}</h2>
+      </div>`;
 
     content.appendChild(section);
+
+    // Registra a primeira categoria para fallback
+    if (!primeiraCategoria) primeiraCategoria = { pill, section, key };
   });
+
+  // ── Fallback: categorias presentes nos produtos mas ausentes/inativas na tabela categorias ──
+  // Garante que nenhuma categoria com produtos fique invisível por problema de cadastro
+  const slugsNomesMap = {
+    "natura": "Natura Cosméticos",
+    "mercearia": "Mercearia",
+    "suplementos": "Suplementos",
+    "cacau-show": "Cacau Show",
+  };
+  const iconesPadrao = {
+    "natura": "🌿",
+    "mercearia": "🛒",
+    "suplementos": "💪",
+    "cacau-show": "🍫",
+  };
+  Object.keys(MENU).forEach((key) => {
+    if (!key || key.trim() === "") return; // ignora slug vazio (produtos sem categoria)
+    if (keysJaCriadas.has(key)) return; // já criada pelo loop principal
+    if (!MENU[key] || MENU[key].length === 0) return;
+
+    const nomeExibicao = slugsNomesMap[key] || key.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const icone = iconesPadrao[key] || "📦";
+
+    const pill = document.createElement("button");
+    pill.className = "cat-pill";
+    pill.dataset.catKey = key;
+    pill.innerHTML = `<span class="cat-pill-icon">${icone}</span>${nomeExibicao}`;
+    pill.onclick = () => {
+      document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
+      pill.classList.add("active");
+
+      const sec = document.getElementById(key);
+      if (!sec) return;
+
+      if (!sec.dataset.loaded) {
+        sec.dataset.loaded = "1";
+        renderCategoriaSectionContent(sec, key);
+      }
+
+      const sd = document.getElementById("sec-destaques");
+      if (sd) sd.style.display = "none";
+      document.querySelectorAll("#menu-content > section[data-cat]").forEach((s) => {
+        s.style.display = s.id === key ? "" : "none";
+      });
+
+      sec.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    nav.appendChild(pill);
+
+    const section = document.createElement("section");
+    section.id = key;
+    section.dataset.cat = key;
+    section.style.display = "none";
+    section.innerHTML = `
+      <div class="section-title-row">
+        <h2 class="section-title"><span>${icone}</span> ${nomeExibicao}</h2>
+      </div>`;
+
+    content.appendChild(section);
+
+    if (!primeiraCategoria) primeiraCategoria = { pill, section, key };
+  });
+
+  // Pill especial "Início" para voltar à vista de destaques (só se houver destaques)
+  if (temDestaques) {
+    const pillTodos = document.createElement("button");
+    pillTodos.className = "cat-pill";
+    pillTodos.id = "pill-todos";
+    pillTodos.innerHTML = `<span class="cat-pill-icon">🏠</span>Início`;
+    pillTodos.onclick = () => {
+      document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
+      pillTodos.classList.add("active");
+      const sd = document.getElementById("sec-destaques");
+      if (sd) sd.style.display = "";
+      document.querySelectorAll("#menu-content > section[data-cat]").forEach((s) => s.style.display = "none");
+      document.getElementById("sec-destaques")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    // Insere como primeiro pill (antes do pill de destaques)
+    nav.insertBefore(pillTodos, nav.firstChild);
+  } else if (primeiraCategoria) {
+    // Sem destaques: exibe a primeira categoria automaticamente com pill ativa
+    primeiraCategoria.pill.classList.add("active");
+    primeiraCategoria.section.style.display = "";
+    primeiraCategoria.section.dataset.loaded = "1";
+    renderCategoriaSectionContent(primeiraCategoria.section, primeiraCategoria.key);
+  }
+
+  // ── Nav em duas linhas: distribui pills em grid 2 colunas ──────────────
+  if (!document.getElementById("nav-two-row-style")) {
+    const navStyle = document.createElement("style");
+    navStyle.id = "nav-two-row-style";
+    navStyle.textContent = `
+      #category-nav {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        overflow-x: unset !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        gap: 6px !important;
+        padding: 8px 12px !important;
+      }
+      #category-nav .cat-pill {
+        flex: 1 1 calc(50% - 6px) !important;
+        min-width: 0 !important;
+        max-width: calc(50% - 3px) !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        justify-content: center !important;
+        text-align: center !important;
+      }
+    `;
+    document.head.appendChild(navStyle);
+  }
 }
 
-// ==========================================
-// 5. MODAL DE PRODUTO (multi-builder)
-// ==========================================
+// ── Filtro de busca global ────────────────────────────────────────────────
+function filtrarProdutos(termo) {
+  const t = (termo || "").trim().toLowerCase();
+  const content = document.getElementById("menu-content");
+  const nav = document.getElementById("category-nav");
+  if (!content) return;
+
+  // Remove seção de busca e mensagem de vazio anteriores
+  const oldSearchSec = document.getElementById("sec-busca-resultados");
+  if (oldSearchSec) oldSearchSec.remove();
+  const emptyOld = document.getElementById("search-empty-msg");
+  if (emptyOld) emptyOld.remove();
+
+  if (!t) {
+    // Sem termo: volta ao estado inicial (destaques visíveis, categorias ocultas)
+    const secDest = document.getElementById("sec-destaques");
+    if (secDest) secDest.style.display = "";
+    content.querySelectorAll("section[data-cat]").forEach((sec) => {
+      sec.style.display = "none";
+    });
+    if (nav) nav.style.display = "";
+    // Reativa pill de início/destaques
+    document.querySelectorAll(".cat-pill").forEach((p) => p.classList.remove("active"));
+    const pillInicio = document.getElementById("pill-todos") || document.getElementById("pill-destaques");
+    if (pillInicio) pillInicio.classList.add("active");
+    return;
+  }
+
+  // Oculta navegação e seções normais durante busca
+  if (nav) nav.style.display = "none";
+  const secDest = document.getElementById("sec-destaques");
+  if (secDest) secDest.style.display = "none";
+  content.querySelectorAll("section[data-cat]").forEach((sec) => {
+    sec.style.display = "none";
+  });
+
+  // Busca diretamente nos dados em memória (todos os produtos, sem limite de paginação)
+  const todosOsProdutos = [];
+  if (window._PROD_SEM_SUBCAT) {
+    Object.values(window._PROD_SEM_SUBCAT).forEach((arr) => todosOsProdutos.push(...arr));
+  }
+  if (window._PROD_POR_SUBCAT) {
+    Object.values(window._PROD_POR_SUBCAT).forEach((arr) => todosOsProdutos.push(...arr));
+  }
+
+  const resultados = todosOsProdutos.filter((item) => {
+    const nome = (item.nome || "").toLowerCase();
+    const desc = (item.desc || "").toLowerCase();
+    return nome.includes(t) || desc.includes(t);
+  });
+
+  if (resultados.length === 0) {
+    const emptyEl = document.createElement("div");
+    emptyEl.id = "search-empty-msg";
+    emptyEl.className = "search-empty";
+    emptyEl.innerHTML = `<i class="fas fa-search"></i><div>Nenhum produto encontrado para "<strong>${termo}</strong>"</div>`;
+    content.prepend(emptyEl);
+    return;
+  }
+
+  // Renderiza resultados em seção temporária (sem paginação, mostra tudo)
+  const secResultados = document.createElement("section");
+  secResultados.id = "sec-busca-resultados";
+  const grid = document.createElement("div");
+  grid.className = "products-grid";
+
+  resultados.forEach((item) => {
+    const div = document.createElement("div");
+    div.className = "product-item" + (item.em_promocao ? " product-item--promo" : "");
+    div.onclick = function () { abrirModal(item); };
+    const img = item.img || "";
+    const imgHtml = img
+      ? `<img src="${img}" class="prod-img" loading="lazy" onerror="this.style.display='none'">`
+      : `<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:2.5rem;background:#f5f5f5;">🛒</div>`;
+    const destaqueBadge = item.em_destaque
+      ? `<span class="prod-badge-destaque">☆ Destaque</span>` : "";
+    const _brl2 = (gs) =>
+      COTACAO_REAL > 0
+        ? `<div class="prod-price-brl">≈ R$ ${(gs / COTACAO_REAL).toFixed(2)}</div>`
+        : "";
+    let precoLabel = "";
+    if (item.em_promocao && item.preco_original && item.preco_original > item.preco) {
+      const pct = Math.round(100 - (item.preco / item.preco_original) * 100);
+      precoLabel = `<div class="prod-promo-row"><span class="prod-price-old">Gs ${item.preco_original.toLocaleString("es-PY")}</span><span class="prod-price-promo-label">Promo Gs ${item.preco.toLocaleString("es-PY")}</span></div>${_brl2(item.preco)}`;
+    } else {
+      precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div>${_brl2(item.preco)}`;
+    }
+    div.innerHTML = `
+      <div class="prod-img-container">
+        ${imgHtml}
+        ${destaqueBadge}
+        <button class="prod-btn-fav" onclick="event.stopPropagation();this.classList.toggle('active');this.textContent=this.classList.contains('active')?'❤️':'🤍'" title="Favoritar">🤍</button>
+      </div>
+      <div class="prod-info">
+        <div class="prod-title">${item.nome}</div>
+        ${precoLabel}
+      </div>
+      <button class="prod-btn-add" onclick="event.stopPropagation();abrirModal(${JSON.stringify(item).replace(/"/g,'&quot;')})">
+        <i class="fas fa-shopping-cart" style="font-size:0.8rem;"></i> Comprar
+      </button>`;
+    grid.appendChild(div);
+  });
+
+  secResultados.appendChild(grid);
+  content.prepend(secResultados);
+}
 
 // Variáveis de estado do modal
-let _pizzaConfig = { tamanhoSelecionado: null, bordaSelecionada: false, tipoSelecionado: null, sabores: [] };
+let _pizzaConfig = {
+  tamanhoSelecionado: null,
+  bordaSelecionada: false,
+  tipoSelecionado: null,
+  sabores: [],
+};
 
 function abrirModal(item) {
   prodAtual = item;
   qtd = 1;
   itensMontagem = {};
-  _pizzaConfig = { p: null, tamanhoSelecionado: null, numSabores: null, sabores: [], bordaConfig: null };
+  _pizzaConfig = {
+    p: null,
+    tamanhoSelecionado: null,
+    numSabores: null,
+    sabores: [],
+    bordaConfig: null,
+  };
   _comboFechadoConfig = { limite: 0, sabores: [], selecao: {} };
 
-  document.getElementById('modal-title').innerText = item.nome;
-  document.getElementById('modal-desc').innerText = item.desc || '';
-  document.getElementById('modal-obs').value = '';
-  document.getElementById('modal-qty').innerText = qtd;
+  document.getElementById("modal-title").innerText = item.nome;
+  document.getElementById("modal-desc").innerText = item.desc || "";
+  document.getElementById("modal-obs").value = "";
+  document.getElementById("modal-qty").innerText = qtd;
 
-  const divOptions = document.getElementById('modal-options');
-  const divMontagem = document.getElementById('modal-montagem');
-  divOptions.innerHTML = '';
-  divMontagem.innerHTML = '';
-  divMontagem.style.display = 'none';
+  const divOptions = document.getElementById("modal-options");
+  const divMontagem = document.getElementById("modal-montagem");
+  divOptions.innerHTML = "";
+  divMontagem.innerHTML = "";
+  divMontagem.style.display = "none";
 
   // Detecta tipo do produto
   let cfg = item.montagem; // montagem_config do banco
   // Supabase às vezes retorna JSONB como string — faz parse defensivo
-  if (typeof cfg === 'string') {
-    try { cfg = JSON.parse(cfg); } catch (_) { cfg = null; }
+  if (typeof cfg === "string") {
+    try {
+      cfg = JSON.parse(cfg);
+    } catch (_) {
+      cfg = null;
+    }
   }
-  let tipo = 'padrao';
+  let tipo = "padrao";
   if (cfg && !Array.isArray(cfg) && cfg.__tipo) tipo = cfg.__tipo;
-  else if (item.e_montavel || (cfg && Array.isArray(cfg) && cfg.length > 0)) tipo = 'montavel';
+  else if (item.e_montavel || (cfg && Array.isArray(cfg) && cfg.length > 0))
+    tipo = "montavel";
 
-  if (tipo === 'shake') {
+  if (tipo === "shake") {
     _renderShake(cfg, divOptions);
-  } else if (tipo === 'montavel') {
+  } else if (tipo === "montavel") {
     _renderMontavel(item, cfg, divOptions);
-  } else if (tipo === 'pizza') {
+  } else if (tipo === "pizza") {
     _renderPizza(cfg, divOptions);
-  } else if (tipo === 'almoco') {
+  } else if (tipo === "almoco") {
     _renderAlmoco(cfg, divOptions);
-  } else if (tipo === 'variacoes') {
+  } else if (tipo === "variacoes") {
     _renderVariacoes(item, cfg, divOptions);
-  } else if (tipo === 'combo_fechado') {
+  } else if (tipo === "combo_fechado") {
     _renderComboFechado(cfg, divOptions);
   }
 
@@ -747,9 +1393,8 @@ function abrirModal(item) {
 
   // Atualiza preço inicial
   _atualizarPrecoPizza();
-  document.getElementById('product-modal').classList.add('active');
+  document.getElementById("product-modal").classList.add("active");
 }
-
 
 /* ══════════════════════════════════════════════
    SHAKE RENDERER — passo a passo: tamanho → sabor
@@ -760,15 +1405,15 @@ let _shakeConfig = { tamanhoSelecionado: null, saborSelecionado: null };
 let _comboFechadoConfig = { limite: 0, sabores: [], selecao: {} };
 
 function _renderShake(cfg, container) {
-  const shk = (cfg && cfg.shake) ? cfg.shake : cfg || {};
+  const shk = cfg && cfg.shake ? cfg.shake : cfg || {};
   _shakeConfig = { tamanhoSelecionado: null, saborSelecionado: null };
 
   const tamanhos = shk.tamanhos || [];
   const sabores = shk.sabores || [];
 
   // Passo 1: Tamanho
-  const sec1 = document.createElement('section');
-  sec1.className = 'pizza-step';
+  const sec1 = document.createElement("section");
+  sec1.className = "pizza-step";
   sec1.innerHTML = `
     <div class="pizza-step-header">
       <span class="pizza-step-num">1</span>
@@ -777,67 +1422,74 @@ function _renderShake(cfg, container) {
     <div class="shake-size-grid" id="shake-size-grid"></div>`;
   container.appendChild(sec1);
 
-  const sizeGrid = sec1.querySelector('#shake-size-grid');
+  const sizeGrid = sec1.querySelector("#shake-size-grid");
   tamanhos.forEach((tam) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'pizza-size-card';
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "pizza-size-card";
     card.innerHTML = `
       <div class="pizza-size-name">${tam.nome}</div>
-      ${tam.ml ? `<div class="pizza-size-info">${tam.ml}ml</div>` : ''}
-      <div class="pizza-size-price">Gs ${(tam.preco || 0).toLocaleString('es-PY')}</div>`;
+      ${tam.ml ? `<div class="pizza-size-info">${tam.ml}ml</div>` : ""}
+      <div class="pizza-size-price">Gs ${(tam.preco || 0).toLocaleString("es-PY")}</div>`;
     card.onclick = () => {
-      sizeGrid.querySelectorAll('.pizza-size-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
+      sizeGrid
+        .querySelectorAll(".pizza-size-card")
+        .forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
       _shakeConfig.tamanhoSelecionado = tam;
-      sec2.style.display = 'block';
+      sec2.style.display = "block";
       _atualizarPrecoShake();
     };
     sizeGrid.appendChild(card);
   });
 
   // Passo 2: Sabor
-  const sec2 = document.createElement('section');
-  sec2.className = 'pizza-step';
-  sec2.style.display = 'none';
+  const sec2 = document.createElement("section");
+  sec2.className = "pizza-step";
+  sec2.style.display = "none";
   sec2.innerHTML = `
     <div class="pizza-step-header">
       <span class="pizza-step-num">2</span>
       <span>Escolha o sabor</span>
     </div>
     <div class="pizza-sabores-lista" id="shake-sabores-lista">
-      ${sabores.map(s => {
-        const esc = (s.nome || '').replace(/'/g, "\'");
-        return `<button type="button" class="pizza-sabor-item" onclick="_selecionarSaborShake('${esc}', ${s.preco || 0}, this)">
+      ${sabores
+        .map((s) => {
+          const esc = (s.nome || "").replace(/'/g, "\'");
+          return `<button type="button" class="pizza-sabor-item" onclick="_selecionarSaborShake('${esc}', ${s.preco || 0}, this)">
           ${s.img ? `<img src="${s.img}" class="pizza-sabor-img" alt="${s.nome}" onerror="this.style.display='none'">` : `<div class="pizza-sabor-emoji">🥤</div>`}
           <div class="pizza-sabor-info">
             <div class="pizza-sabor-nome">${s.nome}</div>
-            ${s.preco ? `<div class="pizza-sabor-preco">+ Gs ${(s.preco).toLocaleString('es-PY')}</div>` : ''}
+            ${s.preco ? `<div class="pizza-sabor-preco">+ Gs ${s.preco.toLocaleString("es-PY")}</div>` : ""}
           </div>
         </button>`;
-      }).join('')}
+        })
+        .join("")}
     </div>`;
   container.appendChild(sec2);
 
   // CSS para o grid de tamanhos (reutiliza pizza-size-grid)
-  const style = document.getElementById('shake-size-style');
+  const style = document.getElementById("shake-size-style");
   if (!style) {
-    const s = document.createElement('style');
-    s.id = 'shake-size-style';
-    s.textContent = '.shake-size-grid { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }';
+    const s = document.createElement("style");
+    s.id = "shake-size-style";
+    s.textContent =
+      ".shake-size-grid { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }";
     document.head.appendChild(s);
   }
 }
 
 function _selecionarSaborShake(nome, preco, el) {
-  document.querySelectorAll('#shake-sabores-lista .pizza-sabor-item').forEach(b => {
-    b.classList.remove('selected');
-    b.querySelector('.pizza-fracao-tag')?.remove();
-  });
-  el.classList.add('selected');
-  const tag = document.createElement('span');
-  tag.className = 'pizza-fracao-tag';
-  tag.textContent = '✓';
+  document
+    .querySelectorAll("#shake-sabores-lista .pizza-sabor-item")
+    .forEach((b) => {
+      b.classList.remove("selected");
+      b.querySelector(".pizza-fracao-tag")?.remove();
+    });
+  el.classList.add("selected");
+  const tag = document.createElement("span");
+  tag.className = "pizza-fracao-tag";
+  tag.textContent = "✓";
   el.appendChild(tag);
   _shakeConfig.saborSelecionado = { nome, preco };
   _atualizarPrecoShake();
@@ -847,25 +1499,26 @@ function _atualizarPrecoShake() {
   const tamPreco = _shakeConfig.tamanhoSelecionado?.preco || 0;
   const saborExtra = _shakeConfig.saborSelecionado?.preco || 0;
   const total = tamPreco + saborExtra;
-  const el = document.getElementById('modal-price');
-  if (el && total > 0) el.textContent = 'Gs ' + total.toLocaleString('es-PY');
+  const el = document.getElementById("modal-price");
+  if (el && total > 0) el.textContent = "Gs " + total.toLocaleString("es-PY");
 }
 
 function _renderMontavel(item, cfg, container) {
-  const etapas = Array.isArray(cfg) ? cfg : (cfg && cfg.etapas ? cfg.etapas : []);
+  const etapas = Array.isArray(cfg) ? cfg : cfg && cfg.etapas ? cfg.etapas : [];
   etapas.forEach((etapa, idxEtapa) => {
-    const h4 = document.createElement('h4');
+    const h4 = document.createElement("h4");
     h4.innerText = `${etapa.titulo} (Máx: ${etapa.max})`;
-    h4.style.cssText = 'margin-top:10px; font-size:0.95rem; color:#555;';
+    h4.style.cssText = "margin-top:10px; font-size:0.95rem; color:#555;";
     container.appendChild(h4);
 
     etapa.itens.forEach((ingrediente) => {
-      const label = document.createElement('label');
-      label.style.cssText = 'display:block; padding:7px 10px; margin-bottom:3px; border:1px solid #eee; border-radius:8px; cursor:pointer;';
-      const input = document.createElement('input');
-      input.type = 'checkbox';
+      const label = document.createElement("label");
+      label.style.cssText =
+        "display:block; padding:7px 10px; margin-bottom:3px; border:1px solid #eee; border-radius:8px; cursor:pointer;";
+      const input = document.createElement("input");
+      input.type = "checkbox";
       input.value = ingrediente;
-      input.style.marginRight = '8px';
+      input.style.marginRight = "8px";
       input.onchange = () => {
         if (!itensMontagem[idxEtapa]) itensMontagem[idxEtapa] = [];
         if (input.checked) {
@@ -904,14 +1557,15 @@ function _renderPizza(cfg, container) {
   // Suporta formato antigo (flat: { __tipo, tamanhos, sabores }) e novo (nested: { __tipo, pizza: {...} })
   const p = cfg.pizza || (cfg.tamanhos ? cfg : null);
   if (!p || (!p.tamanhos && !p.sabores)) {
-    container.innerHTML = '<p style="color:#e74c3c;padding:10px;text-align:center">⚠️ Pizza não configurada ainda.<br>Configure tamanhos e sabores no painel admin.</p>';
+    container.innerHTML =
+      '<p style="color:#e74c3c;padding:10px;text-align:center">⚠️ Pizza não configurada ainda.<br>Configure tamanhos e sabores no painel admin.</p>';
     return;
   }
   _pizzaConfig.p = p;
 
   /* ── PASSO 1: Tamanho ─────────────────────────────── */
-  const secTam = document.createElement('section');
-  secTam.className = 'pizza-step';
+  const secTam = document.createElement("section");
+  secTam.className = "pizza-step";
   secTam.innerHTML = `
     <div class="pizza-step-header">
       <span class="pizza-step-num">1</span>
@@ -920,20 +1574,22 @@ function _renderPizza(cfg, container) {
     <div class="pizza-size-grid" id="pizza-size-grid"></div>`;
   container.appendChild(secTam);
 
-  const sizeGrid = secTam.querySelector('#pizza-size-grid');
+  const sizeGrid = secTam.querySelector("#pizza-size-grid");
   (p.tamanhos || []).forEach((tam) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'pizza-size-card';
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "pizza-size-card";
     card.dataset.nome = tam.nome;
     card.innerHTML = `
       <div class="pizza-size-name">${tam.nome}</div>
       <div class="pizza-size-info">${tam.fatias} fatias</div>
       <div class="pizza-size-info">⌀ ${tam.cm}cm</div>
-      <div class="pizza-size-price">Gs ${(tam.preco || 0).toLocaleString('es-PY')}</div>`;
+      <div class="pizza-size-price">Gs ${(tam.preco || 0).toLocaleString("es-PY")}</div>`;
     card.onclick = () => {
-      sizeGrid.querySelectorAll('.pizza-size-card').forEach((c) => c.classList.remove('selected'));
-      card.classList.add('selected');
+      sizeGrid
+        .querySelectorAll(".pizza-size-card")
+        .forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
       _pizzaConfig.tamanhoSelecionado = tam;
       _revelarPasso2(p, container);
       _atualizarPrecoPizza();
@@ -942,33 +1598,41 @@ function _renderPizza(cfg, container) {
   });
 
   /* ── Passos 2, 3, 4 aparecerão progressivamente ─── */
-  const passo2 = document.createElement('div');
-  passo2.id = 'pizza-passo2';
-  passo2.style.display = 'none';
+  const passo2 = document.createElement("div");
+  passo2.id = "pizza-passo2";
+  passo2.style.display = "none";
   container.appendChild(passo2);
 
-  const passo3 = document.createElement('div');
-  passo3.id = 'pizza-passo3';
-  passo3.style.display = 'none';
+  const passo3 = document.createElement("div");
+  passo3.id = "pizza-passo3";
+  passo3.style.display = "none";
   container.appendChild(passo3);
 
-  const passo4 = document.createElement('div');
-  passo4.id = 'pizza-passo4';
-  passo4.style.display = 'none';
+  const passo4 = document.createElement("div");
+  passo4.id = "pizza-passo4";
+  passo4.style.display = "none";
   container.appendChild(passo4);
 }
 
 /* Passo 2: Quantos sabores? */
 function _revelarPasso2(p, container) {
-  const passo2 = container.querySelector('#pizza-passo2') || document.getElementById('pizza-passo2');
+  const passo2 =
+    container.querySelector("#pizza-passo2") ||
+    document.getElementById("pizza-passo2");
   if (!passo2) return;
   _pizzaConfig.numSabores = null;
   _pizzaConfig.sabores = [];
 
   // max_sabores por tamanho tem prioridade sobre o global do produto
-  const maxLoja = _pizzaConfig.tamanhoSelecionado?.max_sabores || p.max_sabores || 1;
+  const maxLoja =
+    _pizzaConfig.tamanhoSelecionado?.max_sabores || p.max_sabores || 1;
   const opcoes = Array.from({ length: maxLoja }, (_, i) => i + 1);
-  const labels = { 1: 'Inteira', 2: 'Meia a Meia', 3: '3 Sabores', 4: '4 Sabores' };
+  const labels = {
+    1: "Inteira",
+    2: "Meia a Meia",
+    3: "3 Sabores",
+    4: "4 Sabores",
+  };
 
   passo2.innerHTML = `
     <section class="pizza-step">
@@ -977,24 +1641,38 @@ function _revelarPasso2(p, container) {
         <span>Quantos sabores?</span>
       </div>
       <div class="pizza-divisao-grid">
-        ${opcoes.map((n) => `
+        ${opcoes
+          .map(
+            (n) => `
           <button type="button" class="pizza-divisao-btn" data-n="${n}" onclick="_selecionarDivisao(${n})">
             <div class="pizza-divisao-icone">${_iconePizza(n)}</div>
-            <div class="pizza-divisao-nome">${labels[n] || n + ' Sabores'}</div>
-          </button>`).join('')}
+            <div class="pizza-divisao-nome">${labels[n] || n + " Sabores"}</div>
+          </button>`,
+          )
+          .join("")}
       </div>
     </section>`;
-  passo2.style.display = 'block';
+  passo2.style.display = "block";
   // Esconde passos seguintes ao reeditar
-  const p3 = container.querySelector('#pizza-passo3') || document.getElementById('pizza-passo3');
-  const p4 = container.querySelector('#pizza-passo4') || document.getElementById('pizza-passo4');
-  if (p3) { p3.innerHTML = ''; p3.style.display = 'none'; }
-  if (p4) { p4.innerHTML = ''; p4.style.display = 'none'; }
+  const p3 =
+    container.querySelector("#pizza-passo3") ||
+    document.getElementById("pizza-passo3");
+  const p4 =
+    container.querySelector("#pizza-passo4") ||
+    document.getElementById("pizza-passo4");
+  if (p3) {
+    p3.innerHTML = "";
+    p3.style.display = "none";
+  }
+  if (p4) {
+    p4.innerHTML = "";
+    p4.style.display = "none";
+  }
 }
 
 function _iconePizza(n) {
-  const icons = { 1: '🍕', 2: '🍕🍕', 3: '🍕🍕🍕', 4: '🍕🍕🍕🍕' };
-  return icons[n] || '🍕';
+  const icons = { 1: "🍕", 2: "🍕🍕", 3: "🍕🍕🍕", 4: "🍕🍕🍕🍕" };
+  return icons[n] || "🍕";
 }
 
 /* Passo 3: Escolher sabores */
@@ -1003,11 +1681,11 @@ function _selecionarDivisao(n) {
   _pizzaConfig.sabores = new Array(n).fill(null);
 
   // Destaca botão selecionado
-  document.querySelectorAll('.pizza-divisao-btn').forEach((b) => {
-    b.classList.toggle('selected', parseInt(b.dataset.n) === n);
+  document.querySelectorAll(".pizza-divisao-btn").forEach((b) => {
+    b.classList.toggle("selected", parseInt(b.dataset.n) === n);
   });
 
-  const p3 = document.getElementById('pizza-passo3');
+  const p3 = document.getElementById("pizza-passo3");
   if (!p3) return;
   const p = _pizzaConfig.p;
 
@@ -1018,75 +1696,88 @@ function _selecionarDivisao(n) {
   let html = `<section class="pizza-step">
     <div class="pizza-step-header">
       <span class="pizza-step-num">3</span>
-      <span>Escolha ${n === 1 ? 'o sabor' : `os ${n} sabores`}</span>
+      <span>Escolha ${n === 1 ? "o sabor" : `os ${n} sabores`}</span>
     </div>
     <p class="pizza-step-hint">
-      ${n > 1 ? `Selecione ${n} sabores — um por slot.` : ''}
+      ${n > 1 ? `Selecione ${n} sabores — um por slot.` : ""}
     </p>`;
 
   for (let slot = 0; slot < n; slot++) {
-    const fracLabel = n === 1 ? '' : `<span class="pizza-fracao-badge">${slot + 1}/${n}</span>`;
+    const fracLabel =
+      n === 1 ? "" : `<span class="pizza-fracao-badge">${slot + 1}/${n}</span>`;
     html += `
     <div class="pizza-slot-header">
       ${fracLabel}
-      <span class="pizza-slot-label">${n === 1 ? 'Sabor' : `${slot + 1}º sabor`}</span>
+      <span class="pizza-slot-label">${n === 1 ? "Sabor" : `${slot + 1}º sabor`}</span>
     </div>
     <div class="pizza-sabores-lista" id="pizza-slot-${slot}">
-      ${saboresFiltrados.map((s) => {
-  const sfEsc = (s.nome || '').replace(/'/g, "\\'");
-  const tipoLower = (s.tipo || 'Tradicional').toLowerCase();
-  // ── badge de tipo ──
-  let tipoBadge = '';
-  if (tipoLower === 'especial')      tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-especial">⭐ Especial</span>`;
-  else if (tipoLower === 'premium')  tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-especial" style="background:#7c3aed">🏆 Premium</span>`;
-  else if (tipoLower === 'doce premium') tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-doce" style="background:#e91e8c">🎂 Doce Premium</span>`;
-  else if (tipoLower === 'doce')     tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-doce">🍫 Doce</span>`;
-  // ── ícone (estava faltando!) ──
-  const iconHtml = s.img
-    ? `<img src="${s.img}" class="pizza-sabor-img" alt="${s.nome}" onerror="this.style.display='none'">`
-    : `<div class="pizza-sabor-emoji">🍕</div>`;
-  // ── diferença de preço pelo tipo ──
-  const tamAtual = _pizzaConfig.tamanhoSelecionado;
-  const precoTipo = tamAtual ? _precoPizzaPorTipo(tamAtual, s.tipo) : 0;
-  const precoDiff = tamAtual ? precoTipo - _precoPizzaPorTipo(tamAtual, 'Tradicional') : 0;
-  return `<button type="button" class="pizza-sabor-item" data-slot="${slot}" data-nome="${s.nome}" data-preco="0" data-tipo="${s.tipo || 'Tradicional'}" onclick="_selecionarSaborSlot(${slot}, '${sfEsc}', 0, this, '${s.tipo || 'Tradicional'}')">
+      ${saboresFiltrados
+        .map((s) => {
+          const sfEsc = (s.nome || "").replace(/'/g, "\\'");
+          const tipoLower = (s.tipo || "Tradicional").toLowerCase();
+          // ── badge de tipo ──
+          let tipoBadge = "";
+          if (tipoLower === "especial")
+            tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-especial">⭐ Especial</span>`;
+          else if (tipoLower === "premium")
+            tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-especial" style="background:#7c3aed">🏆 Premium</span>`;
+          else if (tipoLower === "doce premium")
+            tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-doce" style="background:#e91e8c">🎂 Doce Premium</span>`;
+          else if (tipoLower === "doce")
+            tipoBadge = `<span class="pizza-sabor-tipo-badge tipo-doce">🍫 Doce</span>`;
+          // ── ícone (estava faltando!) ──
+          const iconHtml = s.img
+            ? `<img src="${s.img}" class="pizza-sabor-img" alt="${s.nome}" onerror="this.style.display='none'">`
+            : `<div class="pizza-sabor-emoji">🍕</div>`;
+          // ── diferença de preço pelo tipo ──
+          const tamAtual = _pizzaConfig.tamanhoSelecionado;
+          const precoTipo = tamAtual ? _precoPizzaPorTipo(tamAtual, s.tipo) : 0;
+          const precoDiff = tamAtual
+            ? precoTipo - _precoPizzaPorTipo(tamAtual, "Tradicional")
+            : 0;
+          return `<button type="button" class="pizza-sabor-item" data-slot="${slot}" data-nome="${s.nome}" data-preco="0" data-tipo="${s.tipo || "Tradicional"}" onclick="_selecionarSaborSlot(${slot}, '${sfEsc}', 0, this, '${s.tipo || "Tradicional"}')">
     ${iconHtml}
     <div class="pizza-sabor-info">
       <div class="pizza-sabor-nome">${s.nome}</div>
-      ${s.desc ? `<div class="pizza-sabor-desc">${s.desc}</div>` : ''}
-      ${precoDiff > 0 ? `<div class="pizza-sabor-preco">+ Gs ${precoDiff.toLocaleString('es-PY')}</div>` : ''}
+      ${s.desc ? `<div class="pizza-sabor-desc">${s.desc}</div>` : ""}
+      ${precoDiff > 0 ? `<div class="pizza-sabor-preco">+ Gs ${precoDiff.toLocaleString("es-PY")}</div>` : ""}
     </div>
     ${tipoBadge}
   </button>`;
-}).join('')}
+        })
+        .join("")}
     </div>`;
   }
   html += `</section>`;
 
   p3.innerHTML = html;
-  p3.style.display = 'block';
+  p3.style.display = "block";
 
   // Borda aparece depois
-  const p4 = document.getElementById('pizza-passo4');
-  if (p4) { p4.innerHTML = ''; p4.style.display = 'none'; }
+  const p4 = document.getElementById("pizza-passo4");
+  if (p4) {
+    p4.innerHTML = "";
+    p4.style.display = "none";
+  }
   _atualizarPrecoPizza();
 }
 
 function _selecionarSaborSlot(slot, nome, preco, el, tipo) {
-  tipo = tipo || el?.dataset?.tipo || 'Tradicional';
+  tipo = tipo || el?.dataset?.tipo || "Tradicional";
   // Desmarca outros no mesmo slot
   const lista = document.getElementById(`pizza-slot-${slot}`);
-  if (lista) lista.querySelectorAll('.pizza-sabor-item').forEach((b) => {
-    b.classList.remove('selected');
-    b.querySelector('.pizza-fracao-tag')?.remove();
-  });
+  if (lista)
+    lista.querySelectorAll(".pizza-sabor-item").forEach((b) => {
+      b.classList.remove("selected");
+      b.querySelector(".pizza-fracao-tag")?.remove();
+    });
 
-  el.classList.add('selected');
+  el.classList.add("selected");
   const n = _pizzaConfig.numSabores || 1;
   // Adiciona tag de fração
-  const tag = document.createElement('span');
-  tag.className = 'pizza-fracao-tag';
-  tag.textContent = n > 1 ? `${slot + 1}/${n}` : '✓';
+  const tag = document.createElement("span");
+  tag.className = "pizza-fracao-tag";
+  tag.textContent = n > 1 ? `${slot + 1}/${n}` : "✓";
   el.appendChild(tag);
 
   _pizzaConfig.sabores[slot] = { nome, preco, tipo };
@@ -1097,12 +1788,14 @@ function _selecionarSaborSlot(slot, nome, preco, el, tipo) {
     _revelarPasso4Borda();
     // Scroll para a borda com pequeno delay (aguarda renderização)
     setTimeout(() => {
-      const p4 = document.getElementById('pizza-passo4');
+      const p4 = document.getElementById("pizza-passo4");
       if (p4) {
-        const scrollEl = document.querySelector('.modal-scroll-area') || document.querySelector('.options-list');
+        const scrollEl =
+          document.querySelector(".modal-scroll-area") ||
+          document.querySelector(".options-list");
         if (scrollEl) {
           const top = p4.offsetTop - scrollEl.offsetTop;
-          scrollEl.scrollTo({ top: top - 12, behavior: 'smooth' });
+          scrollEl.scrollTo({ top: top - 12, behavior: "smooth" });
         }
       }
     }, 80);
@@ -1112,13 +1805,15 @@ function _selecionarSaborSlot(slot, nome, preco, el, tipo) {
     setTimeout(() => {
       const proxLista = document.getElementById(`pizza-slot-${proximoSlot}`);
       if (proxLista) {
-        const scrollEl = document.querySelector('.modal-scroll-area') || document.querySelector('.options-list');
+        const scrollEl =
+          document.querySelector(".modal-scroll-area") ||
+          document.querySelector(".options-list");
         if (scrollEl) {
           // Sobe um pouco para mostrar o header do slot junto
           const header = proxLista.previousElementSibling; // .pizza-slot-header
           const target = header || proxLista;
           const top = target.offsetTop - scrollEl.offsetTop;
-          scrollEl.scrollTo({ top: top - 12, behavior: 'smooth' });
+          scrollEl.scrollTo({ top: top - 12, behavior: "smooth" });
         }
       }
     }, 80);
@@ -1130,7 +1825,7 @@ function _selecionarSaborSlot(slot, nome, preco, el, tipo) {
 /* Passo 4: Borda */
 function _revelarPasso4Borda() {
   const p = _pizzaConfig.p;
-  const p4 = document.getElementById('pizza-passo4');
+  const p4 = document.getElementById("pizza-passo4");
   if (!p4) return;
 
   // Preço de cada borda = determinado pelo TIPO da borda (Tradicional/Especial/Doce)
@@ -1138,17 +1833,29 @@ function _revelarPasso4Borda() {
   const tam = _pizzaConfig.tamanhoSelecionado || {};
 
   function _precoBordaPorTipo(tipo) {
-    const t = (tipo || 'Tradicional').toLowerCase();
-    if (t === 'especial' && tam.borda_preco_especial > 0) return tam.borda_preco_especial;
-    if (t === 'doce' && tam.borda_preco_doce > 0) return tam.borda_preco_doce;
+    const t = (tipo || "Tradicional").toLowerCase();
+    if (t === "especial" && tam.borda_preco_especial > 0)
+      return tam.borda_preco_especial;
+    if (t === "doce" && tam.borda_preco_doce > 0) return tam.borda_preco_doce;
     return tam.borda_preco || 0;
   }
 
-  const bordasOpcoes = p.bordas && p.bordas.length > 0
-    ? p.bordas.map(b => ({ nome: b.nome, tipo: b.tipo || 'Tradicional', preco: _precoBordaPorTipo(b.tipo) }))
-    : p.tem_borda
-      ? [{ nome: 'Borda Recheada', tipo: 'Tradicional', preco: tam.borda_preco || p.borda_preco || 0 }]
-      : [];
+  const bordasOpcoes =
+    p.bordas && p.bordas.length > 0
+      ? p.bordas.map((b) => ({
+          nome: b.nome,
+          tipo: b.tipo || "Tradicional",
+          preco: _precoBordaPorTipo(b.tipo),
+        }))
+      : p.tem_borda
+        ? [
+            {
+              nome: "Borda Recheada",
+              tipo: "Tradicional",
+              preco: tam.borda_preco || p.borda_preco || 0,
+            },
+          ]
+        : [];
 
   p4.innerHTML = `<section class="pizza-step">
     <div class="pizza-step-header">
@@ -1159,65 +1866,92 @@ function _revelarPasso4Borda() {
       <button type="button" class="pizza-opt-chip selected" id="borda-nao" onclick="_pizzaSelecionarBorda(null)">
         Sem borda
       </button>
-      ${bordasOpcoes.map((b) => `
-        <button type="button" class="pizza-opt-chip" onclick="_pizzaSelecionarBorda('${b.nome.replace(/'/g,"\\'")}', ${b.preco || 0}, this)">
-          🧀 ${b.nome} <span style="font-size:0.75rem;opacity:0.85">+Gs ${(b.preco||0).toLocaleString('es-PY')}</span>
-        </button>`).join('')}
+      ${bordasOpcoes
+        .map(
+          (b) => `
+        <button type="button" class="pizza-opt-chip" onclick="_pizzaSelecionarBorda('${b.nome.replace(/'/g, "\\'")}', ${b.preco || 0}, this)">
+          🧀 ${b.nome} <span style="font-size:0.75rem;opacity:0.85">+Gs ${(b.preco || 0).toLocaleString("es-PY")}</span>
+        </button>`,
+        )
+        .join("")}
     </div>
   </section>`;
-  p4.style.display = 'block';
+  p4.style.display = "block";
 }
 
 function _pizzaSelecionarBorda(nome, preco, el) {
-  document.querySelectorAll('#pizza-passo4 .pizza-opt-chip').forEach((c) => c.classList.remove('selected'));
-  if (el) el.classList.add('selected');
-  else document.getElementById('borda-nao')?.classList.add('selected');
+  document
+    .querySelectorAll("#pizza-passo4 .pizza-opt-chip")
+    .forEach((c) => c.classList.remove("selected"));
+  if (el) el.classList.add("selected");
+  else document.getElementById("borda-nao")?.classList.add("selected");
   _pizzaConfig.bordaConfig = nome ? { nome, preco } : null;
   _atualizarPrecoPizza();
   _atualizarResumo();
 }
 
 // compatibilidade
-function _selecionarBorda(com) { _pizzaSelecionarBorda(com ? 'Borda Recheada' : null, _pizzaConfig.p?.borda_preco || 0, null); }
+function _selecionarBorda(com) {
+  _pizzaSelecionarBorda(
+    com ? "Borda Recheada" : null,
+    _pizzaConfig.p?.borda_preco || 0,
+    null,
+  );
+}
 
 /* Resumo em tempo real */
 function _atualizarResumo() {
-  const el = document.getElementById('pizza-resumo');
+  const el = document.getElementById("pizza-resumo");
   if (!el) return;
   const saboresOk = (_pizzaConfig.sabores || []).filter(Boolean);
-  if (saboresOk.length === 0) { el.style.display = 'none'; return; }
+  if (saboresOk.length === 0) {
+    el.style.display = "none";
+    return;
+  }
 
   const tam = _pizzaConfig.tamanhoSelecionado;
   const precoBase = _calcularBasePizza(tam, saboresOk);
   const precoBorda = _pizzaConfig.bordaConfig?.preco || 0;
-  const tipoLabels = { tradicional: '🍕', especial: '⭐', premium: '🏆', doce: '🍫', 'doce premium': '🎂' };
+  const tipoLabels = {
+    tradicional: "🍕",
+    especial: "⭐",
+    premium: "🏆",
+    doce: "🍫",
+    "doce premium": "🎂",
+  };
 
-  el.style.display = 'block';
+  el.style.display = "block";
   el.innerHTML = `
     <div class="pizza-resumo-header">🍕 Resumo da sua pizza</div>
-    ${tam ? `<div class="pizza-resumo-linha"><span>Tamanho</span><span>${tam.nome} (${tam.fatias} fatias · ⌀${tam.cm}cm)</span></div>` : ''}
-    ${saboresOk.map((s, i) => {
-      const tl = (s.tipo || 'Tradicional').toLowerCase();
-      const icon = tipoLabels[tl] || '🍕';
-      return `<div class="pizza-resumo-linha"><span>${_pizzaConfig.numSabores > 1 ? `${i+1}/${_pizzaConfig.numSabores} Sabor` : 'Sabor'}</span><span>${icon} ${s.nome} <span style="font-size:0.75em;opacity:0.7">(${s.tipo||'Tradicional'})</span></span></div>`;
-    }).join('')}
-    ${_pizzaConfig.bordaConfig ? `<div class="pizza-resumo-linha"><span>Borda</span><span>${_pizzaConfig.bordaConfig.nome}</span></div>` : ''}
-    <div class="pizza-resumo-total"><span>Total</span><span>Gs ${((precoBase + precoBorda) * (qtd || 1)).toLocaleString('es-PY')}</span></div>`;
+    ${tam ? `<div class="pizza-resumo-linha"><span>Tamanho</span><span>${tam.nome} (${tam.fatias} fatias · ⌀${tam.cm}cm)</span></div>` : ""}
+    ${saboresOk
+      .map((s, i) => {
+        const tl = (s.tipo || "Tradicional").toLowerCase();
+        const icon = tipoLabels[tl] || "🍕";
+        return `<div class="pizza-resumo-linha"><span>${_pizzaConfig.numSabores > 1 ? `${i + 1}/${_pizzaConfig.numSabores} Sabor` : "Sabor"}</span><span>${icon} ${s.nome} <span style="font-size:0.75em;opacity:0.7">(${s.tipo || "Tradicional"})</span></span></div>`;
+      })
+      .join("")}
+    ${_pizzaConfig.bordaConfig ? `<div class="pizza-resumo-linha"><span>Borda</span><span>${_pizzaConfig.bordaConfig.nome}</span></div>` : ""}
+    <div class="pizza-resumo-total"><span>Total</span><span>Gs ${((precoBase + precoBorda) * (qtd || 1)).toLocaleString("es-PY")}</span></div>`;
 }
 
 function _precoPizzaPorTipo(tam, tipo) {
-  const t = (tipo || 'Tradicional').toLowerCase();
-  if (t === 'premium'      && tam.preco_premium      > 0) return tam.preco_premium;
-  if (t === 'especial'     && tam.preco_especial     > 0) return tam.preco_especial;
-  if (t === 'doce premium' && tam.preco_doce_premium > 0) return tam.preco_doce_premium;
-  if (t === 'doce'         && tam.preco_doce         > 0) return tam.preco_doce;
+  const t = (tipo || "Tradicional").toLowerCase();
+  if (t === "premium" && tam.preco_premium > 0) return tam.preco_premium;
+  if (t === "especial" && tam.preco_especial > 0) return tam.preco_especial;
+  if (t === "doce premium" && tam.preco_doce_premium > 0)
+    return tam.preco_doce_premium;
+  if (t === "doce" && tam.preco_doce > 0) return tam.preco_doce;
   return tam.preco_tradicional || tam.preco || 0;
 }
 
 // Retorna o maior preço entre os sabores selecionados
 function _calcularBasePizza(tam, saboresOk) {
-  if (!tam || saboresOk.length === 0) return tam ? _precoPizzaPorTipo(tam, 'Tradicional') : 0;
-  return Math.max(...saboresOk.map(s => _precoPizzaPorTipo(tam, s.tipo || 'Tradicional')));
+  if (!tam || saboresOk.length === 0)
+    return tam ? _precoPizzaPorTipo(tam, "Tradicional") : 0;
+  return Math.max(
+    ...saboresOk.map((s) => _precoPizzaPorTipo(tam, s.tipo || "Tradicional")),
+  );
 }
 
 function _atualizarPrecoPizza() {
@@ -1225,16 +1959,19 @@ function _atualizarPrecoPizza() {
 
   // Sempre soma extras (válido para qualquer tipo de produto)
   let extrasTotal = 0;
-  document.querySelectorAll('.extra-check-input:checked').forEach((cb) => {
+  document.querySelectorAll(".extra-check-input:checked").forEach((cb) => {
     extrasTotal += parseInt(cb.dataset.preco || 0);
   });
 
   // Tipo variações: preço controlado pelo click na variação
-  const tipo = (cfg && !Array.isArray(cfg) && cfg.__tipo) ? cfg.__tipo : 'padrao';
-  if (tipo === 'variacoes') {
-    const base = _variacaoSelecionada ? (_variacaoSelecionada.preco || 0) : (prodAtual?.preco || 0);
+  const tipo = cfg && !Array.isArray(cfg) && cfg.__tipo ? cfg.__tipo : "padrao";
+  if (tipo === "variacoes") {
+    const base = _variacaoSelecionada
+      ? _variacaoSelecionada.preco || 0
+      : prodAtual?.preco || 0;
     const total = (base + extrasTotal) * qtd;
-    document.getElementById('modal-price').innerText = `Gs ${total.toLocaleString('es-PY')}`;
+    document.getElementById("modal-price").innerText =
+      `Gs ${total.toLocaleString("es-PY")}`;
     _atualizarResumo();
     return;
   }
@@ -1242,18 +1979,22 @@ function _atualizarPrecoPizza() {
   // Suporta formato antigo (flat) e novo (nested .pizza)
   const pizzaCfg = cfg && (cfg.pizza || (cfg.tamanhos ? cfg : null));
   if (!pizzaCfg) {
-    const base = (prodAtual?.preco || 0);
+    const base = prodAtual?.preco || 0;
     const total = (base + extrasTotal) * qtd;
-    document.getElementById('modal-price').innerText = `Gs ${total.toLocaleString('es-PY')}`;
+    document.getElementById("modal-price").innerText =
+      `Gs ${total.toLocaleString("es-PY")}`;
     _atualizarResumo();
     return;
   }
   const saboresOk = (_pizzaConfig.sabores || []).filter(Boolean);
-const tam = _pizzaConfig.tamanhoSelecionado;
-const precoBase = tam ? _calcularBasePizza(tam, saboresOk) : (prodAtual?.preco || 0);
+  const tam = _pizzaConfig.tamanhoSelecionado;
+  const precoBase = tam
+    ? _calcularBasePizza(tam, saboresOk)
+    : prodAtual?.preco || 0;
   const precoBorda = _pizzaConfig.bordaConfig?.preco || 0;
   const total = (precoBase + precoBorda + extrasTotal) * qtd;
-  document.getElementById('modal-price').innerText = `Gs ${total.toLocaleString('es-PY')}`;
+  document.getElementById("modal-price").innerText =
+    `Gs ${total.toLocaleString("es-PY")}`;
   _atualizarResumo();
 }
 
@@ -1266,33 +2007,41 @@ function _renderVariacoes(item, cfg, container) {
 
   if (variacoes.length === 0) return;
 
-  const sec = document.createElement('div');
-  sec.className = 'var-section';
+  const sec = document.createElement("div");
+  sec.className = "var-section";
   sec.innerHTML = `<div class="var-label">Escolha o sabor</div><div class="var-grid" id="var-grid"></div>`;
   container.appendChild(sec);
 
-  const grid = sec.querySelector('#var-grid');
+  const grid = sec.querySelector("#var-grid");
   variacoes.forEach((v) => {
-    const card = document.createElement('div');
-    card.className = 'var-card';
-    const imgSrc = v.img || item.img || 'https://cdn-icons-png.flaticon.com/512/2252/2252075.png';
+    const card = document.createElement("div");
+    card.className = "var-card";
+    const imgSrc =
+      v.img ||
+      item.img ||
+      "https://cdn-icons-png.flaticon.com/512/2252/2252075.png";
     card.innerHTML = `
       <img src="${imgSrc}" class="var-card-img" onerror="this.src='https://cdn-icons-png.flaticon.com/512/2252/2252075.png'">
       <div class="var-card-body">
         <div class="var-card-nome">${v.nome}</div>
-        <div class="var-card-preco">Gs ${(v.preco || 0).toLocaleString('es-PY')}</div>
+        <div class="var-card-preco">Gs ${(v.preco || 0).toLocaleString("es-PY")}</div>
       </div>
       <div class="var-card-check">✓</div>
     `;
     card.dataset.preco = v.preco || 0;
     card.onclick = () => {
-      grid.querySelectorAll('.var-card').forEach((c) => c.classList.remove('selected'));
-      card.classList.add('selected');
+      grid
+        .querySelectorAll(".var-card")
+        .forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
       _variacaoSelecionada = v;
       // Atualiza preço e imagem do modal
-      document.getElementById('modal-price').innerText = `Gs ${((v.preco || 0) * qtd).toLocaleString('es-PY')}`;
+      document.getElementById("modal-price").innerText =
+        `Gs ${((v.preco || 0) * qtd).toLocaleString("es-PY")}`;
       // Atualiza imagem do modal se a variação tiver foto própria
-      const modalImg = document.querySelector('.modal-img') || document.getElementById('modal-img');
+      const modalImg =
+        document.querySelector(".modal-img") ||
+        document.getElementById("modal-img");
       if (modalImg && v.img) modalImg.src = v.img;
     };
     grid.appendChild(card);
@@ -1303,44 +2052,47 @@ function _renderAlmoco(cfg, container) {
   if (!cfg || !cfg.almoco || !cfg.almoco.pratos) return;
   const pratos = cfg.almoco.pratos;
 
-  const sec = document.createElement('div');
+  const sec = document.createElement("div");
   sec.innerHTML = `<div class="sabor-slot-label">Escolha o prato</div><div class="almoco-pratos-grid" id="almoco-pratos-grid"></div>`;
   container.appendChild(sec);
 
-  const grid = sec.querySelector('#almoco-pratos-grid');
+  const grid = sec.querySelector("#almoco-pratos-grid");
   pratos.forEach((prato) => {
-    const card = document.createElement('div');
-    card.className = 'almoco-prato-option';
+    const card = document.createElement("div");
+    card.className = "almoco-prato-option";
     card.innerHTML = `
-      <img src="${prato.img || 'https://via.placeholder.com/160x110?text=Prato'}" alt="${prato.nome}">
+      <img src="${prato.img || "https://via.placeholder.com/160x110?text=Prato"}" alt="${prato.nome}">
       <div class="prato-info">
         <div class="prato-nome">${prato.nome}</div>
-        <div class="prato-desc">${prato.desc || ''}</div>
-        <div class="prato-preco">Gs ${(prato.preco || 0).toLocaleString('es-PY')}</div>
+        <div class="prato-desc">${prato.desc || ""}</div>
+        <div class="prato-preco">Gs ${(prato.preco || 0).toLocaleString("es-PY")}</div>
       </div>`;
     card.onclick = () => {
-      grid.querySelectorAll('.almoco-prato-option').forEach((c) => c.classList.remove('selected'));
-      card.classList.add('selected');
+      grid
+        .querySelectorAll(".almoco-prato-option")
+        .forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
       prodAtual._pratoselecionado = prato;
       // Atualiza preço
       const preco = prato.preco || prodAtual.preco || 0;
-      document.getElementById('modal-price').innerText = `Gs ${(preco * qtd).toLocaleString('es-PY')}`;
+      document.getElementById("modal-price").innerText =
+        `Gs ${(preco * qtd).toLocaleString("es-PY")}`;
     };
     grid.appendChild(card);
   });
 }
 
 function _renderExtras(extras, container) {
-  const sec = document.createElement('div');
-  sec.className = 'extras-section';
+  const sec = document.createElement("div");
+  sec.className = "extras-section";
   sec.innerHTML = `<h5>➕ Adicionais (opcional)</h5>`;
   extras.forEach((ex) => {
-    const row = document.createElement('label');
-    row.className = 'extra-check-row';
+    const row = document.createElement("label");
+    row.className = "extra-check-row";
     row.innerHTML = `
       <input type="checkbox" class="extra-check-input" data-preco="${ex.preco}" onchange="_atualizarPrecoPizza()">
       <span class="extra-check-label">${ex.nome}</span>
-      <span class="extra-check-price">+Gs ${(ex.preco || 0).toLocaleString('es-PY')}</span>`;
+      <span class="extra-check-price">+Gs ${(ex.preco || 0).toLocaleString("es-PY")}</span>`;
     sec.appendChild(row);
   });
   container.appendChild(sec);
@@ -1348,14 +2100,14 @@ function _renderExtras(extras, container) {
 
 // Renderiza opções de PREPARO (radio buttons — o cliente escolhe uma opção)
 function _renderPreparo(opcoes, container) {
-  const sec = document.createElement('div');
-  sec.className = 'extras-section preparo-section';
+  const sec = document.createElement("div");
+  sec.className = "extras-section preparo-section";
   sec.innerHTML = `<h5 style="color:#2980b9">🍳 Como deseja o preparo?</h5>`;
-  
+
   opcoes.forEach((op, idx) => {
-    const label = document.createElement('label');
-    label.className = 'extra-check-row preparo-row';
-    label.style.cssText = 'cursor:pointer;';
+    const label = document.createElement("label");
+    label.className = "extra-check-row preparo-row";
+    label.style.cssText = "cursor:pointer;";
     label.innerHTML = `
       <input type="radio" class="preparo-radio-input" name="preparo-opcao" value="${op}" style="accent-color:#2980b9;width:18px;height:18px;margin-right:8px;">
       <span class="extra-check-label">${op}</span>`;
@@ -1367,28 +2119,28 @@ function _renderPreparo(opcoes, container) {
 // Renderiza EXTRAS GLOBAIS (adicionais disponíveis para qualquer produto)
 function _renderExtrasGlobais(extras, container) {
   if (!extras || extras.length === 0) return;
-  const sec = document.createElement('div');
-  sec.className = 'extras-section extras-globais-section';
+  const sec = document.createElement("div");
+  sec.className = "extras-section extras-globais-section";
   sec.innerHTML = `<h5 style="color:#8e44ad">⭐ Adicionais extras</h5>`;
   extras.forEach((ex) => {
-    const row = document.createElement('label');
-    row.className = 'extra-check-row';
+    const row = document.createElement("label");
+    row.className = "extra-check-row";
     row.innerHTML = `
       <input type="checkbox" class="extra-check-input" data-preco="${ex.preco || 0}" onchange="_atualizarPrecoPizza()">
       <span class="extra-check-label">${ex.nome}</span>
-      ${ex.preco > 0 ? `<span class="extra-check-price">+Gs ${(ex.preco).toLocaleString('es-PY')}</span>` : '<span class="extra-check-price" style="color:#27ae60">Grátis</span>'}`;
+      ${ex.preco > 0 ? `<span class="extra-check-price">+Gs ${ex.preco.toLocaleString("es-PY")}</span>` : '<span class="extra-check-price" style="color:#27ae60">Grátis</span>'}`;
     sec.appendChild(row);
   });
   container.appendChild(sec);
 }
 
 function fecharModalProduto() {
-  document.getElementById('product-modal').classList.remove('active');
+  document.getElementById("product-modal").classList.remove("active");
 }
 
 function mudarQtd(delta) {
   qtd = Math.max(1, qtd + delta);
-  document.getElementById('modal-qty').innerText = qtd;
+  document.getElementById("modal-qty").innerText = qtd;
   _atualizarPrecoPizza();
 }
 
@@ -1396,61 +2148,99 @@ function adicionarDoModal() {
   if (!prodAtual) return;
 
   let cfg = prodAtual.montagem;
-  if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch (_) { cfg = null; } }
-  let tipo = 'padrao';
-  if (cfg && !Array.isArray(cfg) && cfg.__tipo) tipo = cfg.__tipo;
-  else if (prodAtual.e_montavel || (cfg && Array.isArray(cfg) && cfg.length > 0)) tipo = 'montavel';
-
-  // Validações por tipo — cada tipo tem seu próprio bloco (fix #3)
-  if (tipo === 'shake') {
-    if (!_shakeConfig.tamanhoSelecionado) { alert('Escolha um tamanho para o Shake!'); return; }
-    if (!_shakeConfig.saborSelecionado)   { alert('Escolha um sabor para o Shake!');   return; }
-  }
-  if (tipo === 'pizza') {
-    if (!_pizzaConfig.tamanhoSelecionado) { alert('Selecione o tamanho da pizza!'); return; }
-    const saboresOk = (_pizzaConfig.sabores || []).filter(Boolean);
-    if (saboresOk.length === 0) { alert('Selecione ao menos 1 sabor!'); return; }
-    if (_pizzaConfig.numSabores && saboresOk.length < _pizzaConfig.numSabores) {
-      alert(`Você escolheu ${_pizzaConfig.numSabores} sabores mas selecionou apenas ${saboresOk.length}. Complete a seleção!`); return;
+  if (typeof cfg === "string") {
+    try {
+      cfg = JSON.parse(cfg);
+    } catch (_) {
+      cfg = null;
     }
   }
-  if (tipo === 'almoco' && !prodAtual._pratoselecionado) {
-    alert('Selecione o prato!'); return;
+  let tipo = "padrao";
+  if (cfg && !Array.isArray(cfg) && cfg.__tipo) tipo = cfg.__tipo;
+  else if (
+    prodAtual.e_montavel ||
+    (cfg && Array.isArray(cfg) && cfg.length > 0)
+  )
+    tipo = "montavel";
+
+  // Validações por tipo — cada tipo tem seu próprio bloco (fix #3)
+  if (tipo === "shake") {
+    if (!_shakeConfig.tamanhoSelecionado) {
+      alert("Escolha um tamanho para o Shake!");
+      return;
+    }
+    if (!_shakeConfig.saborSelecionado) {
+      alert("Escolha um sabor para o Shake!");
+      return;
+    }
   }
-  if (tipo === 'variacoes' && !_variacaoSelecionada) {
-    alert('Escolha o sabor antes de adicionar!'); return;
+  if (tipo === "pizza") {
+    if (!_pizzaConfig.tamanhoSelecionado) {
+      alert("Selecione o tamanho da pizza!");
+      return;
+    }
+    const saboresOk = (_pizzaConfig.sabores || []).filter(Boolean);
+    if (saboresOk.length === 0) {
+      alert("Selecione ao menos 1 sabor!");
+      return;
+    }
+    if (_pizzaConfig.numSabores && saboresOk.length < _pizzaConfig.numSabores) {
+      alert(
+        `Você escolheu ${_pizzaConfig.numSabores} sabores mas selecionou apenas ${saboresOk.length}. Complete a seleção!`,
+      );
+      return;
+    }
   }
-  if (tipo === 'combo_fechado') {
-    const total = Object.values(_comboFechadoConfig.selecao).reduce((a, b) => a + b, 0);
+  if (tipo === "almoco" && !prodAtual._pratoselecionado) {
+    alert("Selecione o prato!");
+    return;
+  }
+  if (tipo === "variacoes" && !_variacaoSelecionada) {
+    alert("Escolha o sabor antes de adicionar!");
+    return;
+  }
+  if (tipo === "combo_fechado") {
+    const total = Object.values(_comboFechadoConfig.selecao).reduce(
+      (a, b) => a + b,
+      0,
+    );
     if (total !== _comboFechadoConfig.limite) {
-      alert(`Selecione exatamente ${_comboFechadoConfig.limite} itens para continuar.`);
+      alert(
+        `Selecione exatamente ${_comboFechadoConfig.limite} itens para continuar.`,
+      );
       return;
     }
   }
 
   // Monta descrição para o carrinho
   let montagem = [];
-  let variacao = '';
+  let variacao = "";
   let precoFinal = prodAtual.preco;
 
-  if (tipo === 'combo_fechado') {
+  if (tipo === "combo_fechado") {
     const partes = _comboFechadoConfig.sabores
       .filter((s) => (_comboFechadoConfig.selecao[s.id] || 0) > 0)
       .map((s) => `${s.nome} ×${_comboFechadoConfig.selecao[s.id]}`);
-    montagem.push(partes.join(', '));
+    montagem.push(partes.join(", "));
   }
 
-  if (tipo === 'montavel') {
-    const cfgEtapas = Array.isArray(cfg) ? cfg : (cfg && cfg.etapas ? cfg.etapas : []);
+  if (tipo === "montavel") {
+    const cfgEtapas = Array.isArray(cfg)
+      ? cfg
+      : cfg && cfg.etapas
+        ? cfg.etapas
+        : [];
     for (let k in itensMontagem) {
       if (itensMontagem[k] && itensMontagem[k].length > 0) {
-        const titulo = cfgEtapas[k] ? cfgEtapas[k].titulo : `Etapa ${parseInt(k)+1}`;
-        montagem.push(`${titulo}: ${itensMontagem[k].join(', ')}`);
+        const titulo = cfgEtapas[k]
+          ? cfgEtapas[k].titulo
+          : `Etapa ${parseInt(k) + 1}`;
+        montagem.push(`${titulo}: ${itensMontagem[k].join(", ")}`);
       }
     }
   }
 
-  if (tipo === 'pizza') {
+  if (tipo === "pizza") {
     // ─────────────────────────────────────────────────────────────
     // PREÇO PIZZA:
     //   Base    = tamanho selecionado (sempre — é o preço principal)
@@ -1459,92 +2249,113 @@ function adicionarDoModal() {
     //   Total   = (Base + Extra) * qtd + Borda * qtd
     // ─────────────────────────────────────────────────────────────
     const saboresOk = (_pizzaConfig.sabores || []).filter(Boolean);
-    const tam         = _pizzaConfig.tamanhoSelecionado;
-const precoBorda  = _pizzaConfig.bordaConfig?.preco || 0;
-precoFinal = _calcularBasePizza(tam, saboresOk) + precoBorda;
+    const tam = _pizzaConfig.tamanhoSelecionado;
+    const precoBorda = _pizzaConfig.bordaConfig?.preco || 0;
+    precoFinal = _calcularBasePizza(tam, saboresOk) + precoBorda;
 
-    variacao  = 'Pizza ' + (_pizzaConfig.tamanhoSelecionado?.nome || '').trim();
+    variacao = "Pizza " + (_pizzaConfig.tamanhoSelecionado?.nome || "").trim();
     const numSab = _pizzaConfig.numSabores || saboresOk.length || 1;
     const saboresStr = saboresOk
       .map((s, i) => {
-        const nomeSabor = (s.nome || '').trim();
+        const nomeSabor = (s.nome || "").trim();
         if (!nomeSabor) return null;
-        return numSab > 1 ? `${i+1}/${numSab} ${nomeSabor}` : nomeSabor;
+        return numSab > 1 ? `${i + 1}/${numSab} ${nomeSabor}` : nomeSabor;
       })
       .filter(Boolean)
-      .join(' | ');
+      .join(" | ");
 
     // montagem: string legível para exibição no carrinho/cozinha
     // Se saboresStr ficou vazio (nomes em branco no banco), usa fallback genérico
     montagem = saboresStr
       ? [saboresStr]
-      : saboresOk.length > 0 ? [`${saboresOk.length} sabor(es)`] : [];
-    if (_pizzaConfig.bordaConfig) montagem.push(`Borda: ${_pizzaConfig.bordaConfig.nome}`);
+      : saboresOk.length > 0
+        ? [`${saboresOk.length} sabor(es)`]
+        : [];
+    if (_pizzaConfig.bordaConfig)
+      montagem.push(`Borda: ${_pizzaConfig.bordaConfig.nome}`);
   }
 
   // Shake: monta preço, variação e descrição corretamente (fix #3)
-  if (tipo === 'shake') {
-    const tamPreco  = _shakeConfig.tamanhoSelecionado?.preco || 0;
-    const sabPreco  = _shakeConfig.saborSelecionado?.preco  || 0;
+  if (tipo === "shake") {
+    const tamPreco = _shakeConfig.tamanhoSelecionado?.preco || 0;
+    const sabPreco = _shakeConfig.saborSelecionado?.preco || 0;
     precoFinal = tamPreco + sabPreco;
-    variacao   = [_shakeConfig.tamanhoSelecionado?.nome,
-                  _shakeConfig.saborSelecionado?.nome].filter(Boolean).join(' – ');
-    montagem   = variacao ? [variacao] : [];
+    variacao = [
+      _shakeConfig.tamanhoSelecionado?.nome,
+      _shakeConfig.saborSelecionado?.nome,
+    ]
+      .filter(Boolean)
+      .join(" – ");
+    montagem = variacao ? [variacao] : [];
   }
 
-  if (tipo === 'almoco' && prodAtual._pratoselecionado) {
+  if (tipo === "almoco" && prodAtual._pratoselecionado) {
     const prato = prodAtual._pratoselecionado;
     variacao = prato.nome;
     precoFinal = prato.preco || prodAtual.preco;
-    montagem = [prato.desc || ''];
+    montagem = [prato.desc || ""];
   }
 
-  if (tipo === 'variacoes' && _variacaoSelecionada) {
+  if (tipo === "variacoes" && _variacaoSelecionada) {
     variacao = _variacaoSelecionada.nome;
     precoFinal = _variacaoSelecionada.preco || prodAtual.preco;
     // Usa imagem da variação se disponível
-    if (_variacaoSelecionada.img) prodAtual._variacaoImg = _variacaoSelecionada.img;
+    if (_variacaoSelecionada.img)
+      prodAtual._variacaoImg = _variacaoSelecionada.img;
   }
 
   // Extras selecionados
   const extrasEscolhidos = [];
-  document.querySelectorAll('.extra-check-input:checked').forEach((cb) => {
-    const nome = cb.closest('.extra-check-row').querySelector('.extra-check-label').textContent;
+  document.querySelectorAll(".extra-check-input:checked").forEach((cb) => {
+    const nome = cb
+      .closest(".extra-check-row")
+      .querySelector(".extra-check-label").textContent;
     const preco = parseInt(cb.dataset.preco || 0);
     extrasEscolhidos.push({ nome, preco });
     precoFinal += preco;
   });
   if (extrasEscolhidos.length > 0) {
-    montagem.push('Extras: ' + extrasEscolhidos.map((e) => e.nome).join(', '));
+    montagem.push("Extras: " + extrasEscolhidos.map((e) => e.nome).join(", "));
   }
 
   // Captura metadados da pizza ANTES de resetar _pizzaConfig
-  const pizzaMeta = tipo === 'pizza' ? {
-    tamanho: _pizzaConfig.tamanhoSelecionado?.nome   || '',
-    sabores: (_pizzaConfig.sabores || []).filter(Boolean).map((s) => s.nome),
-    borda:   _pizzaConfig.bordaConfig?.nome          || null,
-  } : null;
+  const pizzaMeta =
+    tipo === "pizza"
+      ? {
+          tamanho: _pizzaConfig.tamanhoSelecionado?.nome || "",
+          sabores: (_pizzaConfig.sabores || [])
+            .filter(Boolean)
+            .map((s) => s.nome),
+          borda: _pizzaConfig.bordaConfig?.nome || null,
+        }
+      : null;
 
   // Captura preparo selecionado
-  const preparoSel = document.querySelector('.preparo-radio-input:checked');
-  const preparoEscolhido = preparoSel ? preparoSel.value : '';
+  const preparoSel = document.querySelector(".preparo-radio-input:checked");
+  const preparoEscolhido = preparoSel ? preparoSel.value : "";
 
   carrinho.push({
-    id:       Date.now(),
-    nome:     prodAtual.nome,
-    variacao: variacao || '',          // Guardado separado para não duplicar o nome
-    preparo:  preparoEscolhido,        // Opção de preparo (ex: "Flambado", "Batata Frita")
-    preco:    precoFinal,
-    qtd:      qtd,
+    id: Date.now(),
+    nome: prodAtual.nome,
+    variacao: variacao || "", // Guardado separado para não duplicar o nome
+    preparo: preparoEscolhido, // Opção de preparo (ex: "Flambado", "Batata Frita")
+    preco: precoFinal,
+    qtd: qtd,
     montagem: montagem.filter(Boolean),
-    obs:      document.getElementById('modal-obs').value,
-    img:      prodAtual._variacaoImg || prodAtual.img,
-    categoria_slug: prodAtual.categoria_slug || '', // para filtro de bebidas na rota do motoboy
+    obs: document.getElementById("modal-obs").value,
+    img: prodAtual._variacaoImg || prodAtual.img,
+    categoria_slug: prodAtual.categoria_slug || "", // para filtro de bebidas na rota do motoboy
     ...(pizzaMeta ? { pizzaMeta } : {}),
   });
 
   // Limpa estado após push
-  _pizzaConfig = { p: null, tamanhoSelecionado: null, numSabores: null, sabores: [], bordaConfig: null };
+  _pizzaConfig = {
+    p: null,
+    tamanhoSelecionado: null,
+    numSabores: null,
+    sabores: [],
+    bordaConfig: null,
+  };
   _variacaoSelecionada = null;
   _comboFechadoConfig = { limite: 0, sabores: [], selecao: {} };
   if (prodAtual) prodAtual._variacaoImg = null;
@@ -1553,83 +2364,80 @@ precoFinal = _calcularBasePizza(tam, saboresOk) + precoBorda;
   fecharModalProduto();
 }
 
-
-
 // ==========================================
 // 6. ATUALIZAÇÃO DA UI (Carrinho)
 // ==========================================
 function updateUI() {
-  const cartBar = document.getElementById('cart-bar');
-  const count = document.getElementById('cart-count');
-  const total = document.getElementById('cart-total');
+  const cartBar = document.getElementById("cart-bar");
+  const count = document.getElementById("cart-count");
+  const total = document.getElementById("cart-total");
 
   const totalItens = carrinho.reduce((a, i) => a + i.qtd, 0);
   const totalDinheiro = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
 
   count.innerText = totalItens;
-  total.innerText = `Gs ${totalDinheiro.toLocaleString('es-PY')}`;
-  cartBar.classList.toggle('show', totalItens > 0);
+  total.innerText = `Gs ${totalDinheiro.toLocaleString("es-PY")}`;
+  cartBar.classList.toggle("show", totalItens > 0);
 
   // ── Atualiza sidebar desktop ──────────────────────────────
-  const desktopItems    = document.getElementById('desktop-cart-items');
-  const desktopEmpty    = document.getElementById('desktop-cart-empty');
-  const desktopTotalRow = document.getElementById('desktop-cart-total-row');
-  const desktopTotalVal = document.getElementById('desktop-cart-total-val');
-  const desktopBtn      = document.getElementById('desktop-cart-btn');
+  const desktopItems = document.getElementById("desktop-cart-items");
+  const desktopEmpty = document.getElementById("desktop-cart-empty");
+  const desktopTotalRow = document.getElementById("desktop-cart-total-row");
+  const desktopTotalVal = document.getElementById("desktop-cart-total-val");
+  const desktopBtn = document.getElementById("desktop-cart-btn");
 
   if (desktopItems) {
-    desktopItems.innerHTML = '';
+    desktopItems.innerHTML = "";
     if (carrinho.length === 0) {
-      if (desktopEmpty)    desktopEmpty.style.display    = 'block';
-      if (desktopTotalRow) desktopTotalRow.style.display = 'none';
-      if (desktopBtn)      desktopBtn.disabled = true;
+      if (desktopEmpty) desktopEmpty.style.display = "block";
+      if (desktopTotalRow) desktopTotalRow.style.display = "none";
+      if (desktopBtn) desktopBtn.disabled = true;
     } else {
-      if (desktopEmpty)    desktopEmpty.style.display    = 'none';
-      if (desktopTotalRow) desktopTotalRow.style.display = 'flex';
-      if (desktopBtn)      desktopBtn.disabled = false;
+      if (desktopEmpty) desktopEmpty.style.display = "none";
+      if (desktopTotalRow) desktopTotalRow.style.display = "flex";
+      if (desktopBtn) desktopBtn.disabled = false;
 
       carrinho.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = 'desktop-cart-item';
+        const div = document.createElement("div");
+        div.className = "desktop-cart-item";
         div.innerHTML = `
           <span class="desktop-cart-item-name">${item.qtd}x ${item.nome}</span>
-          <span class="desktop-cart-item-price">Gs ${(item.preco * item.qtd).toLocaleString('es-PY')}</span>`;
+          <span class="desktop-cart-item-price">Gs ${(item.preco * item.qtd).toLocaleString("es-PY")}</span>`;
         desktopItems.appendChild(div);
       });
 
       if (desktopTotalVal)
-        desktopTotalVal.innerText = `Gs ${totalDinheiro.toLocaleString('es-PY')}`;
+        desktopTotalVal.innerText = `Gs ${totalDinheiro.toLocaleString("es-PY")}`;
     }
   }
 
   // Atualiza lista no checkout se estiver aberto
-  const modalCheckout = document.getElementById('checkout-modal');
-  if (modalCheckout && modalCheckout.classList.contains('active')) {
+  const modalCheckout = document.getElementById("checkout-modal");
+  if (modalCheckout && modalCheckout.classList.contains("active")) {
     renderCarrinho();
   }
 }
 
 function limparCarrinho() {
-  if (confirm('Deseja limpar o carrinho?')) {
+  if (confirm("Deseja limpar o carrinho?")) {
     carrinho = [];
     cupomAplicado = null;
     updateUI();
   }
 }
 
-
 // ==========================================
 // VALIDAÇÃO DE FORMULÁRIOS
 // ==========================================
 function validarCampo(campoId, regras = {}) {
   const campo = document.getElementById(campoId);
-  if (!campo) return { valido: false, mensagem: 'Campo não encontrado' };
+  if (!campo) return { valido: false, mensagem: "Campo não encontrado" };
 
   const valor = campo.value.trim();
 
   if (regras.obrigatorio && !valor) {
-    marcarErro(campo, 'Este campo é obrigatório');
-    return { valido: false, mensagem: 'Campo obrigatório' };
+    marcarErro(campo, "Este campo é obrigatório");
+    return { valido: false, mensagem: "Campo obrigatório" };
   }
 
   if (regras.minimo && valor.length < regras.minimo) {
@@ -1638,10 +2446,10 @@ function validarCampo(campoId, regras = {}) {
   }
 
   if (regras.telefone && valor) {
-    const telefoneLimpo = valor.replace(/\D/g, '');
+    const telefoneLimpo = valor.replace(/\D/g, "");
     if (telefoneLimpo.length < 8) {
-      marcarErro(campo, 'Telefone inválido');
-      return { valido: false, mensagem: 'Telefone inválido' };
+      marcarErro(campo, "Telefone inválido");
+      return { valido: false, mensagem: "Telefone inválido" };
     }
   }
 
@@ -1650,29 +2458,30 @@ function validarCampo(campoId, regras = {}) {
 }
 
 function marcarErro(campo, mensagem) {
-  campo.classList.add('erro-validacao');
-  campo.style.borderColor = '#e74c3c';
+  campo.classList.add("erro-validacao");
+  campo.style.borderColor = "#e74c3c";
 
   // Procura ou cria mensagem de erro
-  let msgEl = campo.parentElement.querySelector('.msg-erro');
+  let msgEl = campo.parentElement.querySelector(".msg-erro");
   if (!msgEl) {
-    msgEl = document.createElement('span');
-    msgEl.className = 'msg-erro';
-    msgEl.style.cssText = 'color: #e74c3c; font-size: 0.8rem; margin-top: 4px; display: block;';
+    msgEl = document.createElement("span");
+    msgEl.className = "msg-erro";
+    msgEl.style.cssText =
+      "color: #e74c3c; font-size: 0.8rem; margin-top: 4px; display: block;";
     campo.parentElement.appendChild(msgEl);
   }
   msgEl.textContent = mensagem;
 }
 
 function removerErro(campo) {
-  campo.classList.remove('erro-validacao');
-  campo.style.borderColor = '';
-  const msgEl = campo.parentElement.querySelector('.msg-erro');
+  campo.classList.remove("erro-validacao");
+  campo.style.borderColor = "";
+  const msgEl = campo.parentElement.querySelector(".msg-erro");
   if (msgEl) msgEl.remove();
 }
 
 function limparTodosErros() {
-  document.querySelectorAll('.erro-validacao').forEach(campo => {
+  document.querySelectorAll(".erro-validacao").forEach((campo) => {
     removerErro(campo);
   });
 }
@@ -1682,7 +2491,7 @@ function limparTodosErros() {
 // 7. CHECKOUT E VALIDAÇÃO
 // ==========================================
 function abrirCheckout() {
-  if (carrinho.length === 0) return alert('Carrinho vazio!');
+  if (carrinho.length === 0) return alert("Carrinho vazio!");
 
   // Verifica se a loja está aberta (se não estiver em modo agendamento)
   if (!MODO_AGENDAMENTO) {
@@ -1701,27 +2510,28 @@ function abrirCheckout() {
     mostrarIndicadorAgendamento();
   }
 
-  document.getElementById('checkout-modal').classList.add('active');
+  document.getElementById("checkout-modal").classList.add("active");
 }
 
 function fecharCheckout() {
-  document.getElementById('checkout-modal').classList.remove('active');
+  document.getElementById("checkout-modal").classList.remove("active");
 }
 
 function renderCarrinho() {
-  const lista = document.getElementById('carrinho-lista');
-  lista.innerHTML = '';
+  const lista = document.getElementById("carrinho-lista");
+  lista.innerHTML = "";
 
   carrinho.forEach((item, idx) => {
     const totalItem = item.preco * item.qtd;
-    let detalhes = '';
+    let detalhes = "";
     if (item.pizzaMeta) {
       const m = item.pizzaMeta;
       const partes = [];
       if (m.tamanho) partes.push(`📐 ${m.tamanho}`);
-      if (m.sabores && m.sabores.length > 0) partes.push(`🍕 ${m.sabores.join(' / ')}`);
+      if (m.sabores && m.sabores.length > 0)
+        partes.push(`🍕 ${m.sabores.join(" / ")}`);
       if (m.borda) partes.push(`🧀 ${m.borda}`);
-      detalhes = `<br><small style="color:#888">${partes.join(' · ')}</small>`;
+      detalhes = `<br><small style="color:#888">${partes.join(" · ")}</small>`;
     } else {
       // Variação (ex: "Combo Grande") — aparece como badge separado, não duplica o nome
       if (item.variacao) {
@@ -1732,19 +2542,21 @@ function renderCarrinho() {
         detalhes += `<br><small style="color:#2980b9;font-weight:600">🍳 ${item.preparo}</small>`;
       }
       if (item.montagem && item.montagem.length > 0) {
-        detalhes += `<br><small style="color:#888">${item.montagem.join(', ')}</small>`;
+        detalhes += `<br><small style="color:#888">${item.montagem.join(", ")}</small>`;
       }
     }
-    const obs = item.obs ? `<br><small style="color:#666"><strong>Obs:</strong> ${item.obs}</small>` : '';
+    const obs = item.obs
+      ? `<br><small style="color:#666"><strong>Obs:</strong> ${item.obs}</small>`
+      : "";
 
     lista.innerHTML += `
       <div class="cart-item-row">
-        ${item.img ? `<img src="${item.img}" class="cart-thumb">` : ''}
+        ${item.img ? `<img src="${item.img}" class="cart-thumb">` : ""}
         <div class="cart-details">
           <div class="cart-title">${item.nome}</div>
           ${detalhes}
           ${obs}
-          <div class="cart-item-price">Gs ${totalItem.toLocaleString('es-PY')}</div>
+          <div class="cart-item-price">Gs ${totalItem.toLocaleString("es-PY")}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
           <div class="qty-mini">
@@ -1753,7 +2565,7 @@ function renderCarrinho() {
             <button onclick="mudarQtdCarrinho(${idx}, 1)">+</button>
           </div>
           <button onclick="removerItemCarrinho(${idx})" title="Remover item"
-            style="background:none;border:none;cursor:pointer;color:#e74c3c;font-size:1.1rem;padding:2px 6px;">🗑️</button>
+            class="btn-remover-item">🗑 Remover</button>
         </div>
       </div>
     `;
@@ -1777,19 +2589,19 @@ function removerItemCarrinho(idx) {
 }
 
 function renderUpsell() {
-  const upsellDiv = document.getElementById('lista-upsell');
+  const upsellDiv = document.getElementById("lista-upsell");
   if (!upsellDiv) return;
-  
-  upsellDiv.innerHTML = '';
-  const upsellItems = MENU['bebidas'] || [];
+
+  upsellDiv.innerHTML = "";
+  const upsellItems = MENU["bebidas"] || [];
 
   upsellItems.slice(0, 5).forEach((item) => {
-    const img = item.img || 'https://via.placeholder.com/80?text=🥤';
+    const img = item.img || "https://via.placeholder.com/80?text=🥤";
     upsellDiv.innerHTML += `
       <div class="upsell-item" style="min-width:100px;text-align:center;cursor:pointer;" onclick='adicionarUpsell(${JSON.stringify(item).replace(/'/g, "&#39;")})'>
         <img src="${img}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;margin-bottom:5px;">
         <div style="font-size:0.75rem;font-weight:600">${item.nome}</div>
-        <div style="font-size:0.7rem;color:var(--primary)">Gs ${item.preco.toLocaleString('es-PY')}</div>
+        <div style="font-size:0.7rem;color:var(--primary)">Gs ${item.preco.toLocaleString("es-PY")}</div>
       </div>
     `;
   });
@@ -1798,18 +2610,18 @@ function renderUpsell() {
 function adicionarUpsell(item) {
   // Se o item tem variações/montagem, abre o modal de escolha em vez de adicionar direto
   const cfg = item.montagem;
-  const temVariacao = cfg && (
-    (cfg.__tipo && cfg.__tipo !== 'padrao') ||
-    (cfg.variacoes && cfg.variacoes.length > 0) ||
-    (cfg.pizza) ||
-    (cfg.tamanhos && cfg.tamanhos.length > 0) ||
-    (cfg.shake)
-  );
+  const temVariacao =
+    cfg &&
+    ((cfg.__tipo && cfg.__tipo !== "padrao") ||
+      (cfg.variacoes && cfg.variacoes.length > 0) ||
+      cfg.pizza ||
+      (cfg.tamanhos && cfg.tamanhos.length > 0) ||
+      cfg.shake);
   if (temVariacao || item.e_montavel) {
     abrirModal(item);
     return;
   }
-  carrinho.push({ ...item, qtd: 1, montagem: [], obs: '' });
+  carrinho.push({ ...item, qtd: 1, montagem: [], obs: "" });
   renderCarrinho();
   updateUI();
 }
@@ -1823,36 +2635,37 @@ function adicionarUpsell(item) {
 function atualizarTotalCheckout() {
   const totalItens = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
   let desconto = 0;
-  // -1 é sentinela 'a combinar' — trata como 0 para o total
-  let freteAplicado = freteCalculado === -1 ? 0 : freteCalculado;
-  
+  // -1 é sentinela 'a combinar'; null é sentinela 'fora do raio' — ambos tratados como 0
+  let freteAplicado = (freteCalculado === -1 || freteCalculado === null) ? 0 : freteCalculado;
+
   if (cupomAplicado) {
-    if (cupomAplicado.tipo === 'percentual') {
+    if (cupomAplicado.tipo === "percentual") {
       desconto = Math.round(totalItens * (cupomAplicado.valor / 100));
-    } else if (cupomAplicado.tipo === 'frete') {
+    } else if (cupomAplicado.tipo === "frete") {
       freteAplicado = 0;
     }
   }
-  
-  const totalGeral = totalItens - desconto + (modoEntrega === 'delivery' ? freteAplicado : 0);
-  
+
+  const totalGeral =
+    totalItens - desconto + (modoEntrega === "delivery" ? freteAplicado : 0);
+
   let html = `
     <div style="display:flex;justify-content:space-between;margin:5px 0;font-size:0.9rem">
       <span>Subtotal:</span>
-      <span>Gs ${totalItens.toLocaleString('es-PY')}</span>
+      <span>Gs ${totalItens.toLocaleString("es-PY")}</span>
     </div>
   `;
-  
+
   if (desconto > 0) {
     html += `
       <div style="display:flex;justify-content:space-between;margin:5px 0;font-size:0.9rem;color:#27ae60">
         <span>Desconto (${cupomAplicado.codigo}):</span>
-        <span>- Gs ${desconto.toLocaleString('es-PY')}</span>
+        <span>- Gs ${desconto.toLocaleString("es-PY")}</span>
       </div>
     `;
   }
-  
-  if (modoEntrega === 'delivery') {
+
+  if (modoEntrega === "delivery") {
     if (freteCalculado === -1) {
       html += `
         <div style="display:flex;justify-content:space-between;margin:5px 0;font-size:0.9rem;color:#e67e22">
@@ -1864,20 +2677,20 @@ function atualizarTotalCheckout() {
       html += `
         <div style="display:flex;justify-content:space-between;margin:5px 0;font-size:0.9rem">
           <span>Frete:</span>
-          <span>Gs ${freteAplicado.toLocaleString('es-PY')}</span>
+          <span>Gs ${freteAplicado.toLocaleString("es-PY")}</span>
         </div>
       `;
     }
   }
-  
-  const totalEl = document.getElementById('total-final-checkout');
+
+  const totalEl = document.getElementById("total-final-checkout");
   if (totalEl) {
     totalEl.innerHTML = `
       <div style="border-top:2px solid #eee;padding-top:10px;margin-top:10px">
         ${html}
         <div style="display:flex;justify-content:space-between;font-size:1.2rem;font-weight:bold;margin-top:10px">
           <span>Total:</span>
-          <span>Gs ${totalGeral.toLocaleString('es-PY')}</span>
+          <span>Gs ${totalGeral.toLocaleString("es-PY")}</span>
         </div>
       </div>
     `;
@@ -1886,57 +2699,65 @@ function atualizarTotalCheckout() {
 
 function mudarModoEntrega(modo) {
   modoEntrega = modo;
-  document.getElementById('btn-delivery').classList.toggle('active', modo === 'delivery');
-  document.getElementById('btn-retirada').classList.toggle('active', modo === 'retirada');
-  const btnLocal = document.getElementById('btn-local');
-  if (btnLocal) btnLocal.classList.toggle('active', modo === 'local');
-  document.getElementById('box-endereco').style.display = modo === 'delivery' ? 'block' : 'none';
+  document
+    .getElementById("btn-delivery")
+    .classList.toggle("active", modo === "delivery");
+  document
+    .getElementById("btn-retirada")
+    .classList.toggle("active", modo === "retirada");
+  const btnLocal = document.getElementById("btn-local");
+  if (btnLocal) btnLocal.classList.toggle("active", modo === "local");
+  document.getElementById("box-endereco").style.display =
+    modo === "delivery" ? "block" : "none";
   atualizarTotalCheckout();
 }
 
 function toggleFactura() {
-  const checked = document.getElementById('check-factura').checked;
-  document.getElementById('box-ruc').classList.toggle('hidden', !checked);
+  const checked = document.getElementById("check-factura").checked;
+  document.getElementById("box-ruc").classList.toggle("hidden", !checked);
 }
 
 function verificarPagamento() {
-  const pag = document.getElementById('forma-pag').value;
-  const infoDiv = document.getElementById('info-pagamento-extra');
-  const boxTroco = document.getElementById('box-troco');
-  const boxMulti = document.getElementById('box-multipagamento');
-  const selectPag = document.getElementById('forma-pag');
+  const pag = document.getElementById("forma-pag").value;
+  const infoDiv = document.getElementById("info-pagamento-extra");
+  const boxTroco = document.getElementById("box-troco");
+  const boxMulti = document.getElementById("box-multipagamento");
+  const selectPag = document.getElementById("forma-pag");
 
-  infoDiv.style.display = 'none';
-  boxTroco.classList.add('hidden');
-  if (boxMulti) boxMulti.style.display = 'none';
+  infoDiv.style.display = "none";
+  boxTroco.classList.add("hidden");
+  if (boxMulti) boxMulti.style.display = "none";
 
-  if (pag === 'Efetivo') {
-    boxTroco.classList.remove('hidden');
-  } else if (pag === 'Pix') {
-    infoDiv.style.display = 'block';
+  if (pag === "Efetivo") {
+    boxTroco.classList.remove("hidden");
+  } else if (pag === "Pix") {
+    infoDiv.style.display = "block";
     const totalItens = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
-    let freteAplicado = modoEntrega === 'delivery' ? Math.max(0, freteCalculado) : 0;
+    let freteAplicado =
+      modoEntrega === "delivery" ? Math.max(0, freteCalculado) : 0;
     let desconto = 0;
     if (cupomAplicado) {
-      if (cupomAplicado.tipo === 'percentual') desconto = Math.round(totalItens * (cupomAplicado.valor / 100));
-      else if (cupomAplicado.tipo === 'frete') freteAplicado = 0;
+      if (cupomAplicado.tipo === "percentual")
+        desconto = Math.round(totalItens * (cupomAplicado.valor / 100));
+      else if (cupomAplicado.tipo === "frete") freteAplicado = 0;
     }
     const totalGs = totalItens - desconto + freteAplicado;
-    const totalBrl = COTACAO_REAL > 0 ? (totalGs / COTACAO_REAL).toFixed(2) : '---';
+    const totalBrl =
+      COTACAO_REAL > 0 ? (totalGs / COTACAO_REAL).toFixed(2) : "---";
     infoDiv.innerHTML = `<strong>💳 Chave Pix:</strong><br>${CHAVE_PIX}<br><small>Titular: ${NOME_PIX}</small><br><strong style="color:#27ae60;font-size:1rem">💰 Valor: R$ ${totalBrl}</strong>`;
-  } else if (pag === 'Transferencia') {
-    infoDiv.style.display = 'block';
+  } else if (pag === "Transferencia") {
+    infoDiv.style.display = "block";
     infoDiv.innerHTML = `<strong>🏦 Dados para Transferência:</strong><br>${DADOS_ALIAS}<br>${ALIAS_PY}`;
-  } else if (pag === 'QR_PY') {
-    infoDiv.style.display = 'block';
+  } else if (pag === "QR_PY") {
+    infoDiv.style.display = "block";
     infoDiv.innerHTML = `<strong>📲 Pague via QR Paraguai</strong><br><small style="color:#555">Bi-Pago · Wepa · Zimple · Tigo Money · Billetera Personal</small><br><span style="color:#1a7a2e;font-weight:700">Mostre o QR ao operador ou escaneie o QR da loja</span>`;
-  } else if (pag === 'Multipagamento') {
+  } else if (pag === "Multipagamento") {
     if (boxMulti) {
-      boxMulti.style.display = 'block';
+      boxMulti.style.display = "block";
       // Esconde o select enquanto está no modo multi
-      selectPag.style.display = 'none';
+      selectPag.style.display = "none";
       // Inicializa com 2 formas se ainda não há nenhuma
-      const partes = document.getElementById('multi-partes');
+      const partes = document.getElementById("multi-partes");
       if (partes && partes.children.length === 0) {
         adicionarPartePagamento(); // 1ª forma
         adicionarPartePagamento(); // 2ª forma
@@ -1947,7 +2768,7 @@ function verificarPagamento() {
   }
 
   // Garante que o select volte a aparecer se não for Multipagamento
-  if (selectPag) selectPag.style.display = '';
+  if (selectPag) selectPag.style.display = "";
 }
 
 // ==========================================
@@ -1956,46 +2777,48 @@ function verificarPagamento() {
 let _multiContador = 0;
 
 const METODOS_PAG = [
-  { value: 'Efetivo',       label: '💵 Efectivo' },
-  { value: 'Cartao',        label: '💳 Tarjeta' },
-  { value: 'Pix',           label: '🟢 Pix (BR)' },
-  { value: 'Transferencia', label: '🏦 Alias/Transferencia' },
-  { value: 'QR_PY',         label: '📲 QR Paraguai (Bi-Pago/Wepa)' },
+  { value: "Efetivo", label: "💵 Efectivo" },
+  { value: "Cartao", label: "💳 Tarjeta" },
+  { value: "Pix", label: "🟢 Pix (BR)" },
+  { value: "Transferencia", label: "🏦 Alias/Transferencia" },
+  { value: "QR_PY", label: "📲 QR Paraguai (Bi-Pago/Wepa)" },
 ];
 
 function _getTotalPedidoAtual() {
   const totalItens = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
-  let freteAplicado = modoEntrega === 'delivery' ? Math.max(0, freteCalculado) : 0;
+  let freteAplicado =
+    modoEntrega === "delivery" ? Math.max(0, freteCalculado) : 0;
   let desconto = 0;
   if (cupomAplicado) {
-    if (cupomAplicado.tipo === 'percentual') desconto = Math.round(totalItens * (cupomAplicado.valor / 100));
-    else if (cupomAplicado.tipo === 'frete') freteAplicado = 0;
+    if (cupomAplicado.tipo === "percentual")
+      desconto = Math.round(totalItens * (cupomAplicado.valor / 100));
+    else if (cupomAplicado.tipo === "frete") freteAplicado = 0;
   }
   return totalItens - desconto + freteAplicado;
 }
 
 function voltarPagamentoUnico() {
   // Reseta o select para "nada selecionado" e esconde o painel multi
-  document.getElementById('forma-pag').value = '';
-  document.getElementById('box-multipagamento').style.display = 'none';
+  document.getElementById("forma-pag").value = "";
+  document.getElementById("box-multipagamento").style.display = "none";
   // Limpa as partes
-  document.getElementById('multi-partes').innerHTML = '';
+  document.getElementById("multi-partes").innerHTML = "";
   _multiContador = 0;
   verificarPagamento();
 }
 
 function adicionarPartePagamento() {
-  const container = document.getElementById('multi-partes');
+  const container = document.getElementById("multi-partes");
   if (!container) return;
   _multiContador++;
   const id = _multiContador;
-  const ordinal = ['1ª', '2ª', '3ª', '4ª', '5ª'][id - 1] || `${id}ª`;
+  const ordinal = ["1ª", "2ª", "3ª", "4ª", "5ª"][id - 1] || `${id}ª`;
 
-  const metodoOptions = METODOS_PAG.map(m =>
-    `<option value="${m.value}">${m.label}</option>`
-  ).join('');
+  const metodoOptions = METODOS_PAG.map(
+    (m) => `<option value="${m.value}">${m.label}</option>`,
+  ).join("");
 
-  const card = document.createElement('div');
+  const card = document.createElement("div");
   card.id = `multi-parte-${id}`;
   card.style.cssText = `
     background: white;
@@ -2021,8 +2844,12 @@ function adicionarPartePagamento() {
             oninput="atualizarRestanteMulti()"
             style="width:100%; padding:10px 10px 10px 30px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:0.95rem; font-weight:700; box-sizing:border-box;">
       </div>
-      ${id > 2 ? `<button type="button" onclick="removerPartePagamento(${id})"
-          style="background:#ffeaea; color:#e74c3c; border:none; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:0.9rem; flex-shrink:0;">✕</button>` : ''}
+      ${
+        id > 2
+          ? `<button type="button" onclick="removerPartePagamento(${id})"
+          style="background:#ffeaea; color:#e74c3c; border:none; padding:10px 12px; border-radius:8px; cursor:pointer; font-size:0.9rem; flex-shrink:0;">✕</button>`
+          : ""
+      }
     </div>
     <!-- Info Efetivo (troco) -->
     <div id="multi-troco-${id}" style="display:none; margin-top:8px;">
@@ -2041,7 +2868,8 @@ function adicionarPartePagamento() {
 function verificarPartePix(id) {
   const metodo = document.getElementById(`multi-metodo-${id}`)?.value;
   const trocoBox = document.getElementById(`multi-troco-${id}`);
-  if (trocoBox) trocoBox.style.display = metodo === 'Efetivo' ? 'block' : 'none';
+  if (trocoBox)
+    trocoBox.style.display = metodo === "Efetivo" ? "block" : "none";
   // Atualiza info pix sem recursar
   _atualizarPixInfo(id, metodo);
   // Só chama atualizar ao mudar método, sem recursão
@@ -2052,17 +2880,18 @@ function verificarPartePix(id) {
 function _atualizarPixInfo(id, metodo) {
   const pixInfo = document.getElementById(`multi-pix-info-${id}`);
   if (!pixInfo) return;
-  if (metodo === 'Pix') {
-    const valor = parseFloat(document.getElementById(`multi-valor-${id}`)?.value) || 0;
+  if (metodo === "Pix") {
+    const valor =
+      parseFloat(document.getElementById(`multi-valor-${id}`)?.value) || 0;
     if (valor > 0 && COTACAO_REAL > 0) {
       const brl = (valor / COTACAO_REAL).toFixed(2);
-      pixInfo.style.display = 'block';
+      pixInfo.style.display = "block";
       pixInfo.innerHTML = `💠 Pix: <strong>R$ ${brl}</strong> &nbsp;·&nbsp; Chave: ${CHAVE_PIX}`;
     } else {
-      pixInfo.style.display = 'none';
+      pixInfo.style.display = "none";
     }
   } else {
-    pixInfo.style.display = 'none';
+    pixInfo.style.display = "none";
   }
 }
 
@@ -2077,14 +2906,18 @@ function atualizarRestanteMulti(atualizarPix = true) {
   const total = _getTotalPedidoAtual();
   const inputs = [...document.querySelectorAll('[id^="multi-valor-"]')];
   let soma = 0;
-  inputs.forEach(inp => { soma += parseFloat(inp.value) || 0; });
-  
+  inputs.forEach((inp) => {
+    soma += parseFloat(inp.value) || 0;
+  });
+
   const restante = total - soma;
-  const bar = document.getElementById('multi-status-bar');
-  const el = document.getElementById('multi-restante');
+  const bar = document.getElementById("multi-status-bar");
+  const el = document.getElementById("multi-restante");
 
   // ── AUTO-FILL: se há exatamente 1 input vazio e ainda sobra valor, preenche ──
-  const inputsVazios = inputs.filter(inp => !inp.value || parseFloat(inp.value) === 0);
+  const inputsVazios = inputs.filter(
+    (inp) => !inp.value || parseFloat(inp.value) === 0,
+  );
   if (inputsVazios.length === 1 && restante > 0) {
     inputsVazios[0].value = restante;
     // Recalcula com o novo valor preenchido
@@ -2092,81 +2925,109 @@ function atualizarRestanteMulti(atualizarPix = true) {
   }
 
   if (!el || !bar) return;
-  bar.style.display = 'block';
+  bar.style.display = "block";
 
   const diff = total - soma;
   if (Math.abs(diff) < 1) {
-    bar.style.background = '#eafaf1';
-    bar.style.borderColor = '#27ae60';
-    el.innerHTML = `<span style="color:#27ae60">✅ Total coberto: Gs ${total.toLocaleString('es-PY')}</span>`;
+    bar.style.background = "#eafaf1";
+    bar.style.borderColor = "#27ae60";
+    el.innerHTML = `<span style="color:#27ae60">✅ Total coberto: Gs ${total.toLocaleString("es-PY")}</span>`;
   } else if (diff > 0) {
-    bar.style.background = '#fff8e6';
-    bar.style.borderColor = '#f0a500';
-    el.innerHTML = `<span style="color:#e67e22">⚠️ Faltam: Gs ${diff.toLocaleString('es-PY')}</span>`;
+    bar.style.background = "#fff8e6";
+    bar.style.borderColor = "#f0a500";
+    el.innerHTML = `<span style="color:#e67e22">⚠️ Faltam: Gs ${diff.toLocaleString("es-PY")}</span>`;
   } else {
-    bar.style.background = '#fdf3f3';
-    bar.style.borderColor = '#e74c3c';
-    el.innerHTML = `<span style="color:#e74c3c">❌ Excede: Gs ${Math.abs(diff).toLocaleString('es-PY')}</span>`;
+    bar.style.background = "#fdf3f3";
+    bar.style.borderColor = "#e74c3c";
+    el.innerHTML = `<span style="color:#e74c3c">❌ Excede: Gs ${Math.abs(diff).toLocaleString("es-PY")}</span>`;
   }
 
   // Atualiza info de Pix — SEM chamar verificarPartePix (que chamaria atualizarRestanteMulti de volta)
   if (atualizarPix) {
-    inputs.forEach(inp => {
-      const idNum = inp.id.replace('multi-valor-', '');
+    inputs.forEach((inp) => {
+      const idNum = inp.id.replace("multi-valor-", "");
       const metodo = document.getElementById(`multi-metodo-${idNum}`)?.value;
-      _atualizarPixInfo(idNum, metodo || '');
+      _atualizarPixInfo(idNum, metodo || "");
     });
   }
 }
 
 function _coletarMultiPagamento() {
   const partes = [];
-  document.querySelectorAll('[id^="multi-parte-"]').forEach(div => {
-    const idStr = div.id.replace('multi-parte-', '');
-    const metodo = document.getElementById(`multi-metodo-${idStr}`)?.value || '';
-    const valor = parseFloat(document.getElementById(`multi-valor-${idStr}`)?.value) || 0;
-    const troco = document.getElementById(`multi-troco-val-${idStr}`)?.value || '';
-    if (metodo && valor > 0) partes.push({ metodo, valor, troco: troco || null });
+  document.querySelectorAll('[id^="multi-parte-"]').forEach((div) => {
+    const idStr = div.id.replace("multi-parte-", "");
+    const metodo =
+      document.getElementById(`multi-metodo-${idStr}`)?.value || "";
+    const valor =
+      parseFloat(document.getElementById(`multi-valor-${idStr}`)?.value) || 0;
+    const troco =
+      document.getElementById(`multi-troco-val-${idStr}`)?.value || "";
+    if (metodo && valor > 0)
+      partes.push({ metodo, valor, troco: troco || null });
   });
   return partes;
 }
 
 async function calcularFrete() {
-  const btn = document.getElementById('btn-gps');
-  const msg = document.getElementById('frete-msg');
-  const boxErro = document.getElementById('box-erro-gps');
+  const btn = document.getElementById("btn-gps");
+  const msg = document.getElementById("frete-msg");
+  const boxErro = document.getElementById("box-erro-gps");
 
-  btn.innerText = 'Localizando...';
+  btn.innerText = "Localizando...";
   btn.disabled = true;
 
   if (!navigator.geolocation) {
-    msg.innerHTML = '<span style="color:#e74c3c">GPS não disponível neste dispositivo</span>';
-    boxErro.style.display = 'block';
-    btn.innerText = '📍 Calcular Frete';
+    msg.innerHTML =
+      '<span style="color:#e74c3c">GPS não disponível neste dispositivo</span>';
+    boxErro.style.display = "block";
+    btn.innerText = "📍 Calcular Frete";
     btn.disabled = false;
     return;
   }
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      localCliente = { lat: position.coords.latitude, lng: position.coords.longitude };
-      const dist = calcularDistancia(COORD_LOJA.lat, COORD_LOJA.lng, localCliente.lat, localCliente.lng);
-      
+      localCliente = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+      const dist = calcularDistancia(
+        COORD_LOJA.lat,
+        COORD_LOJA.lng,
+        localCliente.lat,
+        localCliente.lng,
+      );
+
+      // === BLOQUEIO POR RAIO DE COBERTURA ===
+      if (LIMITE_DISTANCIA_KM !== null && dist > LIMITE_DISTANCIA_KM) {
+        freteCalculado = null; // bloqueia envio
+        localCliente = null;   // invalida localização
+        msg.innerHTML = `<span style="color:#e74c3c">🚫 Fora da área de entrega. Distância: ${dist.toFixed(1)}km — Limite: ${LIMITE_DISTANCIA_KM}km.</span>`;
+        boxErro.style.display = "none";
+        btn.innerText = "📍 Tentar Novamente";
+        btn.disabled = false;
+        atualizarTotalCheckout();
+        return;
+      }
+
       // === TABELA DE FRETE DINÂMICA (configurada no admin) ===
       // Faixas: até 1.9 | 2-3 | 3.1-4 | 4.1-5 | 5.1-7 | 7.1-9 | 10+
       const LIMITES_KM = [1.9, 3.0, 4.0, 5.0, 7.0, 9.0, 99999];
       let freteIndex = -1;
       for (let i = 0; i < LIMITES_KM.length; i++) {
-        if (dist <= LIMITES_KM[i]) { freteIndex = i; break; }
+        if (dist <= LIMITES_KM[i]) {
+          freteIndex = i;
+          break;
+        }
       }
 
       if (freteIndex === -1) {
         // Fallback de segurança — na prática nunca ocorre com LIMITES_KM[6]=99999
         freteCalculado = -1; // sentinela: a combinar
         msg.innerHTML = `<span style="color:#e67e22">⚠️ Distância: ${dist.toFixed(1)}km — Frete <strong>a combinar</strong> pelo WhatsApp.</span>`;
-        msg.style.color = '#e67e22';
-        boxErro.style.display = 'none';
-        btn.innerText = '✅ Localização OK';
+        msg.style.color = "#e67e22";
+        boxErro.style.display = "none";
+        btn.innerText = "✅ Localização OK";
         btn.disabled = false;
         atualizarTotalCheckout();
         return;
@@ -2174,16 +3035,18 @@ async function calcularFrete() {
 
       // Verifica se a faixa está marcada como "A combinar" no admin
       // Fix: usa === true para evitar falsos positivos com valores truthy acidentais
-      const faixaSalva = TABELA_FRETE && Array.isArray(TABELA_FRETE) && TABELA_FRETE[freteIndex];
-      const faixaTemValorReal = faixaSalva && (faixaSalva.loja > 0 || faixaSalva.motoboy > 0);
+      const faixaSalva =
+        TABELA_FRETE && Array.isArray(TABELA_FRETE) && TABELA_FRETE[freteIndex];
+      const faixaTemValorReal =
+        faixaSalva && (faixaSalva.loja > 0 || faixaSalva.motoboy > 0);
 
       if (faixaSalva && faixaSalva.acombinar === true && !faixaTemValorReal) {
         freteCalculado = -1; // sentinela: a combinar
-        freteMotoboy   = 0;
+        freteMotoboy = 0;
         msg.innerHTML = `<span style="color:#e67e22">⚠️ Distância: ${dist.toFixed(1)}km — Frete <strong>a combinar</strong> pelo WhatsApp.</span>`;
-        msg.style.color = '#e67e22';
-        boxErro.style.display = 'none';
-        btn.innerText = '✅ Localização OK';
+        msg.style.color = "#e67e22";
+        boxErro.style.display = "none";
+        btn.innerText = "✅ Localização OK";
         btn.disabled = false;
         atualizarTotalCheckout();
         return;
@@ -2192,31 +3055,35 @@ async function calcularFrete() {
       if (faixaSalva && faixaTemValorReal) {
         // Usa tabela configurada no admin
         freteCalculado = faixaSalva.loja || 0;
-        freteMotoboy   = faixaSalva.motoboy || 0;
+        freteMotoboy = faixaSalva.motoboy || 0;
       } else {
         // Fallback se tabela não configurada ou zerada: faixas padrão
-        if (dist <= 3.3)       freteCalculado = 6000;
-        else if (dist <= 4.2)  freteCalculado = 12000;
-        else if (dist <= 5.2)  freteCalculado = 18000;
-        else if (dist <= 6.2)  freteCalculado = 24000;
-        else { const kmExtra = Math.ceil(dist - 6.2); freteCalculado = 24000 + (kmExtra * 3000); }
+        if (dist <= 3.3) freteCalculado = 6000;
+        else if (dist <= 4.2) freteCalculado = 12000;
+        else if (dist <= 5.2) freteCalculado = 18000;
+        else if (dist <= 6.2) freteCalculado = 24000;
+        else {
+          const kmExtra = Math.ceil(dist - 6.2);
+          freteCalculado = 24000 + kmExtra * 3000;
+        }
         freteMotoboy = freteCalculado;
       }
-      
-      msg.innerHTML = `<span style="color:#27ae60">✅ Distância: ${dist.toFixed(1)}km - Frete: Gs ${freteCalculado.toLocaleString('es-PY')}</span>`;
-      msg.style.color = '#27ae60';
-      boxErro.style.display = 'none';
-      
-      btn.innerText = '✅ Localização OK';
+
+      msg.innerHTML = `<span style="color:#27ae60">✅ Distância: ${dist.toFixed(1)}km - Frete: Gs ${freteCalculado.toLocaleString("es-PY")}</span>`;
+      msg.style.color = "#27ae60";
+      boxErro.style.display = "none";
+
+      btn.innerText = "✅ Localização OK";
       btn.disabled = true;
       atualizarTotalCheckout();
     },
     (error) => {
-      msg.innerHTML = '<span style="color:#e74c3c">Não foi possível obter sua localização</span>';
-      boxErro.style.display = 'block';
-      btn.innerText = '📍 Tentar Novamente';
+      msg.innerHTML =
+        '<span style="color:#e74c3c">Não foi possível obter sua localização</span>';
+      boxErro.style.display = "block";
+      btn.innerText = "📍 Tentar Novamente";
       btn.disabled = false;
-    }
+    },
   );
 }
 
@@ -2226,7 +3093,10 @@ function calcularDistancia(lat1, lon1, lat2, lon2) {
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
@@ -2241,296 +3111,385 @@ async function enviarZap() {
   if (_enviandoPedido) return;
   _enviandoPedido = true;
 
-  const _btnEnviar = document.querySelector('[onclick="enviarZap()"]')
-                  || document.querySelector("[onclick='enviarZap()']");
-  const _textoOriginal = _btnEnviar ? _btnEnviar.innerHTML : '';
+  const _btnEnviar =
+    document.querySelector('[onclick="enviarZap()"]') ||
+    document.querySelector("[onclick='enviarZap()']");
+  const _textoOriginal = _btnEnviar ? _btnEnviar.innerHTML : "";
   if (_btnEnviar) {
-    _btnEnviar.disabled      = true;
-    _btnEnviar.style.opacity = '0.6';
-    _btnEnviar.innerHTML     = '⏳ Processando...';
+    _btnEnviar.disabled = true;
+    _btnEnviar.style.opacity = "0.6";
+    _btnEnviar.innerHTML = "⏳ Processando...";
   }
   const _liberarBotao = () => {
     _enviandoPedido = false;
     if (_btnEnviar) {
-      _btnEnviar.disabled      = false;
-      _btnEnviar.style.opacity = '1';
-      _btnEnviar.innerHTML     = _textoOriginal;
+      _btnEnviar.disabled = false;
+      _btnEnviar.style.opacity = "1";
+      _btnEnviar.innerHTML = _textoOriginal;
     }
   };
   const _timerLiberar = setTimeout(_liberarBotao, 60000);
 
   try {
+    const nome = document.getElementById("cli-nome").value.trim();
+    const ddi = document.getElementById("cli-ddi").value;
+    const tel = document.getElementById("cli-tel").value.trim();
+    const pag = document.getElementById("forma-pag").value;
 
-  const nome = document.getElementById('cli-nome').value.trim();
-  const ddi = document.getElementById('cli-ddi').value;
-  const tel = document.getElementById('cli-tel').value.trim();
-  const pag = document.getElementById('forma-pag').value;
+    if (!nome || !tel || !pag)
+      return alert("Preencha todos os campos obrigatórios!");
 
-  if (!nome || !tel || !pag) return alert('Preencha todos os campos obrigatórios!');
-
-  // Troco obrigatório quando pagamento em Efetivo
-  if (pag === 'Efetivo') {
-    const trocoVal = document.getElementById('troco-valor').value.trim();
-    if (!trocoVal || parseFloat(trocoVal.replace(/[^\d]/g, '')) <= 0) {
-      document.getElementById('troco-valor').focus();
-      document.getElementById('troco-valor').style.borderColor = '#e74c3c';
-      return alert('⚠️ Informe o valor em dinheiro para cálculo do troco!');
-    }
-    document.getElementById('troco-valor').style.borderColor = '';
-  }
-
-  // Promoções do dia: bloquear pagamento com Cartão
-  const temPromoItem = carrinho.some(item => {
-    // Verifica se algum item do carrinho pertence a categoria promocoes_do_dia
-    for (const key in MENU) {
-      if (key === 'promocoes_do_dia') {
-        const found = MENU[key].find(m => m.id === item.id || m.nome === item.nome);
-        if (found) return true;
+    // Troco obrigatório quando pagamento em Efetivo
+    if (pag === "Efetivo") {
+      const trocoVal = document.getElementById("troco-valor").value.trim();
+      if (!trocoVal || parseFloat(trocoVal.replace(/[^\d]/g, "")) <= 0) {
+        document.getElementById("troco-valor").focus();
+        document.getElementById("troco-valor").style.borderColor = "#e74c3c";
+        return alert("⚠️ Informe o valor em dinheiro para cálculo do troco!");
       }
+      document.getElementById("troco-valor").style.borderColor = "";
     }
-    return false;
-  });
-  if (temPromoItem && pag === 'Cartao') {
-    return alert('⚠️ Produtos da "Promoção do Dia" não aceitam pagamento com Cartão.');
-  }
 
-  // Pedido duplo: bloqueia se mesmo carrinho enviado no último 1h
-  const _agora = Date.now();
-  const _ultimoHash = localStorage.getItem('locanda_last_hash');
-  const _ultimoTs   = parseInt(localStorage.getItem('locanda_last_ts') || '0');
-  const _hashAtual  = carrinho.map(i => i.nome + i.qtd).sort().join('|');
-  if (_ultimoHash === _hashAtual && (_agora - _ultimoTs) < 3600000) {
-    return alert('🚫 Seu pedido anterior foi computado, estamos bloqueando esta segunda tentativa.');
-  }
-
-  // Valida multipagamento
-  if (pag === 'Multipagamento') {
-    const partes = _coletarMultiPagamento();
-    if (partes.length < 2) return alert('Adicione pelo menos 2 formas de pagamento para o multipagamento.');
-    const somaPartes = partes.reduce((s, p) => s + p.valor, 0);
-    const totalCheck = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0)
-                       - (cupomAplicado?.tipo === 'percentual' ? Math.round(carrinho.reduce((a,i)=>a+i.preco*i.qtd,0) * (cupomAplicado.valor/100)) : 0)
-                       + (modoEntrega === 'delivery' ? (cupomAplicado?.tipo === 'frete' ? 0 : Math.max(0, freteCalculado)) : 0);
-    if (Math.abs(somaPartes - totalCheck) > 1) {
-      return alert(`A soma dos pagamentos (Gs ${somaPartes.toLocaleString('es-PY')}) não confere com o total do pedido (Gs ${totalCheck.toLocaleString('es-PY')}). Ajuste os valores.`);
-    }
-  }
-
-  if (modoEntrega === 'delivery' && !localCliente && !document.getElementById('check-sem-gps')?.checked) {
-    alert('Por favor, calcule o frete ou marque a opção de enviar localização pelo WhatsApp');
-    return;
-  }
-
-  const usouPlanoB = document.getElementById('check-sem-gps')?.checked;
-  const ref = document.getElementById('cli-ref').value || '';
-  // Sanitiza telefone: remove +, -, espaços, parênteses e outros não-numéricos
-  // Caso o cliente cole um número do WhatsApp como "+595 984 692537"
-  const telSanitizado = tel.replace(/[^\d]/g, '');
-  const telCompleto = ddi + telSanitizado;
-
-  const totalItens = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
-  let desconto = 0;
-  // -1 é sentinela 'a combinar' — salva como 0 no banco e no total
-  let freteAplicado = freteCalculado === -1 ? 0 : freteCalculado;
-  const freteACombinar = freteCalculado === -1;
-  
-  if (cupomAplicado) {
-    if (cupomAplicado.tipo === 'percentual') {
-      desconto = Math.round(totalItens * (cupomAplicado.valor / 100));
-    } else if (cupomAplicado.tipo === 'frete') {
-      freteAplicado = 0;
-    }
-  }
-  
-  const totalGeral = totalItens - desconto + (modoEntrega === 'delivery' ? freteAplicado : 0);
-
-  // 1. Salva no Banco PRIMEIRO para pegar o ID real
-  let pedidoDbId = null;
-  let numeroPedido = null;
-  
-  if (typeof supa !== 'undefined') {
-    const pedidoDb = {
-      status: 'pendente',
-      tipo_entrega: modoEntrega,
-      subtotal: totalItens,
-      frete_cobrado_cliente: modoEntrega === 'delivery' ? freteAplicado : 0,
-      frete_motoboy: modoEntrega === 'delivery' ? freteMotoboy : 0,
-      desconto_cupom: desconto,
-      total_geral: totalGeral,
-      forma_pagamento: pag,
-      obs_pagamento: pag === 'Efetivo' ? document.getElementById('troco-valor').value
-                   : pag === 'Multipagamento' ? JSON.stringify(_coletarMultiPagamento())
-                   : '',
-      itens: carrinho.map((i) => ({
-        n: i.nome,
-        nome: i.nome,             // alias legível para admin/motoboy
-        p: i.preco,
-        q: i.qtd,
-        qtd: i.qtd,               // alias legível
-        t: i.variacao || '',
-        pr: i.preparo || '',
-        m: i.montagem,
-        o: i.obs,
-        categoria_slug: i.categoria_slug || i.cat || ''  // para filtro de bebidas no motoboy
-      })),
-      endereco_entrega: ref,
-      geo_lat: localCliente ? localCliente.lat.toString() : null,
-      geo_lng: localCliente ? localCliente.lng.toString() : null,
-      cliente_nome: nome,
-      cliente_telefone: telCompleto,
-      dados_factura: document.getElementById('check-factura').checked
-        ? { ruc: document.getElementById('cli-ruc').value, razao: document.getElementById('cli-zao').value }
-        : null,
-    };
-
-    const { data: pedidoSalvo, error } = await supa.from('pedidos').insert([pedidoDb]).select().single();
-
-    if (error) {
-      console.error('Erro ao salvar pedido:', error);
-      alert('⚠️ Erro ao salvar pedido no sistema. Tente novamente.');
-      return;
-    }
-    
-    if (pedidoSalvo) {
-      pedidoDbId = pedidoSalvo.id;
-      numeroPedido = pedidoSalvo.id; // USA O ID DO BANCO
-      console.log('✅ Pedido salvo com ID:', pedidoDbId);
-
-      // Incrementa contador de usos do cupom
-      if (cupomAplicado?.id) {
-        const novosUsos = (cupomAplicado.usos_realizados || 0) + 1;
-        await supa.from('cupons')
-          .update({ usos_realizados: novosUsos })
-          .eq('id', cupomAplicado.id);
-      }
-    }
-  }
-
-  // Salva localmente para "Repetir Pedido"
-  localStorage.setItem('locanda_last', JSON.stringify(carrinho));
-  localStorage.setItem('locanda_user', JSON.stringify({ nome, tel }));
-
-  // 2. Usa o número real do pedido na mensagem
-  const idDisplay = numeroPedido || 'TEMP';
-  
-  // 3. Monta Mensagem WhatsApp
-  let msg = `🇧🇷 PEDIDO #${idDisplay} - PIZZERÍA LOCANDA\n`;
-  msg += `--------------------------\n`;
-  msg += `👤 Cliente: ${nome}\n`;
-  msg += `📱 Tel: ${telCompleto}\n`;
-  msg += `🛵 Tipo: ${modoEntrega === 'delivery' ? 'DELIVERY' : modoEntrega === 'local' ? 'COMER NO LOCAL 🍽️' : 'RETIRADA'}\n`;
-
-  if (modoEntrega === 'delivery') {
-    if (localCliente) {
-      msg += `📍 Maps: https://maps.google.com/?q=${localCliente.lat},${localCliente.lng}\n`;
-      // Verifica se frete é 'a combinar' (sentinela -1)
-      if (freteACombinar) {
-        msg += `🛵 Delivery: 🤝 A COMBINAR (confirmar pelo WhatsApp)\n`;
-      } else {
-        const _freteReal = freteCalculado;
-        const _fretePago = freteAplicado;
-        if (_freteReal > 0 && _fretePago === 0) {
-          msg += `🛵 Delivery: FRETE GRÁTIS (valor: Gs ${_freteReal.toLocaleString('es-PY')})\n`;
-        } else if (_freteReal > 0) {
-          msg += `🛵 Delivery: Gs ${_fretePago.toLocaleString('es-PY')}\n`;
+    // Promoções do dia: bloquear pagamento com Cartão
+    const temPromoItem = carrinho.some((item) => {
+      // Verifica se algum item do carrinho pertence a categoria promocoes_do_dia
+      for (const key in MENU) {
+        if (key === "promocoes_do_dia") {
+          const found = MENU[key].find(
+            (m) => m.id === item.id || m.nome === item.nome,
+          );
+          if (found) return true;
         }
       }
-    } else if (usouPlanoB) {
-      msg += `📍 *Localização:* Enviarei aqui no WhatsApp 📎\n`;
-      msg += `🛵 *Delivery:* A COMBINAR\n`;
-    }
-    msg += `🏠 Ref: ${ref}\n`;
-  }
-
-  msg += `--------------------------\n`;
-  carrinho.forEach((item) => {
-    msg += `${item.qtd}x ${item.nome}`;
-    if (item.variacao) msg += ` — ${item.variacao}`;
-    if (item.preparo) msg += ` [${item.preparo}]`;
-    msg += `\n`;
-    if (item.montagem && item.montagem.length > 0) msg += `   + ${item.montagem.join(', ')}\n`;
-    if (item.obs) msg += `   Obs: ${item.obs}\n`;
-  });
-
-  msg += `--------------------------\n`;
-  msg += `Subtotal: Gs ${totalItens.toLocaleString('es-PY')}\n`;
-  
-  if (desconto > 0) {
-    msg += `Desconto (${cupomAplicado.codigo}): -Gs ${desconto.toLocaleString('es-PY')}\n`;
-  }
-  
-  if (modoEntrega === 'delivery' && !usouPlanoB) {
-    if (freteACombinar) {
-      msg += `Delivery: 🤝 A COMBINAR\n`;
-      msg += `TOTAL (sem frete): Gs ${totalGeral.toLocaleString('es-PY')}\n`;
-    } else {
-      msg += `Delivery: Gs ${freteAplicado.toLocaleString('es-PY')}\n`;
-      msg += `TOTAL: Gs ${totalGeral.toLocaleString('es-PY')}\n`;
-    }
-  } else {
-    msg += `TOTAL: Gs ${totalGeral.toLocaleString('es-PY')}\n`;
-  }
-  msg += `--------------------------\n`;
-
-  // Pagamento e Troco
-  if (pag === 'Efetivo') {
-     const trocoVal = document.getElementById('troco-valor').value;
-     msg += `💰 Pagamento: Efetivo (Troco p/: ${trocoVal})\n`;
-  } else if (pag === 'Multipagamento') {
-     const partes = _coletarMultiPagamento();
-     msg += `💰 Pagamento dividido (${partes.length} formas):\n`;
-     partes.forEach((p, i) => {
-       msg += `   ${i+1}. ${p.metodo}: Gs ${p.valor.toLocaleString('es-PY')}`;
-       if (p.troco) msg += ` (Troco p/ Gs ${parseFloat(p.troco).toLocaleString('es-PY')})`;
-       msg += '\n';
-     });
-  } else {
-     msg += `💰 Pagamento: ${pag}\n`;
-  }
-
-  // Avisos de Pix/Alias (Bilíngue)
-  if (pag === 'Pix' || pag === 'Transferencia') {
-      if(pag === 'Pix') {
-          const totalBrl = COTACAO_REAL > 0 ? (totalGeral / COTACAO_REAL).toFixed(2) : '---';
-          msg += `\n💠 Chave Pix: ${CHAVE_PIX}\n`;
-          msg += `💰 Valor em Reais: R$ ${totalBrl}\n`;
-      }
-      if(pag === 'Transferencia') msg += `\n📎 Alias: ${ALIAS_PY}\n`;
-      msg += `\n⚠️ *Envie o comprovante após o pagamento!*\n`;
-  }
-  
-  // Para multipagamento: avisar sobre Pix ou Transferencia se incluídos
-  if (pag === 'Multipagamento') {
-    const partes = _coletarMultiPagamento();
-    partes.forEach((p, idx) => {
-      if (p.metodo === 'Pix') {
-        const valBrl = COTACAO_REAL > 0 ? (p.valor / COTACAO_REAL).toFixed(2) : '---';
-        msg += `\n💠 Pix (forma ${idx+1}): Chave ${CHAVE_PIX} — R$ ${valBrl}\n`;
-      }
-      if (p.metodo === 'Transferencia') {
-        msg += `\n📎 Alias (forma ${idx+1}): ${ALIAS_PY}\n`;
-      }
+      return false;
     });
-    const temDigital = partes.some(p => p.metodo === 'Pix' || p.metodo === 'Transferencia');
-    if (temDigital) msg += `\n⚠️ *Envie o(s) comprovante(s) após o pagamento!*\n`;
-  }
+    if (temPromoItem && pag === "Cartao") {
+      return alert(
+        '⚠️ Produtos da "Promoção do Dia" não aceitam pagamento com Cartão.',
+      );
+    }
 
-  // Factura
-  if (document.getElementById('check-factura').checked) {
-      msg += `\n📄 RUC: ${document.getElementById('cli-ruc').value}\nRazão: ${document.getElementById('cli-zao').value}\n`;
-  }
+    // Pedido duplo: bloqueia se mesmo carrinho enviado no último 1h
+    const _agora = Date.now();
+    const _ultimoHash = localStorage.getItem("locanda_last_hash");
+    const _ultimoTs = parseInt(localStorage.getItem("locanda_last_ts") || "0");
+    const _hashAtual = carrinho
+      .map((i) => i.nome + i.qtd)
+      .sort()
+      .join("|");
+    if (_ultimoHash === _hashAtual && _agora - _ultimoTs < 3600000) {
+      return alert(
+        "🚫 Seu pedido anterior foi computado, estamos bloqueando esta segunda tentativa.",
+      );
+    }
 
-  // Salva hash anti-duplicata ANTES de enviar
-  const _hashFinal = carrinho.map(i => i.nome + i.qtd).sort().join('|');
-  localStorage.setItem('locanda_last_hash', _hashFinal);
-  localStorage.setItem('locanda_last_ts',   Date.now().toString());
+    // Valida multipagamento
+    if (pag === "Multipagamento") {
+      const partes = _coletarMultiPagamento();
+      if (partes.length < 2)
+        return alert(
+          "Adicione pelo menos 2 formas de pagamento para o multipagamento.",
+        );
+      const somaPartes = partes.reduce((s, p) => s + p.valor, 0);
+      const totalCheck =
+        carrinho.reduce((a, i) => a + i.preco * i.qtd, 0) -
+        (cupomAplicado?.tipo === "percentual"
+          ? Math.round(
+              carrinho.reduce((a, i) => a + i.preco * i.qtd, 0) *
+                (cupomAplicado.valor / 100),
+            )
+          : 0) +
+        (modoEntrega === "delivery"
+          ? cupomAplicado?.tipo === "frete"
+            ? 0
+            : Math.max(0, freteCalculado)
+          : 0);
+      if (Math.abs(somaPartes - totalCheck) > 1) {
+        return alert(
+          `A soma dos pagamentos (Gs ${somaPartes.toLocaleString("es-PY")}) não confere com o total do pedido (Gs ${totalCheck.toLocaleString("es-PY")}). Ajuste os valores.`,
+        );
+      }
+    }
 
-  // Modal de confirmação 5s antes de abrir WhatsApp
-  await _mostrarModalEnvio(msg, numeroPedido);
+    if (
+      modoEntrega === "delivery" &&
+      !localCliente &&
+      !document.getElementById("check-sem-gps")?.checked
+    ) {
+      alert(
+        "Por favor, calcule o frete ou marque a opção de enviar localização pelo WhatsApp",
+      );
+      return;
+    }
 
+    // Bloqueio: cliente fora do raio de cobertura (freteCalculado === null)
+    if (modoEntrega === "delivery" && freteCalculado === null) {
+      alert("Sua localização está fora da área de entrega da loja. Não é possível finalizar o pedido.");
+      return;
+    }
+
+    const usouPlanoB = document.getElementById("check-sem-gps")?.checked;
+    const ref = document.getElementById("cli-ref").value || "";
+    // Sanitiza telefone: remove +, -, espaços, parênteses e outros não-numéricos
+    // Caso o cliente cole um número do WhatsApp como "+595 984 692537"
+    const telSanitizado = tel.replace(/[^\d]/g, "");
+    const telCompleto = ddi + telSanitizado;
+
+    const totalItens = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
+    let desconto = 0;
+    // -1 é sentinela 'a combinar' — salva como 0 no banco e no total
+    let freteAplicado = freteCalculado === -1 ? 0 : freteCalculado;
+    const freteACombinar = freteCalculado === -1;
+
+    if (cupomAplicado) {
+      if (cupomAplicado.tipo === "percentual") {
+        desconto = Math.round(totalItens * (cupomAplicado.valor / 100));
+      } else if (cupomAplicado.tipo === "frete") {
+        freteAplicado = 0;
+      }
+    }
+
+    const totalGeral =
+      totalItens - desconto + (modoEntrega === "delivery" ? freteAplicado : 0);
+
+    // 1. Salva no Banco PRIMEIRO para pegar o ID real
+    let pedidoDbId = null;
+    let numeroPedido = null;
+
+    if (typeof supa !== "undefined") {
+      const pedidoDb = {
+        status: "pendente",
+        tipo_entrega: modoEntrega,
+        subtotal: totalItens,
+        frete_cobrado_cliente: modoEntrega === "delivery" ? freteAplicado : 0,
+        frete_motoboy: modoEntrega === "delivery" ? freteMotoboy : 0,
+        desconto_cupom: desconto,
+        total_geral: totalGeral,
+        forma_pagamento: pag,
+        obs_pagamento:
+          pag === "Efetivo"
+            ? document.getElementById("troco-valor").value
+            : pag === "Multipagamento"
+              ? JSON.stringify(_coletarMultiPagamento())
+              : "",
+        itens: carrinho.map((i) => ({
+          n: i.nome,
+          nome: i.nome, // alias legível para admin/motoboy
+          p: i.preco,
+          q: i.qtd,
+          qtd: i.qtd, // alias legível
+          t: i.variacao || "",
+          pr: i.preparo || "",
+          m: i.montagem,
+          o: i.obs,
+          categoria_slug: i.categoria_slug || i.cat || "", // para filtro de bebidas no motoboy
+        })),
+        endereco_entrega: ref,
+        geo_lat: localCliente ? localCliente.lat.toString() : null,
+        geo_lng: localCliente ? localCliente.lng.toString() : null,
+        cliente_nome: nome,
+        cliente_telefone: telCompleto,
+        dados_factura: document.getElementById("check-factura").checked
+          ? {
+              ruc: document.getElementById("cli-ruc").value,
+              razao: document.getElementById("cli-zao").value,
+            }
+          : null,
+      };
+
+      const { data: pedidoSalvo, error } = await supa
+        .from("pedidos")
+        .insert([pedidoDb])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Erro ao salvar pedido:", error);
+        alert("⚠️ Erro ao salvar pedido no sistema. Tente novamente.");
+        return;
+      }
+
+      if (pedidoSalvo) {
+        pedidoDbId = pedidoSalvo.id;
+        numeroPedido = pedidoSalvo.id; // USA O ID DO BANCO
+        console.log("✅ Pedido salvo com ID:", pedidoDbId);
+
+        // Incrementa contador de usos do cupom
+        if (cupomAplicado?.id) {
+          const novosUsos = (cupomAplicado.usos_realizados || 0) + 1;
+          await supa
+            .from("cupons")
+            .update({ usos_realizados: novosUsos })
+            .eq("id", cupomAplicado.id);
+        }
+      }
+    }
+
+    // Salva localmente para "Repetir Pedido"
+    localStorage.setItem("locanda_last", JSON.stringify(carrinho));
+    localStorage.setItem("locanda_user", JSON.stringify({ nome, tel }));
+
+    // 2. Usa o número real do pedido na mensagem
+    const idDisplay = numeroPedido || "TEMP";
+
+    // 3. Monta Mensagem WhatsApp
+    let msg = `🇧🇷 PEDIDO #${idDisplay} - PIZZERÍA LOCANDA\n`;
+    msg += `--------------------------\n`;
+    msg += `👤 Cliente: ${nome}\n`;
+    msg += `📱 Tel: ${telCompleto}\n`;
+    msg += `🛵 Tipo: ${modoEntrega === "delivery" ? "DELIVERY" : modoEntrega === "local" ? "COMER NO LOCAL 🍽️" : "RETIRADA"}\n`;
+
+    if (modoEntrega === "delivery") {
+      if (localCliente) {
+        msg += `📍 Maps: https://maps.google.com/?q=${localCliente.lat},${localCliente.lng}\n`;
+        // Verifica se frete é 'a combinar' (sentinela -1)
+        if (freteACombinar) {
+          msg += `🛵 Delivery: 🤝 A COMBINAR (confirmar pelo WhatsApp)\n`;
+        } else {
+          const _freteReal = freteCalculado;
+          const _fretePago = freteAplicado;
+          if (_freteReal > 0 && _fretePago === 0) {
+            msg += `🛵 Delivery: FRETE GRÁTIS (valor: Gs ${_freteReal.toLocaleString("es-PY")})\n`;
+          } else if (_freteReal > 0) {
+            msg += `🛵 Delivery: Gs ${_fretePago.toLocaleString("es-PY")}\n`;
+          }
+        }
+      } else if (usouPlanoB) {
+        msg += `📍 *Localização:* Enviarei aqui no WhatsApp 📎\n`;
+        msg += `🛵 *Delivery:* A COMBINAR\n`;
+      }
+      msg += `🏠 Ref: ${ref}\n`;
+    }
+
+    msg += `--------------------------\n`;
+    carrinho.forEach((item) => {
+      msg += `${item.qtd}x ${item.nome}`;
+      if (item.variacao) msg += ` — ${item.variacao}`;
+      if (item.preparo) msg += ` [${item.preparo}]`;
+      msg += `\n`;
+      if (item.montagem && item.montagem.length > 0)
+        msg += `   + ${item.montagem.join(", ")}\n`;
+      if (item.obs) msg += `   Obs: ${item.obs}\n`;
+    });
+
+    msg += `--------------------------\n`;
+    msg += `Subtotal: Gs ${totalItens.toLocaleString("es-PY")}\n`;
+
+    if (desconto > 0) {
+      msg += `Desconto (${cupomAplicado.codigo}): -Gs ${desconto.toLocaleString("es-PY")}\n`;
+    }
+
+    if (modoEntrega === "delivery" && !usouPlanoB) {
+      if (freteACombinar) {
+        msg += `Delivery: 🤝 A COMBINAR\n`;
+        msg += `TOTAL (sem frete): Gs ${totalGeral.toLocaleString("es-PY")}\n`;
+      } else {
+        msg += `Delivery: Gs ${freteAplicado.toLocaleString("es-PY")}\n`;
+        msg += `TOTAL: Gs ${totalGeral.toLocaleString("es-PY")}\n`;
+      }
+    } else {
+      msg += `TOTAL: Gs ${totalGeral.toLocaleString("es-PY")}\n`;
+    }
+    msg += `--------------------------\n`;
+
+    // Pagamento e Troco
+    if (pag === "Efetivo") {
+      const trocoVal = document.getElementById("troco-valor").value;
+      msg += `💰 Pagamento: Efetivo (Troco p/: ${trocoVal})\n`;
+    } else if (pag === "Multipagamento") {
+      const partes = _coletarMultiPagamento();
+      msg += `💰 Pagamento dividido (${partes.length} formas):\n`;
+      partes.forEach((p, i) => {
+        msg += `   ${i + 1}. ${p.metodo}: Gs ${p.valor.toLocaleString("es-PY")}`;
+        if (p.troco)
+          msg += ` (Troco p/ Gs ${parseFloat(p.troco).toLocaleString("es-PY")})`;
+        msg += "\n";
+      });
+    } else {
+      msg += `💰 Pagamento: ${pag}\n`;
+    }
+
+    // Avisos de Pix/Alias (Bilíngue)
+    if (pag === "Pix" || pag === "Transferencia") {
+      if (pag === "Pix") {
+        const totalBrl =
+          COTACAO_REAL > 0 ? (totalGeral / COTACAO_REAL).toFixed(2) : "---";
+        msg += `\n💠 Chave Pix: ${CHAVE_PIX}\n`;
+        msg += `💰 Valor em Reais: R$ ${totalBrl}\n`;
+      }
+      if (pag === "Transferencia") msg += `\n📎 Alias: ${ALIAS_PY}\n`;
+      msg += `\n⚠️ *Envie o comprovante após o pagamento!*\n`;
+    }
+
+    // Para multipagamento: avisar sobre Pix ou Transferencia se incluídos
+    if (pag === "Multipagamento") {
+      const partes = _coletarMultiPagamento();
+      partes.forEach((p, idx) => {
+        if (p.metodo === "Pix") {
+          const valBrl =
+            COTACAO_REAL > 0 ? (p.valor / COTACAO_REAL).toFixed(2) : "---";
+          msg += `\n💠 Pix (forma ${idx + 1}): Chave ${CHAVE_PIX} — R$ ${valBrl}\n`;
+        }
+        if (p.metodo === "Transferencia") {
+          msg += `\n📎 Alias (forma ${idx + 1}): ${ALIAS_PY}\n`;
+        }
+      });
+      const temDigital = partes.some(
+        (p) => p.metodo === "Pix" || p.metodo === "Transferencia",
+      );
+      if (temDigital)
+        msg += `\n⚠️ *Envie o(s) comprovante(s) após o pagamento!*\n`;
+    }
+
+    // Factura
+    if (document.getElementById("check-factura").checked) {
+      msg += `\n📄 RUC: ${document.getElementById("cli-ruc").value}\nRazão: ${document.getElementById("cli-zao").value}\n`;
+    }
+
+    // Salva hash anti-duplicata ANTES de enviar
+    const _hashFinal = carrinho
+      .map((i) => i.nome + i.qtd)
+      .sort()
+      .join("|");
+    localStorage.setItem("locanda_last_hash", _hashFinal);
+    localStorage.setItem("locanda_last_ts", Date.now().toString());
+
+    // Verifica se o pagamento exige envio de comprovante pelo WhatsApp
+    const _precisaZap = (() => {
+      if (pag === "Pix" || pag === "Transferencia") return true;
+      if (pag === "Multipagamento") {
+        const partes = _coletarMultiPagamento();
+        return partes.some(
+          (p) => p.metodo === "Pix" || p.metodo === "Transferencia",
+        );
+      }
+      return false;
+    })();
+
+    if (_precisaZap) {
+      // Pagamento digital: exige envio de comprovante → abre WhatsApp obrigatoriamente
+      await _mostrarModalEnvio(msg, numeroPedido);
+    } else {
+      // Pagamento em dinheiro/cartão/QR: pedido já está registrado, só confirma
+      _mostrarConfirmacaoPedido(numeroPedido);
+      // Limpa carrinho
+      carrinho = [];
+      cupomAplicado = null;
+      MODO_AGENDAMENTO = false;
+      DATA_AGENDAMENTO = null;
+      const indicadorAg = document.getElementById("indicador-agendamento");
+      if (indicadorAg) indicadorAg.remove();
+      try {
+        localStorage.removeItem("locanda_carrinho_backup");
+        localStorage.removeItem("locanda_carrinho_backup_time");
+      } catch (e) {}
+      updateUI();
+      fecharCheckout();
+      if (numeroPedido) mostrarCardTracking(numeroPedido);
+    }
   } catch (err) {
-    console.error('[enviarZap] Erro:', err);
-    alert('Ocorreu um erro ao processar o pedido. Tente novamente.');
+    console.error("[enviarZap] Erro:", err);
+    alert("Ocorreu um erro ao processar o pedido. Tente novamente.");
   } finally {
     clearTimeout(_timerLiberar);
     _liberarBotao();
@@ -2540,13 +3499,13 @@ async function enviarZap() {
 // Modal: "Seu pedido será validado somente após enviar no WhatsApp"
 function _mostrarModalEnvio(msg, numeroPedido) {
   return new Promise((resolve) => {
-    const _old = document.getElementById('modal-envio-zap');
+    const _old = document.getElementById("modal-envio-zap");
     if (_old) _old.remove();
 
     // Injeta animação de pulsar (só uma vez)
-    if (!document.getElementById('zap-pulse-style')) {
-      const st = document.createElement('style');
-      st.id = 'zap-pulse-style';
+    if (!document.getElementById("zap-pulse-style")) {
+      const st = document.createElement("style");
+      st.id = "zap-pulse-style";
       st.textContent = `
         @keyframes zapPulse {
           0%   { box-shadow: 0 0 0 0 rgba(37,211,102,0.7); transform: scale(1); }
@@ -2558,38 +3517,44 @@ function _mostrarModalEnvio(msg, numeroPedido) {
       document.head.appendChild(st);
     }
 
-    const modal = document.createElement('div');
-    modal.id = 'modal-envio-zap';
+    const modal = document.createElement("div");
+    modal.id = "modal-envio-zap";
     modal.style.cssText = [
-      'position:fixed;inset:0;z-index:99999',
-      'background:rgba(0,0,0,0.75)',
-      'display:flex;align-items:center;justify-content:center',
-      'padding:20px;box-sizing:border-box'
-    ].join(';');
+      "position:fixed;inset:0;z-index:99999",
+      "background:rgba(0,0,0,0.75)",
+      "display:flex;align-items:center;justify-content:center",
+      "padding:20px;box-sizing:border-box",
+    ].join(";");
     modal.innerHTML = `
       <div style="background:white;border-radius:20px;padding:30px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
         <div style="font-size:3.5rem;margin-bottom:10px">📱</div>
         <h3 style="margin:0 0 8px;font-size:1.2rem;color:#1a1a2e">Pedido registrado! ✅</h3>
-        <p style="margin:0 0 20px;font-size:0.93rem;color:#555;line-height:1.55">
-          Para <strong>confirmar seu pedido</strong>, toque no botão abaixo e envie a mensagem no WhatsApp.
-          <br><span style="color:#e74c3c;font-weight:700">Sem o envio, o pedido não será aceito.</span>
-        </p>
+        <div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:12px;padding:12px 14px;margin-bottom:18px;text-align:left;">
+          <div style="font-size:1rem;margin-bottom:4px;">📎 <strong>Pagamento via transferência / Pix</strong></div>
+          <div style="font-size:0.85rem;color:#555;line-height:1.5;">
+            Após realizar o pagamento, <strong>envie o comprovante</strong> pelo WhatsApp.<br>
+            <span style="color:#e74c3c;font-weight:700;">⚠️ O pedido só será preparado após confirmação do comprovante.</span>
+          </div>
+        </div>
         <button id="btn-abrir-zap"
-          style="width:100%;padding:18px;background:#25D366;color:white;border:none;border-radius:14px;font-size:1.1rem;font-weight:800;cursor:pointer;letter-spacing:0.3px;">
-          <i class="fab fa-whatsapp"></i> &nbsp;Enviar mensagem no WhatsApp
+          style="width:100%;padding:18px;background:#25D366;color:white;border:none;border-radius:14px;font-size:1.05rem;font-weight:800;cursor:pointer;letter-spacing:0.3px;display:flex;align-items:center;justify-content:center;gap:8px;">
+          <i class="fab fa-whatsapp" style="font-size:1.3rem;"></i> Enviar pedido + comprovante
         </button>
-        <p style="margin:14px 0 0;font-size:0.75rem;color:#aaa;">Este aviso não fecha sozinho. Envie a mensagem para continuar.</p>
+        <p style="margin:12px 0 0;font-size:0.75rem;color:#aaa;">Este aviso não fecha sozinho. Envie a mensagem para continuar.</p>
       </div>`;
     document.body.appendChild(modal);
 
-    document.getElementById('btn-abrir-zap').onclick = () => {
+    document.getElementById("btn-abrir-zap").onclick = () => {
       _abrirZapEFechar(msg, numeroPedido, modal, resolve);
     };
   });
 }
 
 function _abrirZapEFechar(msg, numeroPedido, modal, resolve) {
-  window.open(`https://wa.me/${FONE_LOJA}?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open(
+    `https://wa.me/${FONE_LOJA}?text=${encodeURIComponent(msg)}`,
+    "_blank",
+  );
   if (modal) modal.remove();
 
   // Limpa carrinho e fecha checkout
@@ -2597,14 +3562,14 @@ function _abrirZapEFechar(msg, numeroPedido, modal, resolve) {
   cupomAplicado = null;
   MODO_AGENDAMENTO = false;
   DATA_AGENDAMENTO = null;
-  const indicador = document.getElementById('indicador-agendamento');
+  const indicador = document.getElementById("indicador-agendamento");
   if (indicador) indicador.remove();
 
   // Limpa backup imediatamente para não restaurar na próxima visita
   try {
-    localStorage.removeItem('locanda_carrinho_backup');
-    localStorage.removeItem('locanda_carrinho_backup_time');
-  } catch(e) {}
+    localStorage.removeItem("locanda_carrinho_backup");
+    localStorage.removeItem("locanda_carrinho_backup_time");
+  } catch (e) {}
 
   updateUI();
   fecharCheckout();
@@ -2615,51 +3580,79 @@ function _abrirZapEFechar(msg, numeroPedido, modal, resolve) {
   resolve();
 }
 
-// ==========================================
-// 9. DADOS LOCAIS & REPETIR PEDIDO (Funções Restauradas)
-// ==========================================
+// Confirmação simples (sem WhatsApp) para pagamentos em dinheiro/cartão/QR
+function _mostrarConfirmacaoPedido(numeroPedido) {
+  const _old = document.getElementById("modal-confirmacao-pedido");
+  if (_old) _old.remove();
+
+  const modal = document.createElement("div");
+  modal.id = "modal-confirmacao-pedido";
+  modal.style.cssText = [
+    "position:fixed;inset:0;z-index:99999",
+    "background:rgba(0,0,0,0.75)",
+    "display:flex;align-items:center;justify-content:center",
+    "padding:20px;box-sizing:border-box",
+  ].join(";");
+  modal.innerHTML = `
+    <div style="background:white;border-radius:20px;padding:30px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="font-size:3.5rem;margin-bottom:10px">✅</div>
+      <h3 style="margin:0 0 8px;font-size:1.2rem;color:#1a1a2e">Pedido confirmado!</h3>
+      <p style="margin:0 0 6px;font-size:1rem;color:#27ae60;font-weight:700">Pedido #${numeroPedido || ""}</p>
+      <p style="margin:0 0 20px;font-size:0.93rem;color:#555;line-height:1.55">
+        Seu pedido foi registrado com sucesso. Acompanhe o status abaixo.
+      </p>
+      <button onclick="document.getElementById('modal-confirmacao-pedido').remove()"
+        style="width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;">
+        OK, acompanhar pedido
+      </button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
 function carregarDadosLocal() {
   try {
-    const user = JSON.parse(localStorage.getItem('locanda_user') || 'null');
+    const user = JSON.parse(localStorage.getItem("locanda_user") || "null");
     if (user) {
-      if (document.getElementById('cli-nome')) document.getElementById('cli-nome').value = user.nome || '';
-      if (document.getElementById('cli-tel')) document.getElementById('cli-tel').value = user.tel || '';
+      if (document.getElementById("cli-nome"))
+        document.getElementById("cli-nome").value = user.nome || "";
+      if (document.getElementById("cli-tel"))
+        document.getElementById("cli-tel").value = user.tel || "";
     }
   } catch (e) {
-    console.warn('Dados de usuário corrompidos no localStorage:', e);
-    localStorage.removeItem('locanda_user');
+    console.warn("Dados de usuário corrompidos no localStorage:", e);
+    localStorage.removeItem("locanda_user");
   }
 
   try {
-    const last = JSON.parse(localStorage.getItem('locanda_last') || 'null');
-    const box = document.getElementById('buy-again-container');
+    const last = JSON.parse(localStorage.getItem("locanda_last") || "null");
+    const box = document.getElementById("buy-again-container");
 
     if (last && Array.isArray(last) && last.length > 0) {
       if (box) {
-        box.style.display = 'block';
-        const ul = document.getElementById('last-order-list');
+        box.style.display = "block";
+        const ul = document.getElementById("last-order-list");
         if (ul) {
-          ul.innerHTML = '';
+          ul.innerHTML = "";
           last.forEach((i) => {
-            const li = document.createElement('li');
-            li.style.cssText = 'border-bottom:1px dashed #eee;padding:5px 0';
+            const li = document.createElement("li");
+            li.style.cssText = "border-bottom:1px dashed #eee;padding:5px 0";
             li.innerHTML = `<b>${i.qtd}x</b> `;
-            li.appendChild(document.createTextNode(i.nome || ''));
+            li.appendChild(document.createTextNode(i.nome || ""));
             ul.appendChild(li);
           });
         }
       }
     } else {
-      if (box) box.style.display = 'none';
+      if (box) box.style.display = "none";
     }
   } catch (e) {
-    console.warn('Último pedido corrompido no localStorage:', e);
-    localStorage.removeItem('locanda_last');
+    console.warn("Último pedido corrompido no localStorage:", e);
+    localStorage.removeItem("locanda_last");
   }
 }
 
 function repetirPedido() {
-  const last = JSON.parse(localStorage.getItem('locanda_last'));
+  const last = JSON.parse(localStorage.getItem("locanda_last"));
   if (last && Array.isArray(last) && last.length > 0) {
     carrinho = last;
     updateUI();
@@ -2680,7 +3673,7 @@ function clicarBanner(idProduto) {
   if (produtoEncontrado) {
     abrirModal(produtoEncontrado);
   } else {
-    console.error('Produto do banner não encontrado no menu carregado.');
+    console.error("Produto do banner não encontrado no menu carregado.");
     // Não damos alert para não incomodar caso o menu ainda esteja carregando
   }
 }
@@ -2690,260 +3683,319 @@ function clicarBanner(idProduto) {
 // ARQUITETURA: polling a cada 5s como BASE (funciona sempre).
 // Realtime como BÔNUS (mais rápido, mas fecha no plano free).
 // O erro "CLOSED" no console é normal — o polling cobre.
-let _trackingChannel  = null;   // canal Realtime (bônus)
-let _pollingTracker   = null;   // setInterval de 5s (garantia)
-let _lastTrackedSt    = '';     // evita re-render sem mudança
-let _trackedId        = null;   // id do pedido em tracking
+let _trackingChannel = null; // canal Realtime (bônus)
+let _pollingTracker = null; // setInterval de 5s (garantia)
+let _lastTrackedSt = ""; // evita re-render sem mudança
+let _trackedId = null; // id do pedido em tracking
 
 const TRACKER_STEPS = {
-    'pendente':       { step: 1, icon: '📥', msg: 'Pedido recebido! Aguardando confirmação...' },
-    'em_preparo':     { step: 2, icon: '🔥', msg: 'Seu pedido está sendo preparado!' },
-    'pronto_entrega': { step: 3, icon: '📦', msg: 'Pronto! Aguardando motoboy...' },
-    'saiu_entrega':   { step: 3, icon: '🛵', msg: 'Seu pedido saiu para entrega!' },
-    'entregue':       { step: 4, icon: '✅', msg: 'Pedido entregue! Bom apetite! 🍕' },
-    'cancelado':      { step: 0, icon: '❌', msg: 'Pedido cancelado. Entre em contato conosco.' },
+  pendente: {
+    step: 1,
+    icon: "📥",
+    msg: "Pedido recebido! Aguardando confirmação...",
+  },
+  em_preparo: { step: 2, icon: "🛍", msg: "Seu pedido está sendo separado!" },
+  pronto_entrega: { step: 3, icon: "📦", msg: "Pronto! Aguardando motoboy..." },
+  saiu_entrega: { step: 3, icon: "🛵", msg: "Seu pedido saiu para entrega!" },
+  entregue: { step: 4, icon: "✅", msg: "Pedido entregue! Obrigado por sua compra 🛒!" },
+  cancelado: {
+    step: 0,
+    icon: "❌",
+    msg: "Pedido cancelado. Entre em contato conosco.",
+  },
 };
 
 function iniciarTracking(pedidoDbId, uidTemporal) {
-    if (!pedidoDbId) return;
-    _trackedId     = pedidoDbId;
-    const uid      = uidTemporal || pedidoDbId;
+  if (!pedidoDbId) return;
+  _trackedId = pedidoDbId;
+  const uid = uidTemporal || pedidoDbId;
 
-    try {
-        localStorage.setItem('locanda_pedido_id',  pedidoDbId);
-        localStorage.setItem('locanda_pedido_uid', uid);
-    } catch(e) {}
+  try {
+    localStorage.setItem("locanda_pedido_id", pedidoDbId);
+    localStorage.setItem("locanda_pedido_uid", uid);
+  } catch (e) {}
 
-    _lastTrackedSt = 'pendente';
-    mostrarTracker('pendente', uid);
+  _lastTrackedSt = "pendente";
+  mostrarTracker("pendente", uid);
 
-    _iniciarPollingTracking(pedidoDbId, uid);   // GARANTIA (sempre funciona)
-    _tentarCanalRealtime(pedidoDbId, uid);       // BÔNUS (mais rápido quando disponível)
+  _iniciarPollingTracking(pedidoDbId, uid); // GARANTIA (sempre funciona)
+  _tentarCanalRealtime(pedidoDbId, uid); // BÔNUS (mais rápido quando disponível)
 
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
 }
 
 // ── POLLING: consulta o banco a cada 5s ──
 function _iniciarPollingTracking(pedidoId, uid) {
-    if (_pollingTracker) { clearInterval(_pollingTracker); _pollingTracker = null; }
+  if (_pollingTracker) {
+    clearInterval(_pollingTracker);
+    _pollingTracker = null;
+  }
 
-    _pollingTracker = setInterval(async () => {
-        try {
-            const { data } = await supa
-                .from('pedidos')
-                .select('status, motoboy_id')
-                .eq('id', pedidoId)
-                .single();
+  _pollingTracker = setInterval(async () => {
+    try {
+      const { data } = await supa
+        .from("pedidos")
+        .select("status, motoboy_id")
+        .eq("id", pedidoId)
+        .single();
 
-            if (!data || data.status === _lastTrackedSt) return; // sem mudança
-            _lastTrackedSt = data.status;
+      if (!data || data.status === _lastTrackedSt) return; // sem mudança
+      _lastTrackedSt = data.status;
 
-            mostrarTracker(data.status, uid);
+      mostrarTracker(data.status, uid);
 
-            // Atualiza também o card de busca se visível
-            if (typeof atualizarTrackingVisual === 'function') {
-                let motoboy = null;
-                if (data.motoboy_id) {
-                    const { data: m } = await supa.from('motoboys')
-                        .select('nome, telefone').eq('id', data.motoboy_id).single();
-                    motoboy = m;
-                }
-                atualizarTrackingVisual(data.status, motoboy);
-            }
+      // Atualiza também o card de busca se visível
+      if (typeof atualizarTrackingVisual === "function") {
+        let motoboy = null;
+        if (data.motoboy_id) {
+          const { data: m } = await supa
+            .from("motoboys")
+            .select("nome, telefone")
+            .eq("id", data.motoboy_id)
+            .single();
+          motoboy = m;
+        }
+        atualizarTrackingVisual(data.status, motoboy);
+      }
 
-            // Notificação push
-            if ('Notification' in window && Notification.permission === 'granted' && TRACKER_STEPS[data.status]) {
-                new Notification('Locanda Pizzeria 🇧🇷', {
-                    body: TRACKER_STEPS[data.status].msg,
-                    icon: 'https://instagram.fasu6-2.fna.fbcdn.net/v/t51.82787-15/573374451_17842149696611574_8991774026443342090_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fasu6-2.fna.fbcdn.net&_nc_cat=106&_nc_oc=Q6cZ2QGF-zpjA8cPijPd5RSpqKxETK5rnkkDDh2p9_6yqpej9zo5GRLUgm0d3tqaeu4Q0J4&_nc_ohc=RupM1OUrZJ4Q7kNvwGnum_W&_nc_gid=FbdfUjQDJpnDTLdsOu7bcA&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_AfzONtO62cnJCGwHroepfIxL3OcBuhtF6AcdRJWoRqm39Q&oe=69ABD045&_nc_sid=7a9f4b'
-                });
-            }
+      // Notificação push
+      if (
+        "Notification" in window &&
+        Notification.permission === "granted" &&
+        TRACKER_STEPS[data.status]
+      ) {
+        new Notification("Locanda Pizzeria 🇧🇷", {
+          body: TRACKER_STEPS[data.status].msg,
+          icon: "https://instagram.fasu6-2.fna.fbcdn.net/v/t51.82787-15/573374451_17842149696611574_8991774026443342090_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fasu6-2.fna.fbcdn.net&_nc_cat=106&_nc_oc=Q6cZ2QGF-zpjA8cPijPd5RSpqKxETK5rnkkDDh2p9_6yqpej9zo5GRLUgm0d3tqaeu4Q0J4&_nc_ohc=RupM1OUrZJ4Q7kNvwGnum_W&_nc_gid=FbdfUjQDJpnDTLdsOu7bcA&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_AfzONtO62cnJCGwHroepfIxL3OcBuhtF6AcdRJWoRqm39Q&oe=69ABD045&_nc_sid=7a9f4b",
+        });
+      }
 
-            if (data.status === 'entregue' || data.status === 'cancelado') {
-                clearInterval(_pollingTracker); _pollingTracker = null;
-                if (_trackingChannel) { _trackingChannel.unsubscribe(); _trackingChannel = null; }
-                setTimeout(() => {
-                    try { localStorage.removeItem('locanda_pedido_id'); localStorage.removeItem('locanda_pedido_uid'); } catch(e) {}
-                }, 10000);
-            }
-        } catch(e) { /* falha silenciosa de rede */ }
-    }, 5000);
+      if (data.status === "entregue" || data.status === "cancelado") {
+        clearInterval(_pollingTracker);
+        _pollingTracker = null;
+        if (_trackingChannel) {
+          _trackingChannel.unsubscribe();
+          _trackingChannel = null;
+        }
+        setTimeout(() => {
+          try {
+            localStorage.removeItem("locanda_pedido_id");
+            localStorage.removeItem("locanda_pedido_uid");
+          } catch (e) {}
+        }, 10000);
+      }
+    } catch (e) {
+      /* falha silenciosa de rede */
+    }
+  }, 5000);
 }
 
 // ── REALTIME: bônus quando disponível ──
 function _tentarCanalRealtime(pedidoId, uid) {
-    try {
-        if (_trackingChannel) { _trackingChannel.unsubscribe(); _trackingChannel = null; }
-        _trackingChannel = supa
-            .channel(`pizzeria-track-${pedidoId}-${Date.now()}`)
-            .on('postgres_changes', {
-                event: 'UPDATE', schema: 'public', table: 'pedidos',
-                filter: `id=eq.${pedidoId}`
-            }, (payload) => {
-                const ns = payload.new?.status;
-                if (ns && ns !== _lastTrackedSt) {
-                    _lastTrackedSt = ns;
-                    mostrarTracker(ns, uid);
-                }
-            })
-            .subscribe((st) => {
-                // CLOSED é normal no plano free — polling já cobre
-                if (st === 'CLOSED' || st === 'CHANNEL_ERROR') {
-                    _trackingChannel = null;
-                }
-            });
-    } catch(e) { /* Realtime indisponível */ }
+  try {
+    if (_trackingChannel) {
+      _trackingChannel.unsubscribe();
+      _trackingChannel = null;
+    }
+    _trackingChannel = supa
+      .channel(`pizzeria-track-${pedidoId}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "pedidos",
+          filter: `id=eq.${pedidoId}`,
+        },
+        (payload) => {
+          const ns = payload.new?.status;
+          if (ns && ns !== _lastTrackedSt) {
+            _lastTrackedSt = ns;
+            mostrarTracker(ns, uid);
+          }
+        },
+      )
+      .subscribe((st) => {
+        // CLOSED é normal no plano free — polling já cobre
+        if (st === "CLOSED" || st === "CHANNEL_ERROR") {
+          _trackingChannel = null;
+        }
+      });
+  } catch (e) {
+    /* Realtime indisponível */
+  }
 }
 
 // [Sistema legado mostrarTracker removido — usando versão track-order-card em L161]
 
 function fecharTracker() {
-    // Fecha tanto o tracker antigo quanto o novo card
-    const tracker = document.getElementById('pedido-tracker');
-    if (tracker) tracker.style.display = 'none';
-    const card = document.getElementById('track-order-card');
-    if (card) card.style.display = 'none';
-    if (_trackingChannel) {
-        _trackingChannel.unsubscribe();
-        _trackingChannel = null;
-    }
-    if (_pollingTracker) {
-        clearInterval(_pollingTracker);
-        _pollingTracker = null;
-    }
+  // Fecha tanto o tracker antigo quanto o novo card
+  const tracker = document.getElementById("pedido-tracker");
+  if (tracker) tracker.style.display = "none";
+  const card = document.getElementById("track-order-card");
+  if (card) card.style.display = "none";
+  if (_trackingChannel) {
+    _trackingChannel.unsubscribe();
+    _trackingChannel = null;
+  }
+  if (_pollingTracker) {
+    clearInterval(_pollingTracker);
+    _pollingTracker = null;
+  }
 }
 
 // Alias para o botão × do card de tracking no index.html
 function fecharCardTracking() {
-    fecharTracker();
+  fecharTracker();
 }
 
 // Restaura tracking ao recarregar a página
 function restaurarTrackingSeExistir() {
-    // Card de rastreio oculto por padrão - só aparece se houver pedido ativo
-    const card = document.getElementById('track-order-card');
-    if (card) card.style.display = 'none';
+  // Card de rastreio oculto por padrão - só aparece se houver pedido ativo
+  const card = document.getElementById("track-order-card");
+  if (card) card.style.display = "none";
 
-    const savedId  = localStorage.getItem('locanda_pedido_id');
-    const savedUid = localStorage.getItem('locanda_pedido_uid');
-    if (!savedId) return;
+  const savedId = localStorage.getItem("locanda_pedido_id");
+  const savedUid = localStorage.getItem("locanda_pedido_uid");
+  if (!savedId) return;
 
-    console.log('🔄 Restaurando tracking para pedido:', savedId);
-    if (typeof supa === 'undefined') return;
+  console.log("🔄 Restaurando tracking para pedido:", savedId);
+  if (typeof supa === "undefined") return;
 
-    supa.from('pedidos').select('status, motoboy_id, created_at').eq('id', savedId).single()
-        .then(async ({ data, error }) => {
-            if (error || !data) return;
-            // Se já foi entregue ou cancelado, limpa e não mostra tracker
-            if (data.status === 'entregue' || data.status === 'cancelado') {
-                try { localStorage.removeItem('locanda_pedido_id'); localStorage.removeItem('locanda_pedido_uid'); } catch(e) {}
-                return;
-            }
+  supa
+    .from("pedidos")
+    .select("status, motoboy_id, created_at")
+    .eq("id", savedId)
+    .single()
+    .then(async ({ data, error }) => {
+      if (error || !data) return;
+      // Se já foi entregue ou cancelado, limpa e não mostra tracker
+      if (data.status === "entregue" || data.status === "cancelado") {
+        try {
+          localStorage.removeItem("locanda_pedido_id");
+          localStorage.removeItem("locanda_pedido_uid");
+        } catch (e) {}
+        return;
+      }
 
-            // REGRA 6H: tracker só aparece se o pedido tem menos de 6 horas
-            if (data.created_at) {
-                const diffHoras = (Date.now() - new Date(data.created_at).getTime()) / 3600000;
-                if (diffHoras > 6) {
-                    try { localStorage.removeItem('locanda_pedido_id'); localStorage.removeItem('locanda_pedido_uid'); } catch(e) {}
-                    return;
-                }
-            }
+      // REGRA 6H: tracker só aparece se o pedido tem menos de 6 horas
+      if (data.created_at) {
+        const diffHoras =
+          (Date.now() - new Date(data.created_at).getTime()) / 3600000;
+        if (diffHoras > 6) {
+          try {
+            localStorage.removeItem("locanda_pedido_id");
+            localStorage.removeItem("locanda_pedido_uid");
+          } catch (e) {}
+          return;
+        }
+      }
 
-            // Só mostra o card se houver pedido ativo
-            if (card) card.style.display = 'block';
+      // Só mostra o card se houver pedido ativo
+      if (card) card.style.display = "block";
 
-            // Preenche input e abre resultado direto
-            const input = document.getElementById('track-pedido-input');
-            if (input) input.value = savedId;
-            const tf = document.getElementById('track-form');   if(tf)  tf.style.display  = 'none';
-            const tr = document.getElementById('track-result'); if(tr)  tr.style.display  = 'block';
-            const tn = document.getElementById('track-numero'); if(tn)  tn.textContent    = savedId;
+      // Preenche input e abre resultado direto
+      const input = document.getElementById("track-pedido-input");
+      if (input) input.value = savedId;
+      const tf = document.getElementById("track-form");
+      if (tf) tf.style.display = "none";
+      const tr = document.getElementById("track-result");
+      if (tr) tr.style.display = "block";
+      const tn = document.getElementById("track-numero");
+      if (tn) tn.textContent = savedId;
 
-            let motoboy = null;
-            if (data.motoboy_id) {
-                const { data: m } = await supa.from('motoboys')
-                    .select('nome, telefone').eq('id', data.motoboy_id).single();
-                motoboy = m;
-            }
+      let motoboy = null;
+      if (data.motoboy_id) {
+        const { data: m } = await supa
+          .from("motoboys")
+          .select("nome, telefone")
+          .eq("id", data.motoboy_id)
+          .single();
+        motoboy = m;
+      }
 
-            atualizarTrackingVisual(data.status, motoboy);
-            _lastTrackedSt = data.status;
-            _trackedId     = savedId;
+      atualizarTrackingVisual(data.status, motoboy);
+      _lastTrackedSt = data.status;
+      _trackedId = savedId;
 
-            _iniciarPollingTracking(savedId, savedUid);
-            _tentarCanalRealtime(savedId, savedUid);
-        });
+      _iniciarPollingTracking(savedId, savedUid);
+      _tentarCanalRealtime(savedId, savedUid);
+    });
 }
 
 async function aplicarCupom() {
-    const codigo = document.getElementById('cupom-codigo')?.value?.trim().toUpperCase();
-    const msgBox = document.getElementById('cupom-msg');
-    
-    if (!codigo) {
-        msgBox.innerHTML = '<span style="color:#e74c3c">Digite um código</span>';
-        msgBox.style.display = 'block';
-        return;
-    }
-    
-    // Busca no banco
-    const { data: cupom, error } = await supa
-        .from('cupons')
-        .select('*')
-        .eq('codigo', codigo)
-        .eq('ativo', true)
-        .single();
-    
-    if (error || !cupom) {
-        msgBox.innerHTML = '<span style="color:#e74c3c">❌ Cupom inválido ou inativo</span>';
-        msgBox.style.display = 'block';
-        cupomAplicado = null;
-        atualizarTotalCheckout();
-        return;
-    }
+  const codigo = document
+    .getElementById("cupom-codigo")
+    ?.value?.trim()
+    .toUpperCase();
+  const msgBox = document.getElementById("cupom-msg");
 
-    // Verifica validade
-    if (cupom.validade) {
-        const vDate = new Date(cupom.validade + 'T23:59:59');
-        if (vDate < new Date()) {
-            msgBox.innerHTML = '<span style="color:#e74c3c">❌ Cupom expirado</span>';
-            msgBox.style.display = 'block';
-            cupomAplicado = null;
-            atualizarTotalCheckout();
-            return;
-        }
-    }
+  if (!codigo) {
+    msgBox.innerHTML = '<span style="color:#e74c3c">Digite um código</span>';
+    msgBox.style.display = "block";
+    return;
+  }
 
-    // Verifica limite de usos
-    if (cupom.limite_uso && cupom.limite_uso > 0) {
-        const usados = cupom.usos_realizados || 0;
-        if (usados >= cupom.limite_uso) {
-            msgBox.innerHTML = `<span style="color:#e74c3c">❌ Este cupom atingiu o limite de ${cupom.limite_uso} usos</span>`;
-            msgBox.style.display = 'block';
-            cupomAplicado = null;
-            atualizarTotalCheckout();
-            return;
-        }
-    }
-    
-    const subtotal = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
-    // Fix #41: tratar minimo NULL como 0 (sem valor mínimo exigido)
-    const minimoExigido = parseFloat(cupom.minimo) || 0;
-    if (minimoExigido > 0 && subtotal < minimoExigido) {
-        msgBox.innerHTML = `<span style="color:#e74c3c">Valor mínimo: Gs ${minimoExigido.toLocaleString('es-PY')}</span>`;
-        msgBox.style.display = 'block';
-        cupomAplicado = null;
-    } else {
-        cupomAplicado = cupom;
-        const restante = cupom.limite_uso
-            ? ` (${cupom.limite_uso - (cupom.usos_realizados || 0)} restantes)`
-            : '';
-        msgBox.innerHTML = `<span style="color:#27ae60">✅ Cupom aplicado!${restante}</span>`;
-        msgBox.style.display = 'block';
-    }
-    
+  // Busca no banco
+  const { data: cupom, error } = await supa
+    .from("cupons")
+    .select("*")
+    .eq("codigo", codigo)
+    .eq("ativo", true)
+    .single();
+
+  if (error || !cupom) {
+    msgBox.innerHTML =
+      '<span style="color:#e74c3c">❌ Cupom inválido ou inativo</span>';
+    msgBox.style.display = "block";
+    cupomAplicado = null;
     atualizarTotalCheckout();
+    return;
+  }
+
+  // Verifica validade
+  if (cupom.validade) {
+    const vDate = new Date(cupom.validade + "T23:59:59");
+    if (vDate < new Date()) {
+      msgBox.innerHTML = '<span style="color:#e74c3c">❌ Cupom expirado</span>';
+      msgBox.style.display = "block";
+      cupomAplicado = null;
+      atualizarTotalCheckout();
+      return;
+    }
+  }
+
+  // Verifica limite de usos
+  if (cupom.limite_uso && cupom.limite_uso > 0) {
+    const usados = cupom.usos_realizados || 0;
+    if (usados >= cupom.limite_uso) {
+      msgBox.innerHTML = `<span style="color:#e74c3c">❌ Este cupom atingiu o limite de ${cupom.limite_uso} usos</span>`;
+      msgBox.style.display = "block";
+      cupomAplicado = null;
+      atualizarTotalCheckout();
+      return;
+    }
+  }
+
+  const subtotal = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
+  // Fix #41: tratar minimo NULL como 0 (sem valor mínimo exigido)
+  const minimoExigido = parseFloat(cupom.minimo) || 0;
+  if (minimoExigido > 0 && subtotal < minimoExigido) {
+    msgBox.innerHTML = `<span style="color:#e74c3c">Valor mínimo: Gs ${minimoExigido.toLocaleString("es-PY")}</span>`;
+    msgBox.style.display = "block";
+    cupomAplicado = null;
+  } else {
+    cupomAplicado = cupom;
+    const restante = cupom.limite_uso
+      ? ` (${cupom.limite_uso - (cupom.usos_realizados || 0)} restantes)`
+      : "";
+    msgBox.innerHTML = `<span style="color:#27ae60">✅ Cupom aplicado!${restante}</span>`;
+    msgBox.style.display = "block";
+  }
+
+  atualizarTotalCheckout();
 }
 // =============================================
 // NOVO SISTEMA DE TRACKING - CARD FIXO
@@ -2951,169 +4003,189 @@ async function aplicarCupom() {
 
 // Mostrar card de tracking automaticamente após enviar pedido
 function mostrarCardTracking(numeroPedido) {
-    const card = document.getElementById('track-order-card');
-    const input = document.getElementById('track-pedido-input');
-    
-    if (card && input) {
-        card.style.display = 'block';
-        input.value = numeroPedido;
-        buscarPedido(); // Busca automaticamente
-        
-        // Scroll suave até o card
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
+  const card = document.getElementById("track-order-card");
+  const input = document.getElementById("track-pedido-input");
+
+  if (card && input) {
+    card.style.display = "block";
+    input.value = numeroPedido;
+    buscarPedido(); // Busca automaticamente
+
+    // Scroll suave até o card
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 }
 
 // Voltar para busca
 function voltarBusca() {
-    document.getElementById('track-form').style.display = 'block';
-    document.getElementById('track-result').style.display = 'none';
-    document.getElementById('track-pedido-input').value = '';
+  document.getElementById("track-form").style.display = "block";
+  document.getElementById("track-result").style.display = "none";
+  document.getElementById("track-pedido-input").value = "";
 }
 
 // Buscar pedido por número
 async function buscarPedido() {
-    const input = document.getElementById('track-pedido-input');
-    const numeroPedido = input ? input.value.trim() : '';
-    
-    if (!numeroPedido) {
-        alert('Por favor, digite o número do pedido');
-        return;
+  const input = document.getElementById("track-pedido-input");
+  const numeroPedido = input ? input.value.trim() : "";
+
+  if (!numeroPedido) {
+    alert("Por favor, digite o número do pedido");
+    return;
+  }
+
+  // Esconde form, mostra resultado
+  document.getElementById("track-form").style.display = "none";
+  document.getElementById("track-result").style.display = "block";
+  document.getElementById("track-numero").textContent = numeroPedido;
+  document.getElementById("track-status-msg").textContent = "Buscando...";
+
+  try {
+    // Busca no Supabase
+    const { data: pedido, error } = await supa
+      .from("pedidos")
+      .select("*, motoboys(nome, telefone)")
+      .eq("id", parseInt(numeroPedido))
+      .single();
+
+    if (error || !pedido) {
+      document.getElementById("track-status-msg").textContent =
+        "Pedido não encontrado";
+      document.getElementById("track-icon").textContent = "❌";
+      return;
     }
-    
-    // Esconde form, mostra resultado
-    document.getElementById('track-form').style.display = 'none';
-    document.getElementById('track-result').style.display = 'block';
-    document.getElementById('track-numero').textContent = numeroPedido;
-    document.getElementById('track-status-msg').textContent = 'Buscando...';
-    
-    try {
-        // Busca no Supabase
-        const { data: pedido, error } = await supa
-            .from('pedidos')
-            .select('*, motoboys(nome, telefone)')
-            .eq('id', parseInt(numeroPedido))
-            .single();
-        
-        if (error || !pedido) {
-            document.getElementById('track-status-msg').textContent = 'Pedido não encontrado';
-            document.getElementById('track-icon').textContent = '❌';
-            return;
-        }
-        
-        // Atualiza status visual
-        atualizarTrackingVisual(pedido.status, pedido.motoboys);
-        
-        // Inscreve no Realtime para atualizações
-        iniciarTrackingRealtime(pedido.id);
-        
-    } catch (err) {
-        console.error('Erro ao buscar pedido:', err);
-        document.getElementById('track-status-msg').textContent = 'Erro ao buscar pedido';
-    }
+
+    // Atualiza status visual
+    atualizarTrackingVisual(pedido.status, pedido.motoboys);
+
+    // Inscreve no Realtime para atualizações
+    iniciarTrackingRealtime(pedido.id);
+  } catch (err) {
+    console.error("Erro ao buscar pedido:", err);
+    document.getElementById("track-status-msg").textContent =
+      "Erro ao buscar pedido";
+  }
 }
 
 // Atualizar visual do tracking
 function atualizarTrackingVisual(status, motoboy) {
-    const statusMap = {
-        'pendente':       { msg: 'Aguardando confirmação...', icon: '⏳', step: 1 },
-        'em_preparo':     { msg: '🔥 Preparando seu pedido!', icon: '🔥', step: 2 },
-        'pronto_entrega': { msg: '📦 Pronto! Aguardando motoboy...', icon: '📦', step: 3 },
-        'saiu_entrega':   { msg: '🛵 Seu pedido saiu para entrega!', icon: '🛵', step: 3 },
-        'entregue':       { msg: '✅ Pedido entregue! Bom apetite!', icon: '✅', step: 4 },
-        'cancelado':      { msg: '❌ Pedido cancelado. Fale conosco.', icon: '❌', step: 0 }
-    };
-    
-    const info = statusMap[status] || statusMap['pendente'];
-    
-    document.getElementById('track-status-msg').textContent = info.msg;
-    document.getElementById('track-icon').textContent = info.icon;
-    
-    // Ativa steps
-    for (let i = 1; i <= 4; i++) {
-        const step = document.getElementById(`track-step-${i}`);
-        if (step) {
-            if (i <= info.step) {
-                step.classList.add('active');
-            } else {
-                step.classList.remove('active');
-            }
-        }
-    }
-    
-    // Mostra info do motoboy se saiu para entrega
-    const motoInfo = document.getElementById('track-motoboy-info');
-    if (motoInfo) {
-        if ((status === 'saiu_entrega' || status === 'entregue') && motoboy) {
-            motoInfo.style.display = 'block';
-            document.getElementById('track-motoboy-nome').textContent = motoboy.nome || 'Não informado';
-            const telLink = document.getElementById('track-motoboy-tel');
-            if (telLink && motoboy.telefone) {
-                telLink.textContent = motoboy.telefone;
-                telLink.href = `https://wa.me/${motoboy.telefone.replace(/\D/g, '')}`;
-            }
-        } else {
-            motoInfo.style.display = 'none';
-        }
-    }
+  const statusMap = {
+    pendente: { msg: "Aguardando confirmação...", icon: "⏳", step: 1 },
+    em_preparo: { msg: "🔥 Preparando seu pedido!", icon: "🔥", step: 2 },
+    pronto_entrega: {
+      msg: "📦 Pronto! Aguardando motoboy...",
+      icon: "📦",
+      step: 3,
+    },
+    saiu_entrega: {
+      msg: "🛵 Seu pedido saiu para entrega!",
+      icon: "🛵",
+      step: 3,
+    },
+    entregue: { msg: "✅ Pedido entregue! Bom apetite!", icon: "✅", step: 4 },
+    cancelado: {
+      msg: "❌ Pedido cancelado. Fale conosco.",
+      icon: "❌",
+      step: 0,
+    },
+  };
 
-    // Limpa botões dinâmicos anteriores
-    const _trackResult = document.getElementById('track-result');
-    ['btn-confirmar-entrega','btn-editar-pedido','btn-cancelar-pedido'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.remove();
-    });
+  const info = statusMap[status] || statusMap["pendente"];
 
-    if (status === 'saiu_entrega') {
-        // Botão confirmar recebimento
-        if (_trackResult) {
-            const _btn = document.createElement('button');
-            _btn.id = 'btn-confirmar-entrega';
-            _btn.onclick = confirmarEntregaCliente;
-            _btn.style.cssText = 'width:100%;margin-top:14px;padding:14px 0;background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;border:none;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(39,174,96,0.35)';
-            _btn.innerHTML = '✅ Confirmar Recebimento do Pedido';
-            _trackResult.appendChild(_btn);
-        }
-        // Inicia timer auto-confirm se ainda não iniciado
-        const _pedidoLocal = localStorage.getItem('locanda_pedido_id');
-        if (_pedidoLocal && typeof iniciarTimerAutoConfirmacao === 'function') {
-            if (!localStorage.getItem('locanda_confirmExpiry_' + _pedidoLocal)) {
-                iniciarTimerAutoConfirmacao(_pedidoLocal);
-            }
-        }
-    } else if (status === 'pendente') {
-        // Botão editar pedido (só enquanto pendente)
-        if (_trackResult) {
-            const _btnEdit = document.createElement('button');
-            _btnEdit.id = 'btn-editar-pedido';
-            _btnEdit.onclick = abrirEdicaoPedido;
-            _btnEdit.style.cssText = 'width:100%;margin-top:10px;padding:12px 0;background:linear-gradient(135deg,#f39c12,#e67e22);color:white;border:none;border-radius:12px;font-weight:700;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 12px rgba(243,156,18,0.35)';
-            _btnEdit.innerHTML = '✏️ Editar Pedido';
-            _trackResult.appendChild(_btnEdit);
-        }
-    }
+  document.getElementById("track-status-msg").textContent = info.msg;
+  document.getElementById("track-icon").textContent = info.icon;
 
-    // Botão cancelar — disponível em pendente e em_preparo
-    if (['pendente','em_preparo'].includes(status) && _trackResult) {
-        const _btnCancel = document.createElement('button');
-        _btnCancel.id = 'btn-cancelar-pedido';
-        _btnCancel.onclick = solicitarCancelamentoCliente;
-        _btnCancel.style.cssText = 'width:100%;margin-top:8px;padding:10px 0;background:transparent;color:#e74c3c;border:1.5px solid #e74c3c;border-radius:12px;font-weight:600;font-size:0.85rem;cursor:pointer;';
-        _btnCancel.innerHTML = '🚫 Solicitar Cancelamento';
-        _trackResult.appendChild(_btnCancel);
+  // Ativa steps
+  for (let i = 1; i <= 4; i++) {
+    const step = document.getElementById(`track-step-${i}`);
+    if (step) {
+      if (i <= info.step) {
+        step.classList.add("active");
+      } else {
+        step.classList.remove("active");
+      }
     }
+  }
+
+  // Mostra info do motoboy se saiu para entrega
+  const motoInfo = document.getElementById("track-motoboy-info");
+  if (motoInfo) {
+    if ((status === "saiu_entrega" || status === "entregue") && motoboy) {
+      motoInfo.style.display = "block";
+      document.getElementById("track-motoboy-nome").textContent =
+        motoboy.nome || "Não informado";
+      const telLink = document.getElementById("track-motoboy-tel");
+      if (telLink && motoboy.telefone) {
+        telLink.textContent = motoboy.telefone;
+        telLink.href = `https://wa.me/${motoboy.telefone.replace(/\D/g, "")}`;
+      }
+    } else {
+      motoInfo.style.display = "none";
+    }
+  }
+
+  // Limpa botões dinâmicos anteriores
+  const _trackResult = document.getElementById("track-result");
+  ["btn-confirmar-entrega", "btn-editar-pedido", "btn-cancelar-pedido"].forEach(
+    (id) => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    },
+  );
+
+  if (status === "saiu_entrega") {
+    // Botão confirmar recebimento
+    if (_trackResult) {
+      const _btn = document.createElement("button");
+      _btn.id = "btn-confirmar-entrega";
+      _btn.onclick = confirmarEntregaCliente;
+      _btn.style.cssText =
+        "width:100%;margin-top:14px;padding:14px 0;background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;border:none;border-radius:12px;font-weight:700;font-size:1rem;cursor:pointer;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(39,174,96,0.35)";
+      _btn.innerHTML = "✅ Confirmar Recebimento do Pedido";
+      _trackResult.appendChild(_btn);
+    }
+    // Inicia timer auto-confirm se ainda não iniciado
+    const _pedidoLocal = localStorage.getItem("locanda_pedido_id");
+    if (_pedidoLocal && typeof iniciarTimerAutoConfirmacao === "function") {
+      if (!localStorage.getItem("locanda_confirmExpiry_" + _pedidoLocal)) {
+        iniciarTimerAutoConfirmacao(_pedidoLocal);
+      }
+    }
+  } else if (status === "pendente") {
+    // Botão editar pedido (só enquanto pendente)
+    if (_trackResult) {
+      const _btnEdit = document.createElement("button");
+      _btnEdit.id = "btn-editar-pedido";
+      _btnEdit.onclick = abrirEdicaoPedido;
+      _btnEdit.style.cssText =
+        "width:100%;margin-top:10px;padding:12px 0;background:linear-gradient(135deg,#f39c12,#e67e22);color:white;border:none;border-radius:12px;font-weight:700;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 12px rgba(243,156,18,0.35)";
+      _btnEdit.innerHTML = "✏️ Editar Pedido";
+      _trackResult.appendChild(_btnEdit);
+    }
+  }
+
+  // Botão cancelar — disponível em pendente e em_preparo
+  if (["pendente", "em_preparo"].includes(status) && _trackResult) {
+    const _btnCancel = document.createElement("button");
+    _btnCancel.id = "btn-cancelar-pedido";
+    _btnCancel.onclick = solicitarCancelamentoCliente;
+    _btnCancel.style.cssText =
+      "width:100%;margin-top:8px;padding:10px 0;background:transparent;color:#e74c3c;border:1.5px solid #e74c3c;border-radius:12px;font-weight:600;font-size:0.85rem;cursor:pointer;";
+    _btnCancel.innerHTML = "🚫 Solicitar Cancelamento";
+    _trackResult.appendChild(_btnCancel);
+  }
 }
 
 // ── EDIÇÃO DE PEDIDO PELO CLIENTE ────────────────────────────────
 function abrirEdicaoPedido() {
-    const pedidoId = localStorage.getItem('locanda_pedido_id');
-    if (!pedidoId) return;
+  const pedidoId = localStorage.getItem("locanda_pedido_id");
+  if (!pedidoId) return;
 
-    // Fecha tracking e abre carrinho com itens atuais
-    const modal = document.createElement('div');
-    modal.id = 'modal-edicao-pedido';
-    modal.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
-    modal.innerHTML = `
+  // Fecha tracking e abre carrinho com itens atuais
+  const modal = document.createElement("div");
+  modal.id = "modal-edicao-pedido";
+  modal.style.cssText =
+    "position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
+  modal.innerHTML = `
       <div style="background:white;border-radius:20px;padding:28px 22px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
         <div style="font-size:2.5rem;margin-bottom:12px">✏️</div>
         <h3 style="margin:0 0 10px;font-size:1.1rem;color:#1a1a2e">Editar Pedido</h3>
@@ -3132,125 +4204,140 @@ function abrirEdicaoPedido() {
           Cancelar
         </button>
       </div>`;
-    document.body.appendChild(modal);
+  document.body.appendChild(modal);
 }
 
 async function iniciarEdicaoCarrinho(pedidoId) {
-    document.getElementById('modal-edicao-pedido')?.remove();
+  document.getElementById("modal-edicao-pedido")?.remove();
 
-    // Busca o pedido atual para pré-carregar itens
-    const { data: p } = await supa.from('pedidos').select('itens,obs_geral').eq('id', pedidoId).single();
-    
-    if (!p) return alert('Pedido não encontrado.');
+  // Busca o pedido atual para pré-carregar itens
+  const { data: p } = await supa
+    .from("pedidos")
+    .select("itens,obs_geral")
+    .eq("id", pedidoId)
+    .single();
 
-    // Pré-carrega itens no carrinho atual
-    if (p.itens && Array.isArray(p.itens)) {
-        carrinho = p.itens.map(i => ({
-            nome: i.nome || i.n,
-            preco: i.preco || i.p || 0,
-            qtd: i.qtd || i.q || 1,
-            variacao: i.variacao || i.t || '',
-            preparo: i.preparo || i.pr || '',
-            montagem: i.montagem || i.m || [],
-            obs: i.obs || i.o || '',
-            img: i.img || '',
-            categoria_slug: i.categoria_slug || ''
-        }));
-        updateUI();
+  if (!p) return alert("Pedido não encontrado.");
+
+  // Pré-carrega itens no carrinho atual
+  if (p.itens && Array.isArray(p.itens)) {
+    carrinho = p.itens.map((i) => ({
+      nome: i.nome || i.n,
+      preco: i.preco || i.p || 0,
+      qtd: i.qtd || i.q || 1,
+      variacao: i.variacao || i.t || "",
+      preparo: i.preparo || i.pr || "",
+      montagem: i.montagem || i.m || [],
+      obs: i.obs || i.o || "",
+      img: i.img || "",
+      categoria_slug: i.categoria_slug || "",
+    }));
+    updateUI();
+  }
+
+  // Abre o checkout com nota de edição
+  abrirCheckout();
+
+  // Adiciona banner de aviso no topo do checkout
+  setTimeout(() => {
+    const checkout =
+      document.getElementById("checkout-panel") ||
+      document.querySelector(".checkout-container");
+    if (checkout) {
+      const banner = document.createElement("div");
+      banner.id = "banner-edicao";
+      banner.style.cssText =
+        "background:#fff3cd;border:1.5px solid #f0a500;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.82rem;color:#7a5100;font-weight:600";
+      banner.innerHTML =
+        "✏️ <strong>Modo Edição</strong> — Modifique seus itens e clique em Enviar Pedido. A loja receberá a versão atualizada.";
+      checkout.insertBefore(banner, checkout.firstChild);
     }
-
-    // Abre o checkout com nota de edição
-    abrirCheckout();
-
-    // Adiciona banner de aviso no topo do checkout
-    setTimeout(() => {
-        const checkout = document.getElementById('checkout-panel') || document.querySelector('.checkout-container');
-        if (checkout) {
-            const banner = document.createElement('div');
-            banner.id = 'banner-edicao';
-            banner.style.cssText = 'background:#fff3cd;border:1.5px solid #f0a500;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:0.82rem;color:#7a5100;font-weight:600';
-            banner.innerHTML = '✏️ <strong>Modo Edição</strong> — Modifique seus itens e clique em Enviar Pedido. A loja receberá a versão atualizada.';
-            checkout.insertBefore(banner, checkout.firstChild);
-        }
-    }, 100);
+  }, 100);
 }
 
 // ── SOLICITAR CANCELAMENTO PELO CLIENTE (via tracking) ──────────
 async function solicitarCancelamentoCliente() {
-    const pedidoId = localStorage.getItem('locanda_pedido_id');
-    if (!pedidoId) return;
-    
-    const motivo = prompt('Motivo do cancelamento (obrigatório):');
-    if (!motivo || !motivo.trim()) return;
+  const pedidoId = localStorage.getItem("locanda_pedido_id");
+  if (!pedidoId) return;
 
-    const { error } = await supa.from('pedidos').update({
-        cancelamento_solicitado: true,
-        cancelamento_motivo: motivo.trim(),
-        cancelamento_solicitado_por: 'cliente',
-        cancelamento_solicitado_em: new Date().toISOString()
-    }).eq('id', parseInt(pedidoId));
+  const motivo = prompt("Motivo do cancelamento (obrigatório):");
+  if (!motivo || !motivo.trim()) return;
 
-    if (error) {
-        alert('Erro ao solicitar cancelamento. Contate a loja pelo WhatsApp.');
-    } else {
-        alert('✅ Solicitação enviada! A loja irá avaliar e responder em breve.');
-    }
+  const { error } = await supa
+    .from("pedidos")
+    .update({
+      cancelamento_solicitado: true,
+      cancelamento_motivo: motivo.trim(),
+      cancelamento_solicitado_por: "cliente",
+      cancelamento_solicitado_em: new Date().toISOString(),
+    })
+    .eq("id", parseInt(pedidoId));
+
+  if (error) {
+    alert("Erro ao solicitar cancelamento. Contate a loja pelo WhatsApp.");
+  } else {
+    alert("✅ Solicitação enviada! A loja irá avaliar e responder em breve.");
+  }
 }
 
 // iniciarTrackingRealtime — usado pelo card de busca do index
 // Delega para o sistema central (polling + realtime bônus)
 function iniciarTrackingRealtime(pedidoId) {
-    _trackedId     = pedidoId;
-    _lastTrackedSt = ''; // força re-render na primeira leitura do polling
-    localStorage.setItem('locanda_pedido_id', pedidoId);
-    localStorage.setItem('locanda_pedido_uid', pedidoId);
-    _iniciarPollingTracking(pedidoId, pedidoId);
-    _tentarCanalRealtime(pedidoId, pedidoId);
+  _trackedId = pedidoId;
+  _lastTrackedSt = ""; // força re-render na primeira leitura do polling
+  localStorage.setItem("locanda_pedido_id", pedidoId);
+  localStorage.setItem("locanda_pedido_uid", pedidoId);
+  _iniciarPollingTracking(pedidoId, pedidoId);
+  _tentarCanalRealtime(pedidoId, pedidoId);
 }
 
 let saboresSelecionados = []; // Array global para guardar a pizza atual
 
 // Função auxiliar para calcular preço da pizza
 function calcularTotalPizza() {
-    if (saboresSelecionados.length === 0) return 0;
+  if (saboresSelecionados.length === 0) return 0;
 
-    // 1. Encontra o sabor mais caro (REGRA DE OURO)
-    let maiorPreco = 0;
-    saboresSelecionados.forEach(sabor => {
-        if (sabor.preco > maiorPreco) maiorPreco = sabor.preco;
-    });
+  // 1. Encontra o sabor mais caro (REGRA DE OURO)
+  let maiorPreco = 0;
+  saboresSelecionados.forEach((sabor) => {
+    if (sabor.preco > maiorPreco) maiorPreco = sabor.preco;
+  });
 
-    // 2. Verifica se tem borda
-    const bordaPreco = produtoAtual.bordaSelecionada ? produtoAtual.bordaSelecionada.preco : 0;
+  // 2. Verifica se tem borda
+  const bordaPreco = produtoAtual.bordaSelecionada
+    ? produtoAtual.bordaSelecionada.preco
+    : 0;
 
-    // 3. Atualiza botão
-    const total = maiorPreco + bordaPreco;
-    document.getElementById('btn-add-carrinho').innerText = 
-        `Adicionar Gs ${total.toLocaleString('es-PY')}`;
-        
-    return total;
+  // 3. Atualiza botão
+  const total = maiorPreco + bordaPreco;
+  document.getElementById("btn-add-carrinho").innerText =
+    `Adicionar Gs ${total.toLocaleString("es-PY")}`;
+
+  return total;
 }
 
 // Função para adicionar sabor (deve ser ligada aos checkboxes/cards da UI)
 function toggleSaborPizza(saborObj, maxSabores) {
-    const index = saboresSelecionados.findIndex(s => s.id === saborObj.id);
+  const index = saboresSelecionados.findIndex((s) => s.id === saborObj.id);
 
-    if (index > -1) {
-        // Se já tá, remove
-        saboresSelecionados.splice(index, 1);
+  if (index > -1) {
+    // Se já tá, remove
+    saboresSelecionados.splice(index, 1);
+  } else {
+    // Se não tá, verifica limite (1/2, 1/3, 1/4)
+    if (saboresSelecionados.length < maxSabores) {
+      saboresSelecionados.push(saborObj);
     } else {
-        // Se não tá, verifica limite (1/2, 1/3, 1/4)
-        if (saboresSelecionados.length < maxSabores) {
-            saboresSelecionados.push(saborObj);
-        } else {
-            alert(`Você escolheu uma pizza de ${maxSabores} sabores. Remova um para trocar.`);
-            return;
-        }
+      alert(
+        `Você escolheu uma pizza de ${maxSabores} sabores. Remova um para trocar.`,
+      );
+      return;
     }
-    
-    // Recalcula visual
-    renderizarSaboresSelecionados(); // Função que pinta a pizza
-    calcularTotalPizza();
+  }
+
+  // Recalcula visual
+  renderizarSaboresSelecionados(); // Função que pinta a pizza
+  calcularTotalPizza();
 }
 
 // ==========================================
@@ -3259,44 +4346,48 @@ function toggleSaborPizza(saborObj, maxSabores) {
 // ==========================================
 // TOAST — NOTIFICAÇÕES VISUAIS (Bug #4 fix)
 // ==========================================
-function mostrarToast(msg, tipo = 'info', duracao = 3000) {
+function mostrarToast(msg, tipo = "info", duracao = 3000) {
   const CORES = {
-    success: '#27ae60',
-    warning: '#e67e22',
-    error:   '#e74c3c',
-    info:    '#2980b9'
+    success: "#27ae60",
+    warning: "#e67e22",
+    error: "#e74c3c",
+    info: "#2980b9",
   };
-  const existing = document.getElementById('locanda-toast');
+  const existing = document.getElementById("locanda-toast");
   if (existing) existing.remove();
 
-  const toast = document.createElement('div');
-  toast.id = 'locanda-toast';
+  const toast = document.createElement("div");
+  toast.id = "locanda-toast";
   toast.style.cssText = [
-    'position:fixed;bottom:90px;left:50%;transform:translateX(-50%)',
-    'background:' + (CORES[tipo] || CORES.info),
-    'color:white;padding:12px 22px;border-radius:10px',
-    'z-index:99999;font-weight:600;font-size:0.9rem',
-    'box-shadow:0 4px 14px rgba(0,0,0,0.25)',
-    'max-width:90vw;text-align:center',
-    'transition:opacity 0.3s'
-  ].join(';');
+    "position:fixed;bottom:90px;left:50%;transform:translateX(-50%)",
+    "background:" + (CORES[tipo] || CORES.info),
+    "color:white;padding:12px 22px;border-radius:10px",
+    "z-index:99999;font-weight:600;font-size:0.9rem",
+    "box-shadow:0 4px 14px rgba(0,0,0,0.25)",
+    "max-width:90vw;text-align:center",
+    "transition:opacity 0.3s",
+  ].join(";");
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(() => {
-    toast.style.opacity = '0';
+    toast.style.opacity = "0";
     setTimeout(() => toast.remove(), 300);
   }, duracao);
 }
 
 function initDeteccaoConexao() {
   // Mostra alerta quando fica offline
-  window.addEventListener('offline', () => {
-    mostrarToast('⚠️ Sem conexão com a internet. Algumas funcionalidades podem não funcionar.', 'warning', 5000);
+  window.addEventListener("offline", () => {
+    mostrarToast(
+      "⚠️ Sem conexão com a internet. Algumas funcionalidades podem não funcionar.",
+      "warning",
+      5000,
+    );
   });
 
   // Mostra alerta quando volta online
-  window.addEventListener('online', () => {
-    mostrarToast('✅ Conexão restaurada!', 'success', 3000);
+  window.addEventListener("online", () => {
+    mostrarToast("✅ Conexão restaurada!", "success", 3000);
     // Recarrega dados
     verificarHorario();
   });
@@ -3313,21 +4404,24 @@ initDeteccaoConexao();
 function salvarCarrinhoLocal() {
   try {
     if (carrinho && carrinho.length > 0) {
-      localStorage.setItem('locanda_carrinho_backup', JSON.stringify(carrinho));
-      localStorage.setItem('locanda_carrinho_backup_time', new Date().toISOString());
+      localStorage.setItem("locanda_carrinho_backup", JSON.stringify(carrinho));
+      localStorage.setItem(
+        "locanda_carrinho_backup_time",
+        new Date().toISOString(),
+      );
     } else {
-      localStorage.removeItem('locanda_carrinho_backup');
-      localStorage.removeItem('locanda_carrinho_backup_time');
+      localStorage.removeItem("locanda_carrinho_backup");
+      localStorage.removeItem("locanda_carrinho_backup_time");
     }
   } catch (e) {
-    console.warn('Não foi possível salvar backup do carrinho:', e);
+    console.warn("Não foi possível salvar backup do carrinho:", e);
   }
 }
 
 function restaurarCarrinhoBackup() {
   try {
-    const backup = localStorage.getItem('locanda_carrinho_backup');
-    const backupTime = localStorage.getItem('locanda_carrinho_backup_time');
+    const backup = localStorage.getItem("locanda_carrinho_backup");
+    const backupTime = localStorage.getItem("locanda_carrinho_backup_time");
 
     if (backup && backupTime) {
       const tempoBackup = new Date(backupTime);
@@ -3338,16 +4432,20 @@ function restaurarCarrinhoBackup() {
       if (diffHoras < 24) {
         const carrinhoSalvo = JSON.parse(backup);
         if (carrinhoSalvo && carrinhoSalvo.length > 0) {
-          if (confirm('Você tem itens no carrinho de uma sessão anterior. Deseja restaurá-los?')) {
+          if (
+            confirm(
+              "Você tem itens no carrinho de uma sessão anterior. Deseja restaurá-los?",
+            )
+          ) {
             carrinho = carrinhoSalvo;
             updateUI();
-            mostrarToast('✅ Carrinho restaurado!', 'success');
+            mostrarToast("✅ Carrinho restaurado!", "success");
           }
         }
       }
     }
   } catch (e) {
-    console.warn('Não foi possível restaurar backup do carrinho:', e);
+    console.warn("Não foi possível restaurar backup do carrinho:", e);
   }
 }
 
@@ -3364,75 +4462,78 @@ setInterval(salvarCarrinhoLocal, 5000); // A cada 5 segundos
 // ══════════════════════════════════════════════════════════════
 
 function _renderComboFechado(cfg, container) {
-  if (!cfg || cfg.__tipo !== 'combo_fechado') return;
-  const limite  = cfg.limite_total || 0;
+  if (!cfg || cfg.__tipo !== "combo_fechado") return;
+  const limite = cfg.limite_total || 0;
   const sabores = cfg.sabores || [];
 
-  _comboFechadoConfig.limite  = limite;
+  _comboFechadoConfig.limite = limite;
   _comboFechadoConfig.sabores = sabores;
   _comboFechadoConfig.selecao = {};
   sabores.forEach((s) => (_comboFechadoConfig.selecao[s.id] = 0));
 
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'padding:4px 0';
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "padding:4px 0";
 
-  const instrucao = document.createElement('p');
-  instrucao.style.cssText = 'font-size:0.85rem;color:#64748b;margin:0 0 12px;line-height:1.45';
-  instrucao.textContent = `Distribua ${limite} ${limite === 1 ? 'item' : 'itens'} entre os sabores disponíveis.`;
+  const instrucao = document.createElement("p");
+  instrucao.style.cssText =
+    "font-size:0.85rem;color:#64748b;margin:0 0 12px;line-height:1.45";
+  instrucao.textContent = `Distribua ${limite} ${limite === 1 ? "item" : "itens"} entre os sabores disponíveis.`;
   wrap.appendChild(instrucao);
 
-  const contador = document.createElement('div');
-  contador.id = 'combo-contador';
+  const contador = document.createElement("div");
+  contador.id = "combo-contador";
   contador.style.cssText =
-    'font-size:0.85rem;font-weight:600;color:#475569;text-align:center;' +
-    'padding:8px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;' +
-    'border-radius:8px;margin-bottom:12px;transition:background .2s,color .2s,border-color .2s';
+    "font-size:0.85rem;font-weight:600;color:#475569;text-align:center;" +
+    "padding:8px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;" +
+    "border-radius:8px;margin-bottom:12px;transition:background .2s,color .2s,border-color .2s";
   contador.textContent = `0 / ${limite} selecionados`;
   wrap.appendChild(contador);
 
-  const lista = document.createElement('div');
-  lista.style.cssText = 'border:1px solid #f1f5f9;border-radius:10px;overflow:hidden';
+  const lista = document.createElement("div");
+  lista.style.cssText =
+    "border:1px solid #f1f5f9;border-radius:10px;overflow:hidden";
 
   sabores.forEach((sabor) => {
-    const row = document.createElement('div');
+    const row = document.createElement("div");
     row.style.cssText =
-      'display:flex;align-items:center;justify-content:space-between;' +
-      'gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9;background:#fff';
+      "display:flex;align-items:center;justify-content:space-between;" +
+      "gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9;background:#fff";
 
-    const nome = document.createElement('span');
+    const nome = document.createElement("span");
     nome.textContent = sabor.nome;
-    nome.style.cssText = 'flex:1;font-size:0.95rem;color:#1e293b;font-weight:500';
+    nome.style.cssText =
+      "flex:1;font-size:0.95rem;color:#1e293b;font-weight:500";
 
-    const stepper = document.createElement('div');
+    const stepper = document.createElement("div");
     stepper.style.cssText =
-      'display:flex;align-items:center;gap:0;border:1.5px solid #e5e7eb;' +
-      'border-radius:8px;overflow:hidden;flex-shrink:0';
+      "display:flex;align-items:center;gap:0;border:1.5px solid #e5e7eb;" +
+      "border-radius:8px;overflow:hidden;flex-shrink:0";
 
-    const btnDec = document.createElement('button');
-    btnDec.type = 'button';
+    const btnDec = document.createElement("button");
+    btnDec.type = "button";
     btnDec.dataset.btnDec = sabor.id;
-    btnDec.textContent = '−';
+    btnDec.textContent = "−";
     btnDec.style.cssText =
-      'width:34px;height:34px;background:#f8fafc;border:none;font-size:1.1rem;' +
-      'font-weight:700;cursor:pointer;color:#374151;line-height:1';
+      "width:34px;height:34px;background:#f8fafc;border:none;font-size:1.1rem;" +
+      "font-weight:700;cursor:pointer;color:#374151;line-height:1";
     btnDec.disabled = true;
-    btnDec.onclick  = () => _cfDecrementar(sabor.id);
+    btnDec.onclick = () => _cfDecrementar(sabor.id);
 
-    const qty = document.createElement('span');
-    qty.id = 'cf-qty-' + sabor.id;
-    qty.textContent = '0';
+    const qty = document.createElement("span");
+    qty.id = "cf-qty-" + sabor.id;
+    qty.textContent = "0";
     qty.style.cssText =
-      'min-width:36px;text-align:center;font-size:0.95rem;font-weight:700;' +
-      'color:#1e293b;padding:0 4px;background:#fff;' +
-      'border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;line-height:34px';
+      "min-width:36px;text-align:center;font-size:0.95rem;font-weight:700;" +
+      "color:#1e293b;padding:0 4px;background:#fff;" +
+      "border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;line-height:34px";
 
-    const btnInc = document.createElement('button');
-    btnInc.type = 'button';
+    const btnInc = document.createElement("button");
+    btnInc.type = "button";
     btnInc.dataset.btnInc = sabor.id;
-    btnInc.textContent = '+';
+    btnInc.textContent = "+";
     btnInc.style.cssText =
-      'width:34px;height:34px;background:#f8fafc;border:none;font-size:1.1rem;' +
-      'font-weight:700;cursor:pointer;color:#374151;line-height:1';
+      "width:34px;height:34px;background:#f8fafc;border:none;font-size:1.1rem;" +
+      "font-weight:700;cursor:pointer;color:#374151;line-height:1";
     btnInc.onclick = () => _cfIncrementar(sabor.id);
 
     stepper.appendChild(btnDec);
@@ -3444,7 +4545,7 @@ function _renderComboFechado(cfg, container) {
   });
 
   const lastRow = lista.lastElementChild;
-  if (lastRow) lastRow.style.borderBottom = 'none';
+  if (lastRow) lastRow.style.borderBottom = "none";
 
   wrap.appendChild(lista);
   container.appendChild(wrap);
@@ -3452,7 +4553,7 @@ function _renderComboFechado(cfg, container) {
 }
 
 function _cfIncrementar(id) {
-  const sel   = _comboFechadoConfig.selecao;
+  const sel = _comboFechadoConfig.selecao;
   const total = Object.values(sel).reduce((a, b) => a + b, 0);
   if (total >= _comboFechadoConfig.limite) return;
   if (!(id in sel)) return;
@@ -3468,42 +4569,42 @@ function _cfDecrementar(id) {
 }
 
 function _cfAtualizarUI() {
-  const sel    = _comboFechadoConfig.selecao;
+  const sel = _comboFechadoConfig.selecao;
   const limite = _comboFechadoConfig.limite;
-  const total  = Object.values(sel).reduce((a, b) => a + b, 0);
-  const cheio  = total >= limite;
-  const exato  = total === limite;
+  const total = Object.values(sel).reduce((a, b) => a + b, 0);
+  const cheio = total >= limite;
+  const exato = total === limite;
 
   Object.entries(sel).forEach(([id, qty]) => {
-    const el = document.getElementById('cf-qty-' + id);
+    const el = document.getElementById("cf-qty-" + id);
     if (el) el.textContent = qty;
   });
 
-  const contador = document.getElementById('combo-contador');
+  const contador = document.getElementById("combo-contador");
   if (contador) {
     contador.textContent = `${total} / ${limite} selecionados`;
-    contador.style.background  = exato ? '#f0fdf4' : '#f8fafc';
-    contador.style.borderColor = exato ? '#86efac' : '#e2e8f0';
-    contador.style.color       = exato ? '#166534' : '#475569';
+    contador.style.background = exato ? "#f0fdf4" : "#f8fafc";
+    contador.style.borderColor = exato ? "#86efac" : "#e2e8f0";
+    contador.style.color = exato ? "#166534" : "#475569";
   }
 
-  document.querySelectorAll('[data-btn-inc]').forEach((btn) => {
-    btn.disabled     = cheio;
-    btn.style.color  = cheio ? '#cbd5e1' : '#374151';
-    btn.style.cursor = cheio ? 'not-allowed' : 'pointer';
+  document.querySelectorAll("[data-btn-inc]").forEach((btn) => {
+    btn.disabled = cheio;
+    btn.style.color = cheio ? "#cbd5e1" : "#374151";
+    btn.style.cursor = cheio ? "not-allowed" : "pointer";
   });
 
-  document.querySelectorAll('[data-btn-dec]').forEach((btn) => {
-    const qty        = sel[btn.dataset.btnDec] || 0;
-    btn.disabled     = qty <= 0;
-    btn.style.color  = qty <= 0 ? '#cbd5e1' : '#374151';
-    btn.style.cursor = qty <= 0 ? 'not-allowed' : 'pointer';
+  document.querySelectorAll("[data-btn-dec]").forEach((btn) => {
+    const qty = sel[btn.dataset.btnDec] || 0;
+    btn.disabled = qty <= 0;
+    btn.style.color = qty <= 0 ? "#cbd5e1" : "#374151";
+    btn.style.cursor = qty <= 0 ? "not-allowed" : "pointer";
   });
 
-  const btnAdd = document.querySelector('.btn-add');
+  const btnAdd = document.querySelector(".btn-add");
   if (btnAdd) {
-    btnAdd.disabled      = !exato;
-    btnAdd.style.opacity = exato ? '1' : '0.45';
-    btnAdd.style.cursor  = exato ? 'pointer' : 'not-allowed';
+    btnAdd.disabled = !exato;
+    btnAdd.style.opacity = exato ? "1" : "0.45";
+    btnAdd.style.cursor = exato ? "pointer" : "not-allowed";
   }
 }

@@ -11,12 +11,19 @@ let CHAVE_PIX = "";
 let NOME_PIX = "";
 let DADOS_ALIAS = ""; // Transferência Banco Ueno
 let ALIAS_PY = ""; // Titular Banco Ueno
+let QR_ALIAS_URL = ""; // QR Code Alias
+let QR_PY_URL = ""; // QR Code Paraguay
+let WHATSAPP_LOJA_APP = ""; // WhatsApp da loja (dígitos)
+let NOME_RESTAURANTE_APP = ""; // Nome da loja para mensagem WhatsApp
+let LIMITE_DISTANCIA_KM = null; // Limite de distância para delivery
+let TAXA_DEBITO_BR = 0; // Taxa cartão débito (%)
+let TAXA_CREDITO_BR = 0; // Taxa cartão crédito (%)
 
 async function carregarConfiguracoesLoja() {
   const { data, error } = await supa
     .from("configuracoes")
     .select(
-      "whatsapp_loja, telefone_loja, coord_lat, coord_lng, chave_pix, nome_pix, dados_alias, nome_alias, nome_restaurante"
+      "whatsapp_loja, telefone_loja, coord_lat, coord_lng, chave_pix, nome_pix, dados_alias, nome_alias, nome_restaurante, cotacao_real, limite_distancia_km"
     )
     .maybeSingle();
 
@@ -29,6 +36,11 @@ async function carregarConfiguracoesLoja() {
   if (data.nome_pix)       NOME_PIX    = data.nome_pix;
   if (data.dados_alias)    DADOS_ALIAS = data.dados_alias;
   if (data.nome_alias)     ALIAS_PY    = data.nome_alias;
+  // Cotação precisa estar pronta ANTES de renderMenu para exibir preço em R$
+  if (data.cotacao_real)   COTACAO_REAL = Number(data.cotacao_real);
+  // Limite de distância precisa estar pronto antes do calcularFrete
+  if (data.limite_distancia_km != null)
+    LIMITE_DISTANCIA_KM = parseFloat(data.limite_distancia_km) || null;
 }
 
 function iniciarTimerAutoConfirmacao(pedidoId) {
@@ -376,57 +388,55 @@ async function carregarExtrasGlobais() {
 // 4. FUNÇÕES DE BANCO DE DADOS E MENU
 // ==========================================
 
+// ── Aplica visibilidade das formas de pagamento no checkout do cliente ──
+function _aplicarFormasPagamentoCliente(features) {
+  const pags = features?.pagamentos;
+  const select = document.getElementById("forma-pag");
+  if (!select || !pags) return;
+  Array.from(select.options).forEach((opt) => {
+    if (!opt.value) return; // placeholder
+    const key = opt.value.toLowerCase();
+    // Mapeia os valores do select para as chaves de features.pagamentos
+    const mapa = {
+      efetivo: "efetivo",
+      pix: "pix",
+      transferencia: "alias",
+      cartao: "cartao",
+      qr_py: "qr_py",
+      multipagamento: "multipagamento",
+    };
+    const featureKey = mapa[key] || key;
+    if (pags[featureKey] === false) {
+      opt.style.display = "none";
+    } else {
+      opt.style.display = "";
+    }
+  });
+}
+
 // Verifica Horário e Atualiza Banner
 async function verificarHorario() {
-  const { data } = await supa.from("configuracoes").select("*").single();
+  const { data } = await supa.from("configuracoes").select("*").maybeSingle();
   if (!data) return;
 
   if (data.cotacao_real) COTACAO_REAL = data.cotacao_real;
   if (data.tabela_frete && Array.isArray(data.tabela_frete))
     TABELA_FRETE = data.tabela_frete;
+  if (data.limite_distancia_km != null)
+    LIMITE_DISTANCIA_KM = parseFloat(data.limite_distancia_km) || null;
+  // Aplica visibilidade das formas de pagamento conforme configuração
+  _aplicarFormasPagamentoCliente(data.features_ativas);
+  if (data.taxa_debito != null) TAXA_DEBITO_BR = Number(data.taxa_debito);
+  if (data.taxa_credito != null) TAXA_CREDITO_BR = Number(data.taxa_credito);
 
-  // Fix #73: se admin fechou delivery manualmente, força loja fechada
-  if (data.delivery_aberto === false) {
-    const badge = document.querySelector(".badge-status");
-    if (badge) {
-      const lang = localStorage.getItem("language") || "es";
-      const fechados = {
-        es: "Cerrado",
-        pt: "Fechado",
-        en: "Closed",
-        de: "Geschlossen",
-      };
-      badge.innerText = fechados[lang] || "Cerrado";
-      badge.classList.remove("open");
-      badge.classList.add("closed");
-    }
-    if (data.aviso_delivery) {
-      let aviso = document.getElementById("aviso-delivery-admin");
-      if (!aviso) {
-        aviso = document.createElement("div");
-        aviso.id = "aviso-delivery-admin";
-        aviso.style.cssText =
-          "background:#fff3cd;border:1.5px solid #f0a500;border-radius:10px;padding:12px 16px;margin:12px 20px;font-size:0.9rem;font-weight:600;color:#856404;text-align:center";
-        const nav = document.getElementById("category-nav");
-        if (nav && nav.parentElement)
-          nav.parentElement.insertBefore(aviso, nav);
-      }
-      aviso.textContent = "⚠️ " + data.aviso_delivery;
-      aviso.style.display = "block";
-    }
-    return; // loja forçada fechada — encerra verificação
-  }
-
-  // Fix #74: extensão temporária de horário configurada pelo admin
-  if (data.horario_extra_hoje) {
-    const hoje = new Date().toISOString().split("T")[0];
-    if (
-      data.horario_extra_hoje.data === hoje &&
-      data.horario_extra_hoje.minutos > 0
-    ) {
-      EXTENSAO_HORARIO_TEMP = data.horario_extra_hoje.minutos;
-    }
-  }
+  // ── Dados de pagamento do banco ────────────────────────────────
+  if (data.chave_pix) CHAVE_PIX = data.chave_pix;
+  if (data.nome_pix) NOME_PIX = data.nome_pix;
+  if (data.dados_alias) DADOS_ALIAS = data.dados_alias;
+  if (data.nome_alias) ALIAS_PY = data.nome_alias;
+  if (data.alias_qr_url) QR_ALIAS_URL = data.alias_qr_url;
+  if (data.qr_py_url) QR_PY_URL = data.qr_py_url;
+  if (data.whatsapp_loja) WHATSAPP_LOJA_APP = data.whatsapp_loja;
 
   const agora = new Date();
   const horaAtual = agora.getHours() * 60 + agora.getMinutes();
@@ -449,7 +459,63 @@ async function verificarHorario() {
     return horaAtual >= abre && horaAtual < fecha;
   }
 
-   // Atualiza Banners Promocionais (banner 1 e banner 2)
+  // Lógica de Aberto/Fechado usando grade semanal
+  let estaAberto = false;
+  if (data.loja_aberta) {
+    const hs = data.horarios_semanais;
+    if (hs && hs[diaKey]) {
+      const diaConfig = hs[diaKey];
+
+      // Dia explicitamente fechado na grade
+      if (diaConfig.fechado) {
+        estaAberto = false;
+      } else {
+        // Filtra turnos válidos (exclui {abre:"", fecha:""})
+        const turnosValidos = (diaConfig.turnos || []).filter(
+          (t) => t.abre && t.fecha,
+        );
+
+        if (turnosValidos.length > 0) {
+          // Há turnos configurados → segue o horário
+          estaAberto = turnosValidos.some(turnoAtivo);
+        } else {
+          // Dia não está fechado mas não tem horário definido → considera aberto
+          estaAberto = true;
+        }
+      }
+    } else if (hs && Object.keys(hs).length > 0) {
+      // Grade existe mas não tem entrada para hoje → aberto
+      estaAberto = true;
+    } else {
+      // Sem grade configurada → loja_aberta=true é suficiente para abrir
+      estaAberto = true;
+    }
+  }
+
+  const badge = document.querySelector(".badge-status");
+  if (badge) {
+    // Obtém o idioma atual para traduzir Aberto/Fechado
+    const lang = localStorage.getItem("language") || "es";
+    const textos = {
+      es: { aberto: "Abierto", fechado: "Cerrado" },
+      pt: { aberto: "Aberto", fechado: "Fechado" },
+      en: { aberto: "Open", fechado: "Closed" },
+      de: { aberto: "Geöffnet", fechado: "Geschlossen" },
+    };
+    const t = textos[lang] || textos.es;
+
+    if (estaAberto) {
+      badge.innerText = t.aberto;
+      badge.classList.remove("closed");
+      badge.classList.add("open");
+    } else {
+      badge.innerText = t.fechado;
+      badge.classList.remove("open");
+      badge.classList.add("closed");
+    }
+  }
+
+  // Atualiza Banners Promocionais (banner 1 e banner 2)
   const bannerImgs = [
     document.getElementById("banner1-img") ||
       document.querySelectorAll(".banner-track img")[0],
@@ -481,79 +547,37 @@ async function verificarHorario() {
     bannerImgs[1].style.display = "none";
   }
 
-  // Lógica de Aberto/Fechado usando grade semanal
-  let estaAberto = false;
-  if (data.loja_aberta) {
-    const hs = data.horarios_semanais;
-    if (hs && hs[diaKey]) {
-      const diaConfig = hs[diaKey];
-      if (
-        !diaConfig.fechado &&
-        diaConfig.turnos &&
-        diaConfig.turnos.length > 0
-      ) {
-        estaAberto = diaConfig.turnos.some(turnoAtivo);
-      }
-    } else {
-      // Fallback: se não houver grade configurada, usa os campos antigos
-      const abre = horaParaMin(data.hora_abertura || "18:00");
-      const fecha = horaParaMin(data.hora_fechamento || "23:59");
-      if (abre !== null && fecha !== null) {
-        if (fecha < abre) estaAberto = horaAtual >= abre || horaAtual < fecha;
-        else estaAberto = horaAtual >= abre && horaAtual < fecha;
-      }
-    }
+  // Atualiza nome da loja no header
+  const nomeVal = data.nome_restaurante || data.nome_loja || "";
+  NOME_RESTAURANTE_APP = nomeVal; // ← torna disponível para mensagem WhatsApp
+  const nomeEl = document.getElementById("nome-loja-app");
+  if (nomeEl && nomeVal) {
+    nomeEl.textContent = nomeVal;
+    document.title = nomeVal + " — Delivery";
   }
 
-  const badge = document.querySelector(".badge-status");
-  if (badge) {
-    // Obtém o idioma atual para traduzir Aberto/Fechado
-    const lang = localStorage.getItem("language") || "es";
-    const textos = {
-      es: { aberto: "Abierto", fechado: "Cerrado" },
-      pt: { aberto: "Aberto", fechado: "Fechado" },
-      en: { aberto: "Open", fechado: "Closed" },
-      de: { aberto: "Geöffnet", fechado: "Geschlossen" },
-    };
-    const t = textos[lang] || textos.es;
-
-    if (estaAberto) {
-      badge.innerText = t.aberto;
-      badge.classList.remove("closed");
-      badge.classList.add("open");
-    } else {
-      badge.innerText = t.fechado;
-      badge.classList.remove("open");
-      badge.classList.add("closed");
-    }
+  // Coordenadas da loja (para cálculo de frete)
+  if (data.coord_lat && data.coord_lng) {
+    COORD_LOJA.lat = parseFloat(data.coord_lat) || 0;
+    COORD_LOJA.lng = parseFloat(data.coord_lng) || 0;
   }
 
-  // ── Personalização visual da loja ────────────────────────────────
-  const nomeLoja = data.nome_restaurante || data.nome_loja || "";
-  if (nomeLoja) {
-    const h1 = document.getElementById("nome-loja-app");
-    if (h1) h1.textContent = nomeLoja;
-    document.title = nomeLoja + " - Delivery";
+  // Logo
+  const logoEl = document.getElementById("logo-app");
+  const logoUrl = data.logo_url || data.icone_url || "";
+  if (logoEl && logoUrl) {
+    logoEl.src = logoUrl;
+    logoEl.style.display = "block";
+    logoEl.style.objectFit = "contain";
+    logoEl.style.width = "44px";
+    logoEl.style.height = "44px";
+    logoEl.style.borderRadius = "50%";
+    logoEl.style.filter = "none";
+    logoEl.style.webkitFilter = "none";
   }
 
   if (data.cor_primaria) {
     document.documentElement.style.setProperty("--primary", data.cor_primaria);
-    if (data.cor_secundaria) {
-      document.documentElement.style.setProperty("--primary-dark", data.cor_secundaria);
-    }
-  }
-
-  // Logo / ícone da loja
-  const logoUrl = data.logo_url || data.icone_url || "";
-  if (logoUrl) {
-    const logoEl = document.getElementById("logo-app");
-    if (logoEl) {
-      logoEl.src = logoUrl;
-      logoEl.style.display = "block";
-    }
-    document.querySelectorAll('link[rel="apple-touch-icon"], link[rel="icon"]').forEach(function(el) {
-      el.href = logoUrl;
-    });
   }
 }
 
@@ -736,50 +760,36 @@ async function renderMenu() {
     // ── Pricing label ──────────────────────────────────────────
     let precoLabel = "";
     let discountBadge = "";
+    const _brl = (gs) =>
+      COTACAO_REAL > 0
+        ? `<div class="prod-price-brl">≈ R$ ${(gs / COTACAO_REAL).toFixed(2)}</div>`
+        : "";
 
     if (item.em_promocao && item.preco_original && item.preco_original > item.preco) {
-      // Calculate % discount
       const pct = Math.round(100 - (item.preco / item.preco_original) * 100);
       discountBadge = `<span class="prod-badge-discount">-${pct}%</span>`;
-
-      // BRL equivalent
-      const brl = (item.preco / COTACAO_REAL).toFixed(2);
       precoLabel = `
         <div class="prod-promo-row">
           <span class="prod-price-old">Gs ${item.preco_original.toLocaleString("es-PY")}</span>
-          <span class="prod-price prod-price-promo">Gs ${item.preco.toLocaleString("es-PY")}</span>
+          <span class="prod-price-promo-label">Promo Gs ${item.preco.toLocaleString("es-PY")}</span>
         </div>
-        <div class="prod-price-brl">≈ R$ ${brl}</div>`;
+        ${_brl(item.preco)}`;
     } else if (tipo === "variacoes" && cfg && cfg.variacoes && cfg.variacoes.length > 0) {
       const precos = cfg.variacoes.map((v) => v.preco || 0).filter((p) => p > 0);
       if (precos.length > 0) {
         const min = Math.min(...precos);
-        const brl = (min / COTACAO_REAL).toFixed(2);
-        precoLabel = `<div class="prod-price" style="font-size:0.78rem;"><span style="font-size:0.68rem;font-weight:500;opacity:0.7">A partir de</span><br>Gs ${min.toLocaleString("es-PY")}</div><div class="prod-price-brl">≈ R$ ${brl}</div>`;
+        precoLabel = `<div class="prod-price" style="font-size:0.78rem;"><span style="font-size:0.68rem;font-weight:500;opacity:0.7">A partir de</span><br>Gs ${min.toLocaleString("es-PY")}</div>${_brl(min)}`;
       } else {
-        const brl = (item.preco / COTACAO_REAL).toFixed(2);
-        precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div><div class="prod-price-brl">≈ R$ ${brl}</div>`;
+        precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div>${_brl(item.preco)}`;
       }
     } else {
-      const brl = (item.preco / COTACAO_REAL).toFixed(2);
-      precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div><div class="prod-price-brl">≈ R$ ${brl}</div>`;
+      precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div>${_brl(item.preco)}`;
     }
 
     // ── Destaque badge — estilo referência (☆ verde) ──────────────
     const destaqueBadge = item.em_destaque
       ? `<span class="prod-badge-destaque">☆ Destaque</span>`
       : "";
-
-    // ── Promoção: sobrescreve precoLabel com estilo da referência ──
-    if (item.em_promocao && item.preco_original && item.preco_original > item.preco) {
-      const brl = (item.preco / COTACAO_REAL).toFixed(2);
-      precoLabel = `
-        <div class="prod-promo-row">
-          <span class="prod-price-old">Gs ${item.preco_original.toLocaleString("es-PY")}</span>
-          <span class="prod-price-promo-label">Promo Gs ${item.preco.toLocaleString("es-PY")}</span>
-        </div>
-        <div class="prod-price-brl">≈ R$ ${brl}</div>`;
-    }
 
     // ── Image section ──────────────────────────────────────────
     const imgHtml = img
@@ -1163,6 +1173,34 @@ pill.innerHTML = catIcon2
     primeiraCategoria.section.dataset.loaded = "1";
     renderCategoriaSectionContent(primeiraCategoria.section, primeiraCategoria.key);
   }
+
+  // ── Nav em duas linhas: distribui pills em grid 2 colunas ──────────────
+  if (!document.getElementById("nav-two-row-style")) {
+    const navStyle = document.createElement("style");
+    navStyle.id = "nav-two-row-style";
+    navStyle.textContent = `
+      #category-nav {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        overflow-x: unset !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        gap: 6px !important;
+        padding: 8px 12px !important;
+      }
+      #category-nav .cat-pill {
+        flex: 1 1 calc(50% - 6px) !important;
+        min-width: 0 !important;
+        max-width: calc(50% - 3px) !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        justify-content: center !important;
+        text-align: center !important;
+      }
+    `;
+    document.head.appendChild(navStyle);
+  }
 }
 
 // ── Filtro de busca global ────────────────────────────────────────────────
@@ -1241,13 +1279,16 @@ function filtrarProdutos(termo) {
       : `<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:2.5rem;background:#f5f5f5;">🛒</div>`;
     const destaqueBadge = item.em_destaque
       ? `<span class="prod-badge-destaque">☆ Destaque</span>` : "";
+    const _brl2 = (gs) =>
+      COTACAO_REAL > 0
+        ? `<div class="prod-price-brl">≈ R$ ${(gs / COTACAO_REAL).toFixed(2)}</div>`
+        : "";
     let precoLabel = "";
     if (item.em_promocao && item.preco_original && item.preco_original > item.preco) {
-      const brl = (item.preco / COTACAO_REAL).toFixed(2);
-      precoLabel = `<div class="prod-promo-row"><span class="prod-price-old">Gs ${item.preco_original.toLocaleString("es-PY")}</span><span class="prod-price-promo-label">Promo Gs ${item.preco.toLocaleString("es-PY")}</span></div><div class="prod-price-brl">≈ R$ ${brl}</div>`;
+      const pct = Math.round(100 - (item.preco / item.preco_original) * 100);
+      precoLabel = `<div class="prod-promo-row"><span class="prod-price-old">Gs ${item.preco_original.toLocaleString("es-PY")}</span><span class="prod-price-promo-label">Promo Gs ${item.preco.toLocaleString("es-PY")}</span></div>${_brl2(item.preco)}`;
     } else {
-      const brl = (item.preco / COTACAO_REAL).toFixed(2);
-      precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div><div class="prod-price-brl">≈ R$ ${brl}</div>`;
+      precoLabel = `<div class="prod-price">Gs ${item.preco.toLocaleString("es-PY")}</div>${_brl2(item.preco)}`;
     }
     div.innerHTML = `
       <div class="prod-img-container">
@@ -2591,8 +2632,8 @@ function adicionarUpsell(item) {
 function atualizarTotalCheckout() {
   const totalItens = carrinho.reduce((a, i) => a + i.preco * i.qtd, 0);
   let desconto = 0;
-  // -1 é sentinela 'a combinar' — trata como 0 para o total
-  let freteAplicado = freteCalculado === -1 ? 0 : freteCalculado;
+  // -1 é sentinela 'a combinar'; null é sentinela 'fora do raio' — ambos tratados como 0
+  let freteAplicado = (freteCalculado === -1 || freteCalculado === null) ? 0 : freteCalculado;
 
   if (cupomAplicado) {
     if (cupomAplicado.tipo === "percentual") {
@@ -2954,6 +2995,18 @@ async function calcularFrete() {
         localCliente.lng,
       );
 
+      // === BLOQUEIO POR RAIO DE COBERTURA ===
+      if (LIMITE_DISTANCIA_KM !== null && dist > LIMITE_DISTANCIA_KM) {
+        freteCalculado = null; // bloqueia envio
+        localCliente = null;   // invalida localização
+        msg.innerHTML = `<span style="color:#e74c3c">🚫 Fora da área de entrega. Distância: ${dist.toFixed(1)}km — Limite: ${LIMITE_DISTANCIA_KM}km.</span>`;
+        boxErro.style.display = "none";
+        btn.innerText = "📍 Tentar Novamente";
+        btn.disabled = false;
+        atualizarTotalCheckout();
+        return;
+      }
+
       // === TABELA DE FRETE DINÂMICA (configurada no admin) ===
       // Faixas: até 1.9 | 2-3 | 3.1-4 | 4.1-5 | 5.1-7 | 7.1-9 | 10+
       const LIMITES_KM = [1.9, 3.0, 4.0, 5.0, 7.0, 9.0, 99999];
@@ -3163,6 +3216,12 @@ async function enviarZap() {
       alert(
         "Por favor, calcule o frete ou marque a opção de enviar localização pelo WhatsApp",
       );
+      return;
+    }
+
+    // Bloqueio: cliente fora do raio de cobertura (freteCalculado === null)
+    if (modoEntrega === "delivery" && freteCalculado === null) {
+      alert("Sua localização está fora da área de entrega da loja. Não é possível finalizar o pedido.");
       return;
     }
 
