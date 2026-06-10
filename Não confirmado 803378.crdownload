@@ -3790,32 +3790,10 @@ async function salvarProduto() {
       const pkgVal = parseFloat(document.getElementById("prod-preco-kg")?.value) || 0;
       if (pkgVal > 0) precoBase = pkgVal;
     }
-
-    let precoOriginal = null;
-    let emPromocao = false;
-
-    if (document.getElementById("prod-promo-ativo")?.checked) {
-      const tipo = document.getElementById("prod-promo-tipo")?.value;
-      const valor = parseFloat(document.getElementById("prod-promo-valor")?.value) || 0;
-      if (valor > 0) {
-        emPromocao = true;
-        if (tipo === "percentual") {
-          // precoBase = preço promocional
-          precoOriginal = Math.round(precoBase / (1 - valor / 100));
-        } else { // fixo
-          precoOriginal = precoBase + valor;
-        }
-      }
-    }
     const dados = {
       nome: document.getElementById("prod-nome").value,
       descricao: document.getElementById("prod-desc").value,
       preco: precoBase,
-      promo_ativo:    document.getElementById("prod-promo-ativo")?.checked || false,
-      promo_tipo:     document.getElementById("prod-promo-tipo")?.value || null,
-      promo_valor:    parseFloat(document.getElementById("prod-promo-valor")?.value) || null,
-      em_promocao: emPromocao,
-      preco_original: precoOriginal,
       categoria_slug: document.getElementById("prod-cat").value || null,
       subcategoria_slug: document.getElementById("prod-subcat")?.value || null,
       imagem_url: urlFinal,
@@ -3829,6 +3807,27 @@ async function salvarProduto() {
       // ── Varejo ────────────────────────────────────────────
       unidade_venda:  document.getElementById("prod-unidade-venda")?.value || null,
       destaque:       document.getElementById("prod-destaque")?.checked || false,
+      promo_ativo:    document.getElementById("prod-promo-ativo")?.checked || false,
+      promo_tipo:     document.getElementById("prod-promo-tipo")?.value || null,
+      promo_valor:    parseFloat(document.getElementById("prod-promo-valor")?.value) || null,
+      // ── Campos computados para o cardápio online ──────────
+      // app.js lê em_promocao (boolean) e preco_original para exibir o preço riscado
+      ...((() => {
+        const _promoOn    = document.getElementById("prod-promo-ativo")?.checked || false;
+        const _promoTipo  = document.getElementById("prod-promo-tipo")?.value || "percent";
+        const _promoValor = parseFloat(document.getElementById("prod-promo-valor")?.value) || 0;
+        if (_promoOn && _promoValor > 0) {
+          const _precoOriginal = precoBase;
+          const _precoFinal    = _promoTipo === "percent"
+            ? Math.round(_precoOriginal * (1 - _promoValor / 100))
+            : Math.round(_precoOriginal - _promoValor);
+          if (_precoFinal > 0 && _precoFinal < _precoOriginal) {
+            return { em_promocao: true, preco_original: _precoOriginal, preco: _precoFinal };
+          }
+        }
+        // Sem promoção ativa: limpa os campos computados
+        return { em_promocao: false, preco_original: null };
+      })()),
       // Estoque direto (sem vínculo com inventário)
       estoque_qtd:    document.getElementById("prod-tem-estoque")?.checked
                         ? (parseInt(document.getElementById("prod-estoque-qtd")?.value) || 0)
@@ -9371,19 +9370,11 @@ async function salvarPedidoBalcao() {
 
   const _soKg = carrinhoPDV.length > 0 && carrinhoPDV.every((i) => i._isKg);
 
-  // const mesaInput = document.getElementById("balcao-mesa");
-  //   if (mesaInput) mesaInput.value = "";
-
-  const mesaEl = document.getElementById("balcao-mesa");
-    const clienteEl = document.getElementById("balcao-cliente");
-    const telefoneEl = document.getElementById("balcao-telefone");
-    const pagEl = document.getElementById("balcao-pag");
-
-
-    const cli = clienteEl?.value?.trim() || "Cliente";
-    const tel = telefoneEl?.value?.trim() || "";
-    const pag = pagEl?.value || "Efetivo";
-    const mesa = "";
+  const mesa = document.getElementById("balcao-mesa").value.trim();
+  const cli =
+    document.getElementById("balcao-cliente").value.trim() || "Cliente";
+  const tel = document.getElementById("balcao-telefone").value.trim() || "";
+  let pag = document.getElementById("balcao-pag").value;
   const pagFinalPDV =
     pag === "CartaoBR"
       ? _cartaoBRTipoPDV === "debito"
@@ -9392,7 +9383,7 @@ async function salvarPedidoBalcao() {
       : pag;
 
   const nomeFinal = mesa
-    ? `MESA ${mesa} - ${cliente}`
+    ? `MESA ${mesa} - ${cli}`
     : _soKg
       ? `BALCÃO KG - ${cli}`
       : `BALCÃO - ${cli}`;
@@ -9625,8 +9616,7 @@ async function salvarPedidoBalcao() {
 
   carrinhoPDV = [];
   document.getElementById("balcao-cliente").value = "";
-  const mesaInput = document.getElementById("balcao-mesa");
-  if (mesaInput) mesaInput.value = "";
+  document.getElementById("balcao-mesa").value = "";
   document.getElementById("balcao-telefone").value = "";
   // Reset tipo entrega e campos de delivery
   const tipoSelPDV = document.getElementById("balcao-tipo-entrega");
