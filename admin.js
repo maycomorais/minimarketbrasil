@@ -1825,6 +1825,29 @@ async function _abrirSessaoCaixa(valorAbertura, descricao) {
   return data;
 }
 
+// ─────────────────────────────────────────────────────────────
+// HELPER — offset UTC de Assunção em ms para uma data específica
+// Desde 2024 o Paraguai adotou UTC-3 permanente (sem horário de verão).
+// Usamos Intl.DateTimeFormat com "America/Asuncion" para que a IANA tz
+// database reflita automaticamente qualquer futura mudança de lei.
+// ─────────────────────────────────────────────────────────────
+function _getAsuncionOffsetMs(date) {
+  try {
+    // Determina o offset real comparando UTC com o horário local de Assunção
+    const utc = date.getTime();
+    const localStr = new Intl.DateTimeFormat("sv-SE", { // sv-SE = formato ISO sem vírgula
+      timeZone: "America/Asuncion",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      hour12: false,
+    }).format(date);
+    const local = new Date(localStr);
+    return utc - local.getTime();
+  } catch (_) {
+    return 3 * 60 * 60 * 1000; // fallback UTC-3 (permanente desde 2024)
+  }
+}
+
 async function calcularFinanceiro() {
   const abaFin = document.getElementById("financeiro");
   if (!abaFin || !abaFin.classList.contains("active")) return;
@@ -1851,13 +1874,17 @@ async function calcularFinanceiro() {
   const sessaoInicio = _sessaoCaixaAtiva.aberto_em;
   const sessaoFim    = _sessaoCaixaAtiva.fechado_em || new Date().toISOString();
 
-  // Gestores podem sobrepor o intervalo com o filtro de datas da tela
+  // Gestores podem sobrepor o intervalo com o filtro de datas da tela.
+  // NOTA DE FUSO: o Supabase armazena UTC. Assunção é UTC-3 permanente desde 2024.
+  // Ao converter a data local do filtro, usamos _getAsuncionOffsetMs para obter UTC correto.
   let utcI = sessaoInicio;
   let utcF = sessaoFim;
   if (ehGestor && elInicio.value && elFim.value) {
-    const _tz = 4 * 60 * 60 * 1000; // UTC-4 PY
-    utcI = new Date(new Date(elInicio.value + "T00:00:00").getTime() + _tz).toISOString();
-    utcF = new Date(new Date(elFim.value   + "T23:59:59").getTime() + _tz).toISOString();
+    // Determina o offset de Assunção dinamicamente via Intl
+    const _refDate = new Date(elInicio.value + "T12:00:00");
+    const _asunOffset = _getAsuncionOffsetMs(_refDate);
+    utcI = new Date(new Date(elInicio.value + "T00:00:00").getTime() + _asunOffset).toISOString();
+    utcF = new Date(new Date(elFim.value   + "T23:59:59").getTime() + _asunOffset).toISOString();
   } else if (!elInicio.value || !elFim.value) {
     // Preenche os campos de data com os valores da sessão para exibição
     const dAbr = new Date(sessaoInicio);
@@ -1870,10 +1897,12 @@ async function calcularFinanceiro() {
   const facturaFiltro = elFactura ? elFactura.value : "todos";
 
   // ── 4. Busca pedidos dentro da janela da sessão ───────────────────
+  // Inclui TODOS os status exceto cancelado — pedidos do app chegam como
+  // "pendente" ou "em_preparo" e devem ser contabilizados no caixa do dia.
   let query = supa
     .from("pedidos")
     .select("*, motoboys(nome)")
-    .in("status", ["entregue", "em_preparo", "pronto_entrega", "saiu_entrega"])
+    .neq("status", "cancelado")
     .gte("created_at", utcI)
     .lte("created_at", utcF);
 
@@ -2123,20 +2152,24 @@ async function exportarFinanceiro() {
   const mes = String(hoje.getMonth() + 1).padStart(2, "0");
   const dia = String(hoje.getDate()).padStart(2, "0");
 
+  // Define período — corrige fuso: Assunção é UTC-3 permanente desde 2024
+  // O Supabase armazena UTC, então desloca o intervalo local para UTC via helper
+  const _refDate = new Date(); // data de referência para calcular o offset atual
+  const _TZ_OFFSET_MS = _getAsuncionOffsetMs(_refDate); // UTC-3 = 3h em ms
   let dataInicio, dataFim;
   if (inicio && fim) {
-    dataInicio = inicio + " 00:00:00";
-    dataFim = fim + " 23:59:59";
+    dataInicio = new Date(new Date(inicio + "T00:00:00").getTime() + _TZ_OFFSET_MS).toISOString();
+    dataFim    = new Date(new Date(fim   + "T23:59:59").getTime() + _TZ_OFFSET_MS).toISOString();
   } else {
-    dataInicio = `${ano}-${mes}-${dia} 00:00:00`;
-    dataFim = `${ano}-${mes}-${dia} 23:59:59`;
+    dataInicio = new Date(new Date(`${ano}-${mes}-${dia}T00:00:00`).getTime() + _TZ_OFFSET_MS).toISOString();
+    dataFim    = new Date(new Date(`${ano}-${mes}-${dia}T23:59:59`).getTime() + _TZ_OFFSET_MS).toISOString();
   }
 
   // 2. Busca os dados
   let query = supa
     .from("pedidos")
     .select("*")
-    .eq("status", "entregue")
+    .neq("status", "cancelado")
     .gte("created_at", dataInicio)
     .lte("created_at", dataFim);
 
@@ -2277,9 +2310,8 @@ async function carregarRelatorio() {
   } else {
     const ini = filtroInicio || hoje;
     const fim = filtroFim || hoje;
-    // Paraguay UTC-4: shift local date range to UTC so after-midnight sales are captured
-    // e.g. local 00:00 PY = UTC 04:00; local 23:59 PY = UTC 03:59 next day
-    const _off = 4 * 60 * 60 * 1000;
+    // Assunção UTC-3 permanente desde 2024: desloca datas locais para UTC
+    const _off = _getAsuncionOffsetMs(new Date(ini + "T00:00:00"));
     const utcIni = new Date(
       new Date(ini + "T00:00:00").getTime() + _off,
     ).toISOString();
@@ -2544,6 +2576,7 @@ async function salvarMovimentacaoCaixa() {
       await _abrirSessaoCaixa(valor, desc);
       alert(`✅ Caixa aberto com fundo de Gs ${valor.toLocaleString("es-PY")}!`);
       fecharModal("modal-caixa");
+      _pdvAtualizarPainelCaixa(); // sincroniza painel no PDV
       calcularFinanceiro();
       return;
     } catch (e) {
@@ -2643,6 +2676,11 @@ Sessão encerrada!`);
   if (qEl) qEl.innerText = "0";
   _caixaState = { faturamento:0, custoEntregas:0, totalSaidas:0, totalEntradas:0,
                   totalPix:0, totalTransf:0, totalCartao:0, totalEfetivo:0, qtdPedidos:0 };
+
+  // Atualiza indicador global e painel PDV
+  const elStatusGlobal = document.getElementById("status-sessao-caixa");
+  if (elStatusGlobal) elStatusGlobal.innerHTML = `<span style="color:#e74c3c">🔴 Nenhum caixa aberto</span>`;
+  _pdvAtualizarPainelCaixa();
 }
 
 // =========================================
@@ -7355,9 +7393,38 @@ async function carregarPDV() {
     .maybeSingle();
   _aplicarFormasPagamentoPDV(featCfg?.features_ativas);
 
+  // ── Sincroniza painel de abertura de caixa no PDV ────────────────
+  await _carregarSessaoCaixa();
+  _pdvAtualizarPainelCaixa();
+
   renderizarGridPDV();
   atualizarBarraMesasAtivas();
   pdvIniciarTabs();
+}
+
+/**
+ * Atualiza o mini-painel de status/abertura de caixa dentro do PDV.
+ * Chamado após _carregarSessaoCaixa() para refletir o estado atual.
+ */
+function _pdvAtualizarPainelCaixa() {
+  const elStatus  = document.getElementById("pdv-status-caixa");
+  const btnAbrir  = document.getElementById("pdv-btn-abrir-caixa");
+  const btnFechar = document.getElementById("pdv-btn-fechar-caixa");
+  if (!elStatus) return;
+
+  if (_sessaoCaixaAtiva) {
+    const dAbr = new Date(_sessaoCaixaAtiva.aberto_em).toLocaleString("pt-BR", {
+      day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit",
+      timeZone: "America/Asuncion"
+    });
+    elStatus.innerHTML = `<span style="color:#27ae60">🟢 Aberto desde ${dAbr}</span>`;
+    if (btnAbrir)  btnAbrir.style.display  = "none";
+    if (btnFechar) btnFechar.style.display = "flex";
+  } else {
+    elStatus.innerHTML = `<span style="color:#e74c3c">🔴 Caixa fechado — abra para registrar vendas</span>`;
+    if (btnAbrir)  btnAbrir.style.display  = "flex";
+    if (btnFechar) btnFechar.style.display = "none";
+  }
 }
 
 let produtosCatsPDV = [];
