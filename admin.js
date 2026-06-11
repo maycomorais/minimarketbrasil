@@ -966,7 +966,7 @@ async function carregarPedidos(silencioso = false) {
   // ───────────────────────────────────────────────────────────────────────────
 
   // Badge de cancelamento pendente para o dono / adminMaster
-  const _podeCancel = ["dono", "adminMaster"].includes(perfilUsuario);
+  const _podeCancel = ["dono", "adminMaster", "gerente"].includes(perfilUsuario);
   const badgeCancelPendente = _podeCancel
     ? `<span style="background:#e74c3c;color:white;font-size:0.7rem;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;">CANC. PENDENTE</span>`
     : "";
@@ -982,7 +982,7 @@ async function carregarPedidos(silencioso = false) {
 
       // Badge cancelamento (só dono vê)
       const badgeCancelRow =
-        temSolicitacaoCancelamento && perfilUsuario === "dono"
+        temSolicitacaoCancelamento && ["dono", "gerente"].includes(perfilUsuario)
           ? `<div style="background:#fff0f0;border:1px solid #e74c3c;border-radius:6px;padding:4px 8px;font-size:0.75rem;margin-top:4px;color:#c0392b">
                      🚫 <strong>Cancelamento solicitado:</strong> ${p.cancelamento_motivo || "-"}
                      <br><button class="btn btn-danger btn-sm" onclick="aprovarCancelamento(${p.id})" style="margin-top:4px;font-size:0.7rem">✅ Aprovar</button>
