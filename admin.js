@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (abaAtual === "pdv") carregarMonitorMesas();
     // if (abaAtual === 'financeiro') calcularFinanceiro();
     if (abaAtual === "dashboard") carregarDashboard();
-  }, 10000);
+  }, 60000);
 
   // Verifica Login e Permissões
   if (typeof checkUser === "function") {
