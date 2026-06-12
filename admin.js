@@ -1972,15 +1972,16 @@ async function calcularFinanceiro() {
   // ── 1. Carrega/verifica sessão ativa ─────────────────────────────
   await _carregarSessaoCaixa();
 
-  // ── 2. Se não houver sessão aberta, exibe alerta de abertura ─────
-  if (!_sessaoCaixaAtiva) {
-    _exibirAlertaAberturaCaixa();
-    return; // não renderiza nada enquanto não houver sessão
-  }
+  // // ── 2. Se não houver sessão aberta, exibe alerta de abertura ─────
+  // if (!_sessaoCaixaAtiva) {
+  //   _exibirAlertaAberturaCaixa();
+  //   return; // não renderiza nada enquanto não houver sessão
+  // }
 
   // ── 3. Define intervalo de tempo baseado na SESSÃO, não no calendário ─
-  const sessaoInicio = _sessaoCaixaAtiva.aberto_em;
-  const sessaoFim = _sessaoCaixaAtiva.fechado_em || new Date().toISOString();
+  const hoje = new Date().toISOString().split("T")[0];
+  const sessaoInicio = (elInicio.value || hoje) + "T00:00:00";
+  const sessaoFim    = (elFim.value   || hoje) + "T23:59:59";
 
   // Gestores podem sobrepor o intervalo com o filtro de datas da tela.
   // NOTA DE FUSO: o Supabase armazena UTC. Assunção é UTC-3 permanente desde 2024.
@@ -1998,11 +1999,9 @@ async function calcularFinanceiro() {
       new Date(elFim.value + "T23:59:59").getTime() + _asunOffset,
     ).toISOString();
   } else if (!elInicio.value || !elFim.value) {
-    // Preenche os campos de data com os valores da sessão para exibição
-    const dAbr = new Date(sessaoInicio);
-    elInicio.value = dAbr.toISOString().split("T")[0];
-    const dFch = new Date(sessaoFim);
-    elFim.value = dFch.toISOString().split("T")[0];
+    const hoje = new Date().toISOString().split("T")[0];
+    if (!elInicio.value) elInicio.value = hoje;
+    if (!elFim.value) elFim.value = hoje;
   }
 
   const tipoFiltro = elTipo.value;
@@ -2033,13 +2032,16 @@ async function calcularFinanceiro() {
     peds = peds.filter((p) => !p.dados_factura?.ruc && !p.dados_factura?.ci);
 
   // ── 5. Movimentações de caixa da SESSÃO ──────────────────────────
+let caixa = [];
+if (_sessaoCaixaAtiva) {
   let caixaQuery = supa
     .from("movimentacoes_caixa")
     .select("*")
-    .eq("sessao_id", _sessaoCaixaAtiva.id); // vínculo direto à sessão
+    .eq("sessao_id", _sessaoCaixaAtiva.id);
   if (!ehGestor) caixaQuery = caixaQuery.eq("usuario_email", emailAtual);
-
-  const { data: caixa } = await caixaQuery;
+  const { data: caixaData } = await caixaQuery;
+  caixa = caixaData || [];
+}
 
   // Verifica bloqueio de caixa (sangria limite)
   _verificarBloqueioCaixa(emailAtual);
@@ -2194,7 +2196,8 @@ async function calcularFinanceiro() {
 
   // Badge do operador / info da sessão
   const badgeCaixa = document.getElementById("badge-caixa-operador");
-  if (badgeCaixa) {
+if (badgeCaixa) {
+  if (_sessaoCaixaAtiva) {
     const dAbr = new Date(_sessaoCaixaAtiva.aberto_em).toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
@@ -2212,7 +2215,10 @@ async function calcularFinanceiro() {
     badgeCaixa.textContent = ehGestor
       ? `📊 Visão geral — sessão ${_sessaoCaixaAtiva.id} (${_sessaoCaixaAtiva.usuario_email}) · ${dAbr} → ${dFch}`
       : `💼 Seu caixa — aberto ${dAbr} → ${dFch}`;
+  } else {
+    badgeCaixa.textContent = "📊 Sem sessão de caixa ativa — exibindo todos os pedidos do período";
   }
+}
 
   // Tabelas de despesas e motoboys (código original preservado)
   const tbD = document.getElementById("lista-despesas-caixa");
