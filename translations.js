@@ -105,7 +105,26 @@ const translations = {
         close: "Cerrar",
         confirm: "Confirmar",
         yes: "Sí",
-        no: "No"
+        no: "No",
+
+        // Alertas dinâmicos do storefront (app.js)
+        app_alert_pedido_nao_encontrado: "Error: Pedido no encontrado",
+        app_alert_erro_confirmar_entrega: "Error al confirmar la entrega. Intente nuevamente.",
+        app_alert_max_itens_etapa: 'Máximo: {max} ítems para "{titulo}"',
+        app_alert_escolha_tamanho_shake: "¡Elija un tamaño para el Shake!",
+        app_alert_escolha_sabor_shake: "¡Elija un sabor para el Shake!",
+        app_alert_selecione_tamanho_pizza: "¡Seleccione el tamaño de la pizza!",
+        app_alert_selecione_sabor: "¡Seleccione al menos 1 sabor!",
+        app_alert_selecione_prato: "¡Seleccione el plato!",
+        app_alert_escolha_sabor_antes: "¡Elija el sabor antes de agregar!",
+        app_alert_carrinho_vazio: "¡Carrito vacío!",
+        app_alert_campos_obrigatorios: "¡Complete todos los campos obligatorios!",
+        app_alert_fora_area_entrega: "Su ubicación está fuera del área de entrega de la tienda. No es posible finalizar el pedido.",
+        app_alert_erro_processar_pedido: "Ocurrió un error al procesar el pedido. Intente nuevamente.",
+        app_alert_digite_numero_pedido: "Por favor, ingrese el número de pedido",
+        app_alert_pedido_nao_encontrado2: "Pedido no encontrado.",
+        app_alert_erro_cancelamento: "Error al solicitar la cancelación. Contacte a la tienda por WhatsApp.",
+        app_buscando: "Buscando..."
     },
     
     // ===== PORTUGUÊS (BRASIL) =====
@@ -214,7 +233,26 @@ const translations = {
         close: "Fechar",
         confirm: "Confirmar",
         yes: "Sim",
-        no: "Não"
+        no: "Não",
+
+        // Alertas dinâmicos do storefront (app.js)
+        app_alert_pedido_nao_encontrado: "Erro: Pedido não encontrado",
+        app_alert_erro_confirmar_entrega: "Erro ao confirmar entrega. Tente novamente.",
+        app_alert_max_itens_etapa: 'Máximo: {max} itens para "{titulo}"',
+        app_alert_escolha_tamanho_shake: "Escolha um tamanho para o Shake!",
+        app_alert_escolha_sabor_shake: "Escolha um sabor para o Shake!",
+        app_alert_selecione_tamanho_pizza: "Selecione o tamanho da pizza!",
+        app_alert_selecione_sabor: "Selecione ao menos 1 sabor!",
+        app_alert_selecione_prato: "Selecione o prato!",
+        app_alert_escolha_sabor_antes: "Escolha o sabor antes de adicionar!",
+        app_alert_carrinho_vazio: "Carrinho vazio!",
+        app_alert_campos_obrigatorios: "Preencha todos os campos obrigatórios!",
+        app_alert_fora_area_entrega: "Sua localização está fora da área de entrega da loja. Não é possível finalizar o pedido.",
+        app_alert_erro_processar_pedido: "Ocorreu um erro ao processar o pedido. Tente novamente.",
+        app_alert_digite_numero_pedido: "Por favor, digite o número do pedido",
+        app_alert_pedido_nao_encontrado2: "Pedido não encontrado.",
+        app_alert_erro_cancelamento: "Erro ao solicitar cancelamento. Contate a loja pelo WhatsApp.",
+        app_buscando: "Buscando..."
     },
     
     // ===== INGLÊS (EUA) =====
@@ -323,7 +361,26 @@ const translations = {
         close: "Close",
         confirm: "Confirm",
         yes: "Yes",
-        no: "No"
+        no: "No",
+
+        // Alertas dinâmicos do storefront (app.js)
+        app_alert_pedido_nao_encontrado: "Error: Order not found",
+        app_alert_erro_confirmar_entrega: "Error confirming delivery. Please try again.",
+        app_alert_max_itens_etapa: 'Maximum: {max} items for "{titulo}"',
+        app_alert_escolha_tamanho_shake: "Choose a size for the Shake!",
+        app_alert_escolha_sabor_shake: "Choose a flavor for the Shake!",
+        app_alert_selecione_tamanho_pizza: "Select the pizza size!",
+        app_alert_selecione_sabor: "Select at least 1 flavor!",
+        app_alert_selecione_prato: "Select the dish!",
+        app_alert_escolha_sabor_antes: "Choose the flavor before adding!",
+        app_alert_carrinho_vazio: "Empty cart!",
+        app_alert_campos_obrigatorios: "Fill in all required fields!",
+        app_alert_fora_area_entrega: "Your location is outside the store's delivery area. The order cannot be completed.",
+        app_alert_erro_processar_pedido: "An error occurred while processing the order. Please try again.",
+        app_alert_digite_numero_pedido: "Please enter the order number",
+        app_alert_pedido_nao_encontrado2: "Order not found.",
+        app_alert_erro_cancelamento: "Error requesting cancellation. Contact the store via WhatsApp.",
+        app_buscando: "Searching..."
     },
     
     // ===== ALEMÃO =====
@@ -432,7 +489,26 @@ const translations = {
         close: "Schließen",
         confirm: "Bestätigen",
         yes: "Ja",
-        no: "Nein"
+        no: "Nein",
+
+        // Alertas dinâmicos do storefront (app.js)
+        app_alert_pedido_nao_encontrado: "Fehler: Bestellung nicht gefunden",
+        app_alert_erro_confirmar_entrega: "Fehler bei der Bestätigung der Lieferung. Bitte versuchen Sie es erneut.",
+        app_alert_max_itens_etapa: 'Maximal: {max} Artikel für "{titulo}"',
+        app_alert_escolha_tamanho_shake: "Wählen Sie eine Größe für den Shake!",
+        app_alert_escolha_sabor_shake: "Wählen Sie einen Geschmack für den Shake!",
+        app_alert_selecione_tamanho_pizza: "Wählen Sie die Pizzagröße!",
+        app_alert_selecione_sabor: "Wählen Sie mindestens 1 Geschmack!",
+        app_alert_selecione_prato: "Wählen Sie das Gericht!",
+        app_alert_escolha_sabor_antes: "Wählen Sie den Geschmack, bevor Sie hinzufügen!",
+        app_alert_carrinho_vazio: "Warenkorb leer!",
+        app_alert_campos_obrigatorios: "Füllen Sie alle Pflichtfelder aus!",
+        app_alert_fora_area_entrega: "Ihr Standort liegt außerhalb des Lieferbereichs des Geschäfts. Die Bestellung kann nicht abgeschlossen werden.",
+        app_alert_erro_processar_pedido: "Bei der Bearbeitung der Bestellung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+        app_alert_digite_numero_pedido: "Bitte geben Sie die Bestellnummer ein",
+        app_alert_pedido_nao_encontrado2: "Bestellung nicht gefunden.",
+        app_alert_erro_cancelamento: "Fehler bei der Stornierungsanfrage. Kontaktieren Sie das Geschäft über WhatsApp.",
+        app_buscando: "Suchen..."
     }
 };
 

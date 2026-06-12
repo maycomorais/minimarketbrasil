@@ -5698,3 +5698,26 @@ td.pdv-item-card:last-child {
     transition: background .12s;
 }
 .pdv-item-card-excluir:hover { background: #fee2e2; }
+
+.btn-print-barcode {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-print-barcode:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+}
+
+.btn-print-barcode i {
+    font-size: 14px;
+}

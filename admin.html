@@ -10,6 +10,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <link rel="stylesheet" href="admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <style>
       /* ── Componentes de Assinatura ── */
       .sub-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px}
@@ -165,7 +166,7 @@
 
         <div class="sb-menu-item menu-item sb-menu-item--pdv" id="menu-pdv" onclick="showTab('pdv', event)">
           <i class="fas fa-cash-register"></i>
-          <span class="sb-label">PDV Mostrador</span>
+          <span class="sb-label" data-i18n="sidebar.pdv">PDV Mostrador</span>
         </div>
 
         <div class="sb-menu-item menu-item" id="menu-pedidos" onclick="showTab('pedidos', event)">
@@ -175,7 +176,7 @@
 
         <div class="sb-menu-item menu-item" id="menu-cozinha" onclick="showTab('cozinha', event)">
           <i class="fas fa-list-check"></i>
-          <span class="sb-label">Separação</span>
+          <span class="sb-label" data-i18n="sidebar.cozinha">Separação</span>
         </div>
 
         <div class="sb-menu-item menu-item restrito-gerente" id="menu-equipe" onclick="showTab('equipe', event)">
@@ -184,25 +185,25 @@
         </div>
 
         <!-- Separador: Catálogo -->
-        <div class="sb-separator"><span class="sb-separator-label sidebar-label">Catálogo</span></div>
+        <div class="sb-separator"><span class="sb-separator-label sidebar-label" data-i18n="sidebar.catalogo">Catálogo</span></div>
 
         <div class="sb-menu-item menu-item" id="menu-produtos" onclick="showTab('produtos', event)">
           <i class="fas fa-utensils"></i>
-          <span class="sb-label">Produtos</span>
+          <span class="sb-label" data-i18n="sidebar.produtos">Produtos</span>
         </div>
 
         <div class="sb-menu-item menu-item" onclick="showTab('categorias', event)">
           <i class="fas fa-tags"></i>
-          <span class="sb-label">Categorias</span>
+          <span class="sb-label" data-i18n="sidebar.categorias">Categorias</span>
         </div>
 
         <div class="sb-menu-item menu-item" onclick="showTab('motoboys', event)">
           <i class="fas fa-motorcycle"></i>
-          <span class="sb-label">Motoboys</span>
+          <span class="sb-label" data-i18n="sidebar.motoboys">Motoboys</span>
         </div>
 
         <!-- Separador: Gestão (itens escondidos por perfil) -->
-        <div class="sb-separator" id="sep-gestao" style="display:none"><span class="sb-separator-label sidebar-label">Gestão</span></div>
+        <div class="sb-separator" id="sep-gestao" style="display:none"><span class="sb-separator-label sidebar-label" data-i18n="sidebar.gestao">Gestão</span></div>
 
         <div class="sb-menu-item menu-item restrito-gerente" id="menu-financeiro" onclick="showTab('financeiro', event)" style="display:none">
           <i class="fas fa-wallet"></i>
@@ -211,12 +212,12 @@
 
         <div class="sb-menu-item menu-item" id="menu-estatisticas" onclick="showTab('estatisticas', event)" style="display:none">
           <i class="fas fa-chart-bar"></i>
-          <span class="sb-label">Estatísticas</span>
+          <span class="sb-label" data-i18n="sidebar.estatisticas">Estatísticas</span>
         </div>
 
         <div class="sb-menu-item menu-item" id="menu-crm" onclick="showTab('crm', event)" style="display:none">
           <i class="fas fa-address-book"></i>
-          <span class="sb-label">Clientes CRM</span>
+          <span class="sb-label" data-i18n="sidebar.crm">Clientes CRM</span>
         </div>
 
         <div class="sb-menu-item menu-item restrito-func" id="menu-configuracoes" onclick="showTab('configuracoes', event)">
@@ -226,13 +227,13 @@
 
         <div class="sb-menu-item menu-item" id="menu-filiais" onclick="showTab('filiais', event)" style="display:none">
           <i class="fas fa-store"></i>
-          <span class="sb-label">Sucursales</span>
+          <span class="sb-label" data-i18n="sidebar.filiais">Sucursales</span>
         </div>
 
         <div class="sb-menu-item menu-item" id="menu-adminmaster" onclick="showTab('adminmaster', event)"
              style="display:none; background:linear-gradient(135deg,#1a1a2e,#16213e); border-top:2px solid #e74c3c;">
           <i class="fas fa-shield-alt" style="color:#e74c3c"></i>
-          <span class="sb-label" style="color:#e74c3c">Master</span>
+          <span class="sb-label" style="color:#e74c3c" data-i18n="sidebar.master">Master</span>
         </div>
 
       </nav>
@@ -253,14 +254,14 @@
         <!-- Senha -->
         <div class="sb-menu-item menu-item sb-menu-item--senha" onclick="abrirModalAlterarSenha()" title="Alterar minha senha">
           <i class="fas fa-key"></i>
-          <span class="sb-label">Senha</span>
+          <span class="sb-label" data-i18n="sidebar.senha">Senha</span>
         </div>
 
         <!-- Assinatura -->
         <div id="menu-assinatura" class="sb-menu-item menu-item sb-menu-item--assinatura" onclick="showTab('assinatura', event)"
           style="display:none" title="Controle de Assinatura">
           <i class="fas fa-credit-card"></i>
-          <span class="sb-label">Assinatura</span>
+          <span class="sb-label" data-i18n="sidebar.assinatura">Assinatura</span>
         </div>
 
         <!-- Sair -->
@@ -286,28 +287,28 @@
           <div class="kpi-card kpi-accent-green">
             <div class="kpi-icon"><i class="fas fa-coins"></i></div>
             <div class="kpi-info">
-              <div class="kpi-label">Vendas Hoje</div>
+              <div class="kpi-label" data-i18n="dash.vendas_hoje_lbl">Vendas Hoje</div>
               <div class="value" id="kpi-vendas">Gs 0</div>
             </div>
           </div>
           <div class="kpi-card kpi-accent-blue">
             <div class="kpi-icon"><i class="fas fa-receipt"></i></div>
             <div class="kpi-info">
-              <div class="kpi-label">Pedidos Hoje</div>
+              <div class="kpi-label" data-i18n="dash.pedidos_hoje_lbl">Pedidos Hoje</div>
               <div class="value" id="kpi-pedidos">0</div>
             </div>
           </div>
           <div class="kpi-card kpi-accent-orange">
             <div class="kpi-icon"><i class="fas fa-motorcycle"></i></div>
             <div class="kpi-info">
-              <div class="kpi-label">A Pagar Motoboys</div>
+              <div class="kpi-label" data-i18n="dash.moto_pagar">A Pagar Motoboys</div>
               <div class="value" id="kpi-moto">Gs 0</div>
             </div>
           </div>
           <div class="kpi-card kpi-accent-red">
             <div class="kpi-icon"><i class="fas fa-fire-alt"></i></div>
             <div class="kpi-info">
-              <div class="kpi-label">Em Preparo</div>
+              <div class="kpi-label" data-i18n="dash.em_preparo_lbl">Em Preparo</div>
               <div class="value" id="kpi-em-preparo">0</div>
             </div>
           </div>
@@ -317,13 +318,13 @@
           <div class="card ranking-card">
             <div class="ranking-header">
               <i class="fas fa-trophy" style="color:#f59e0b"></i>
-              <h3>Top Produtos</h3>
+              <h3 data-i18n="dash.top_produtos_lbl">Top Produtos</h3>
               <select id="rank-prod-periodo" class="rank-periodo-select" onchange="carregarRankingProdutos()" style="margin-left:auto">
-                <option value="hoje">Hoje</option>
-                <option value="7">7 dias</option>
-                <option value="30">30 dias</option>
-                <option value="mes">Este mês</option>
-                <option value="custom">Período</option>
+                <option value="hoje" data-i18n="dash.hoje">Hoje</option>
+                <option value="7" data-i18n="dash.7dias">7 dias</option>
+                <option value="30" data-i18n="dash.30dias">30 dias</option>
+                <option value="mes" data-i18n="dash.mes">Este mês</option>
+                <option value="custom" data-i18n="dash.personalizado">Período</option>
               </select>
             </div>
             <div id="rank-prod-custom" style="display:none;gap:4px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
@@ -337,14 +338,14 @@
           <div class="card ranking-card">
             <div class="ranking-header">
               <i class="fas fa-star" style="color:#a78bfa"></i>
-              <h3>Clientes Assíduos</h3>
+              <h3 data-i18n="dash.clientes_lbl">Clientes Assíduos</h3>
               <select id="rank-cli-periodo" class="rank-periodo-select" onchange="carregarRankingClientes()" style="margin-left:auto">
-                <option value="tudo">Todos</option>
-                <option value="hoje">Hoje</option>
-                <option value="7">7 dias</option>
-                <option value="30">30 dias</option>
-                <option value="mes">Este mês</option>
-                <option value="custom">Período</option>
+                <option value="tudo" data-i18n="geral.todos">Todos</option>
+                <option value="hoje" data-i18n="dash.hoje">Hoje</option>
+                <option value="7" data-i18n="dash.7dias">7 dias</option>
+                <option value="30" data-i18n="dash.30dias">30 dias</option>
+                <option value="mes" data-i18n="dash.mes">Este mês</option>
+                <option value="custom" data-i18n="dash.personalizado">Período</option>
               </select>
             </div>
             <div id="rank-cli-custom" style="display:none;gap:4px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
@@ -367,10 +368,10 @@
           <!-- Linha 1: Título + badge delivery + refresh -->
           <div class="pedidos-topbar-row1">
             <div class="pedidos-topbar-left">
-              <h2 class="section-title">Pedidos</h2>
+              <h2 class="section-title" data-i18n="pedidos.title">Pedidos</h2>
               <span id="badge-delivery-status" class="delivery-badge delivery-open"
                 onclick="carregarStatusDelivery()" title="Clique para atualizar">
-                🟢 Aberto
+                🟢 <span data-i18n="ped.aberto_badge">Aberto</span>
               </span>
               <span id="badge-horario-extra" class="delivery-badge badge-extra" style="display:none"></span>
             </div>
@@ -384,32 +385,32 @@
           <!-- Linha 2: Ações de controle do delivery -->
           <div class="pedidos-topbar-row2">
             <button class="topbar-btn btn-horario" onclick="abrirModalEstenderHorario()" title="Estender horário">
-              <i class="fas fa-clock"></i> <span>+Horário</span>
+              <i class="fas fa-clock"></i> <span data-i18n="ped.horario_btn">+Horário</span>
             </button>
             <button class="topbar-btn btn-encerrar" onclick="avisarEncerramentoDelivery()" title="Encerrar delivery">
-              <i class="fas fa-ban"></i> <span>Encerrar</span>
+              <i class="fas fa-ban"></i> <span data-i18n="ped.encerrar_btn">Encerrar</span>
             </button>
             <button class="topbar-btn btn-reabrir" onclick="reabrirDelivery()" title="Reabrir delivery">
-              <i class="fas fa-check"></i> <span>Reabrir</span>
+              <i class="fas fa-check"></i> <span data-i18n="ped.reabrir_btn">Reabrir</span>
             </button>
             <button class="topbar-btn btn-relatorio" onclick="abrirRelatorio()" title="Relatório">
-              <i class="fas fa-clipboard-list"></i> <span>Relatório</span>
+              <i class="fas fa-clipboard-list"></i> <span data-i18n="ped.relatorio_btn">Relatório</span>
             </button>
             
             <button class="topbar-btn btn-baixar-nd" onclick="baixarTodosNaoDelivery()" title="Confirmar Delivery">
-              <i class="fas fa-motorcycle"></i> <span>Baixar Delivery</span>
+              <i class="fas fa-motorcycle"></i> <span data-i18n="ped.baixar_delivery">Baixar Delivery</span>
             </button>
           </div>
         </div>
 
         <div class="card rota-card">
-          <div class="rota-card-title"><i class="fas fa-route"></i> Despachar Rota</div>
+          <div class="rota-card-title"><i class="fas fa-route"></i> <span data-i18n="ped.despachar_rota">Despachar Rota</span></div>
           <div class="rota-controls">
             <select id="sel-motoboy" class="form-control">
-              <option value="">Selecione Motoboy...</option>
+              <option value="" data-i18n="ped.sel_motoboy_ph">Selecione Motoboy...</option>
             </select>
             <button class="btn btn-success btn-zap" onclick="enviarRotaZap()">
-              <i class="fab fa-whatsapp"></i> Enviar Rota
+              <i class="fab fa-whatsapp"></i> <span data-i18n="ped.enviar_rota">Enviar Rota</span>
             </button>
           </div>
         </div>
@@ -421,12 +422,12 @@
           <table class="table">
             <thead>
               <tr>
-                <th width="50">Rota</th>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Status</th>
-                <th>Total</th>
-                <th>Ações</th>
+                <th width="50" data-i18n="col.rota">Rota</th>
+                <th data-i18n="col.id">ID</th>
+                <th data-i18n="col.cliente">Cliente</th>
+                <th data-i18n="col.status">Status</th>
+                <th data-i18n="col.total">Total</th>
+                <th data-i18n="col.acoes">Ações</th>
               </tr>
             </thead>
             <tbody id="lista-pedidos"></tbody>
@@ -439,17 +440,17 @@
         <!-- ── CABEÇALHO DA ABA ───────────────────────────────── -->
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
           <div>
-            <h2 class="section-title" style="margin:0">📦 Lista de Separação</h2>
-            <p style="font-size:0.82rem;color:#888;margin:4px 0 0">Pedidos aguardando separação e envio. Marque cada item conforme for buscando.</p>
+            <h2 class="section-title" style="margin:0" data-i18n="sep.title">📦 Lista de Separação</h2>
+            <p style="font-size:0.82rem;color:#888;margin:4px 0 0" data-i18n="sep.desc">Pedidos aguardando separação e envio. Marque cada item conforme for buscando.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-sm" style="background:#2980b9;color:#fff"
               onclick="sepRecarregar()">
-              <i class="fas fa-rotate-right"></i> Atualizar
+              <i class="fas fa-rotate-right"></i> <span data-i18n="sep.atualizar">Atualizar</span>
             </button>
             <button class="btn btn-sm" style="background:#6b7280;color:#fff"
               onclick="sepImprimirTudo()">
-              <i class="fas fa-print"></i> Imprimir tudo
+              <i class="fas fa-print"></i> <span data-i18n="sep.imprimir_tudo">Imprimir tudo</span>
             </button>
           </div>
         </div>
@@ -458,24 +459,23 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
           <select id="sep-filtro-status" class="form-control" style="max-width:200px"
             onchange="sepRecarregar()">
-            <option value="em_preparo,pronto_entrega">Em aberto</option>
-            <option value="em_preparo">Só em separação</option>
-            <option value="pronto_entrega">Só prontos</option>
-            <option value="saiu_entrega">Saiu p/ entrega</option>
+            <option value="em_preparo,pronto_entrega" data-i18n="sep.em_aberto">Em aberto</option>
+            <option value="em_preparo" data-i18n="sep.so_separacao">Só em separação</option>
+            <option value="pronto_entrega" data-i18n="sep.so_prontos">Só prontos</option>
+            <option value="saiu_entrega" data-i18n="sep.saiu">Saiu p/ entrega</option>
           </select>
           <input type="text" id="sep-busca" class="form-control" style="max-width:220px"
             placeholder="🔍 Buscar pedido ou cliente…"
             oninput="sepFiltrarBusca(this.value)">
           <label style="display:flex;align-items:center;gap:6px;font-size:0.83rem;cursor:pointer;white-space:nowrap">
             <input type="checkbox" id="sep-agrupar" onchange="sepRecarregar()" checked>
-            Agrupar por pedido
+            <span data-i18n="sep.agrupar">Agrupar por pedido</span>
           </label>
         </div>
-
         <!-- ── RESUMO GLOBAL (itens consolidados de todos os pedidos) ── -->
         <div id="sep-resumo-global" style="display:none;background:#fff;border:1.5px solid #e5e7eb;
           border-radius:12px;padding:14px 16px;margin-bottom:16px">
-          <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px;color:#444">
+          <div style="font-weight:700;font-size:0.9rem;margin-bottom:10px;color:#444" data-i18n="sep.resumo_glob">
             🗂️ Resumo consolidado — todos os pedidos abertos
           </div>
           <div id="sep-resumo-lista"></div>
@@ -492,27 +492,26 @@
       <div id="pdv" class="tab-content">
         <!-- PDV Header -->
         <div class="pdv-header-bar">
-          <h2 class="section-title" style="margin:0">🏪 PDV — Caixa</h2>
+          <h2 class="section-title" style="margin:0" data-i18n="pdv.title">🏪 PDV — Caixa</h2>
         </div>
 
         <!-- ===== PAINEL DE ABERTURA DE CAIXA (PDV) ===== -->
-        <!-- Visível para todos: o JS controla estado via _sessaoCaixaAtiva -->
         <div id="pdv-painel-caixa" style="margin:12px 16px 4px;padding:14px 18px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
           <div style="display:flex;align-items:center;gap:10px">
             <div style="width:4px;height:20px;background:var(--primary,#1a7a2e);border-radius:2px"></div>
-            <span style="font-weight:700;font-size:0.95rem;color:#334155">Controle de Caixa</span>
-            <span id="pdv-status-caixa" style="font-size:0.82rem;color:#e74c3c">🔴 Caixa fechado</span>
+            <span style="font-weight:700;font-size:0.95rem;color:#334155" data-i18n="pdv.controle_caixa">Controle de Caixa</span>
+            <span id="pdv-status-caixa" style="font-size:0.82rem;color:#e74c3c" data-i18n="pdv.caixa_fechado">🔴 Caixa fechado</span>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="pdv-btn-abrir-caixa"
               onclick="abrirModalCaixa('abertura')"
               style="padding:9px 20px;background:linear-gradient(135deg,#1a7a2e,#145a22);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;display:flex;align-items:center;gap:6px">
-              <i class="fas fa-door-open"></i> Abrir Caixa
+              <i class="fas fa-door-open"></i> <span data-i18n="pdv.abrir_caixa">Abrir Caixa</span>
             </button>
             <button id="pdv-btn-fechar-caixa"
               onclick="fecharCaixaResumo()"
               style="padding:9px 20px;background:#c0392b;color:#fff;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;display:none;align-items:center;gap:6px">
-              <i class="fas fa-calculator"></i> Fechar Caixa
+              <i class="fas fa-calculator"></i> <span data-i18n="pdv.fechar_caixa">Fechar Caixa</span>
             </button>
           </div>
         </div>
@@ -520,13 +519,12 @@
         <!-- MOBILE TABS — Produtos | Pedido -->
         <div class="pdv-tabs" id="pdv-tabs">
           <button class="pdv-tab-btn active" onclick="pdvMudarAba('produtos',this)">
-            <i class="fas fa-box"></i> Produtos
+            <i class="fas fa-box"></i> <span data-i18n="pdv.produtos">Produtos</span>
           </button>
           <button class="pdv-tab-btn" onclick="pdvMudarAba('carrinho',this)">
-            <i class="fas fa-shopping-cart"></i> Pedido
+            <i class="fas fa-shopping-cart"></i> <span data-i18n="pdv.pedido">Pedido</span>
           </button>
         </div>
-
         <!-- VIEW: VENDA -->
         <div id="pdv-panel-venda" class="pdv-view-panel">
           <div class="pdv-layout">
@@ -552,7 +550,7 @@
               </div>
 
               <!-- Mesas ativas -->
-              <div class="pdv-mesas-bar" id="pdv-mesas-bar">
+              <div class="pdv-mesas-bar" id="pdv-mesas-bar" style="display:none">
                 <i class="fas fa-chair" style="color:#888;font-size:0.75rem"></i>
                 <span class="pdv-mesas-label">Mesas:</span>
                 <span id="pdv-mesas-vazio" style="color:#aaa;font-size:0.75rem">Nenhuma mesa ativa</span>
@@ -757,58 +755,56 @@
             <span class="pdv-mobile-valor">Gs <strong id="pdv-mobile-total-val">0</strong></span>
           </div>
           <button class="pdv-mobile-checkout-btn" onclick="pdvMudarAba('carrinho', document.querySelector('.pdv-tab-btn:nth-child(2)'))">
-            <i class="fas fa-shopping-cart"></i> VER PEDIDO
+            <i class="fas fa-shopping-cart"></i> <span data-i18n="pdv.ver_pedido">VER PEDIDO</span>
           </button>
         </div>
       </div>
 
       <div id="financeiro" class="tab-content">
-  <h2 class="section-title">💰 Controle Financeiro</h2>
+  <h2 class="section-title" data-i18n="fin.title">💰 Controle Financeiro</h2>
   <div id="badge-caixa-operador" style="font-size:0.82rem;font-weight:600;padding:6px 12px;background:var(--color-background-secondary);border-radius:8px;margin-bottom:12px;color:var(--color-text-secondary)"></div>
 
   <!-- ===== FILTROS ===== -->
   <div class="filtro-bar">
     <div class="filtro-group">
-      <label><i class="far fa-calendar-alt"></i> Início</label>
+      <label><i class="far fa-calendar-alt"></i> <span data-i18n="fin.inicio">Início</span></label>
       <input type="date" id="fin-inicio" />
     </div>
 
     <div class="filtro-group">
-      <label><i class="far fa-calendar-alt"></i> Fim</label>
+      <label><i class="far fa-calendar-alt"></i> <span data-i18n="fin.fim">Fim</span></label>
       <input type="date" id="fin-fim" />
     </div>
 
     <div class="filtro-group">
-      <label><i class="fas fa-wallet"></i> Pagamento</label>
+      <label><i class="fas fa-wallet"></i> <span data-i18n="fin.forma_pag">Forma de Pag.</span></label>
       <select id="fin-tipo">
-        <option value="todos">Todos</option>
-        <option value="Efetivo">Dinheiro</option>
-        <option value="Cartao">Cartão</option>
-        <option value="Pix">Pix</option>
-        <option value="Transferencia">Transferência</option>
+        <option value="todos" data-i18n="fin.todos">Todos</option>
+        <option value="Efetivo" data-i18n="fin.dinheiro">Dinheiro</option>
+        <option value="Cartao" data-i18n="fin.cartao">Cartão</option>
+        <option value="Pix" data-i18n="fin.pix">Pix</option>
+        <option value="Transferencia" data-i18n="fin.transferencia">Transferência</option>
       </select>
     </div>
 
-    <!-- NOVO FILTRO -->
     <div class="filtro-group">
       <label><i class="fas fa-receipt"></i> Factura</label>
       <select id="fin-factura">
-        <option value="todos">Todos</option>
+        <option value="todos" data-i18n="fin.todos">Todos</option>
         <option value="com_factura">Com Factura</option>
         <option value="sem_factura">Sem Factura</option>
       </select>
     </div>
 
     <button class="btn-filtrar" onclick="calcularFinanceiro()">
-      <i class="fas fa-filter"></i> Filtrar
+      <i class="fas fa-filter"></i> <span data-i18n="fin.filtrar_btn">Filtrar</span>
     </button>
 
-    <!-- NOVO BOTÃO EXPORTAR -->
     <button class="btn btn-success" onclick="exportarFinanceiro()" style="height: 45px;">
-      <i class="fas fa-file-excel"></i> Excel
+      <i class="fas fa-file-excel"></i> <span data-i18n="fin.excel">Excel</span>
     </button>
     <button class="btn btn-primary" onclick="abrirGraficos()" style="height:45px; background:#8e44ad; border-color:#8e44ad">
-      <i class="fas fa-chart-bar"></i> Gráficos
+      <i class="fas fa-chart-bar"></i> <span data-i18n="fin.graficos_btn">Gráficos</span>
     </button>
   </div>
 
@@ -822,27 +818,27 @@
     <div class="actions-grid">
       <button class="action-card ac-abrir" onclick="abrirModalCaixa('abertura')">
         <i class="fas fa-door-open"></i>
-        <span>Abrir Caixa</span>
+        <span data-i18n="fin.abertura">🟢 Abertura</span>
       </button>
 
       <button class="action-card ac-suprir" onclick="abrirModalCaixa('suprimento')">
         <i class="fas fa-plus-circle"></i>
-        <span>Suprimento</span>
+        <span data-i18n="fin.suprimento_btn">Suprimento</span>
       </button>
 
       <button class="action-card ac-sangria" onclick="abrirModalCaixa('sangria')">
         <i class="fas fa-hand-holding-usd"></i>
-        <span>Sangria</span>
+        <span data-i18n="fin.sangria_btn">Sangria</span>
       </button>
 
       <button class="action-card ac-despesa" onclick="abrirModalCaixa('despesa')">
         <i class="fas fa-file-invoice-dollar"></i>
-        <span>Despesa</span>
+        <span data-i18n="fin.despesa_btn">Despesa</span>
       </button>
 
       <button class="action-card ac-fechar" onclick="fecharCaixaResumo()">
         <i class="fas fa-calculator"></i>
-        <span>Fechar Dia</span>
+        <span data-i18n="fin.fechar_dia">Fechar Dia</span>
       </button>
     </div>
   </div>
@@ -854,7 +850,7 @@
       <div class="value" id="card-faturamento">Gs 0</div>
     </div>
     <div class="kpi-card" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border-left:4px solid #2e7d32">
-      <h3 style="color:#1b5e20">💰 Lucro s/ Vendas</h3>
+      <h3 style="color:#1b5e20" data-i18n="fin.lucro_vendas">💰 Lucro s/ Vendas</h3>
       <div class="value" id="card-lucro-vendas" style="color:#2e7d32">Gs 0</div>
       <div id="card-lucro-vendas-pct" style="font-size:0.75rem;color:#388e3c;margin-top:2px;font-weight:600">— markup</div>
     </div>
@@ -867,35 +863,34 @@
       <div class="value" id="card-lucro" style="color: green">Gs 0</div>
     </div>
     
-    <!-- NOVOS CARDS -->
     <div class="kpi-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-      <h3 style="color: rgba(255,255,255,0.9);">Total Pedidos</h3>
+      <h3 style="color: rgba(255,255,255,0.9);" data-i18n="fin.total_pedidos">Total Pedidos</h3>
       <div class="value" id="card-qtd-pedidos" style="color: white;">0</div>
     </div>
     <div class="kpi-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
-      <h3 style="color: rgba(255,255,255,0.9);">Ticket Médio</h3>
+      <h3 style="color: rgba(255,255,255,0.9);" data-i18n="fin.ticket_medio">Ticket Médio</h3>
       <div class="value" id="card-ticket-medio" style="color: white;">Gs 0</div>
     </div>
   </div>
 
   <!-- ===== FORMAS DE PAGAMENTO ===== -->
   <div class="card" style="margin-top: 20px; padding: 20px;">
-    <h3 style="margin-bottom: 15px; color: #555;">💳 Por Forma de Pagamento</h3>
+    <h3 style="margin-bottom: 15px; color: #555;" data-i18n="fin.por_pagamento">💳 Por Forma de Pagamento</h3>
     <div class="kpi-grid" style="margin: 0;">
       <div class="kpi-card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
-        <h4 style="color: #856404;">Dinheiro</h4>
+        <h4 style="color: #856404;" data-i18n="fin.dinheiro_label">Dinheiro</h4>
         <div class="value" id="total-efetivo" style="color: #856404;">Gs 0</div>
       </div>
       <div class="kpi-card" style="background: #d1ecf1; border-left: 4px solid #17a2b8;">
-        <h4 style="color: #0c5460;">Cartão</h4>
+        <h4 style="color: #0c5460;" data-i18n="fin.cartao_label">Cartão</h4>
         <div class="value" id="total-cartao" style="color: #0c5460;">Gs 0</div>
       </div>
       <div class="kpi-card" style="background: #d4edda; border-left: 4px solid #28a745;">
-        <h4 style="color: #155724;">Pix</h4>
+        <h4 style="color: #155724;" data-i18n="fin.pix_label">Pix</h4>
         <div class="value" id="total-pix" style="color: #155724;">Gs 0</div>
       </div>
       <div class="kpi-card" style="background: #e7e8ea; border-left: 4px solid #6c757d;">
-        <h4 style="color: #383d41;">Transferência</h4>
+        <h4 style="color: #383d41;" data-i18n="fin.transf_label">Transferência</h4>
         <div class="value" id="total-transf" style="color: #383d41;">Gs 0</div>
       </div>
     </div>
@@ -904,18 +899,18 @@
   <!-- ===== TABELA DE DESPESAS ===== -->
   <div class="card" style="margin-top: 20px; padding: 0;">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #f0f0f0">
-      <h3 style="margin:0;color:#444;font-size:0.95rem">🧾 Despesas do Período</h3>
+      <h3 style="margin:0;color:#444;font-size:0.95rem" data-i18n="fin.despesas_titulo">🧾 Despesas do Período</h3>
       <button onclick="abrirModalCaixa('despesa')" class="btn btn-danger" style="font-size:0.83rem;padding:7px 14px">
-        <i class="fas fa-plus"></i> Nova Despesa
+        <i class="fas fa-plus"></i> <span data-i18n="fin.nova_despesa">Nova Despesa</span>
       </button>
     </div>
     <div style="overflow-x:auto">
       <table class="table" style="margin:0;font-size:0.88rem">
         <thead>
           <tr>
-            <th>Data/Hora</th><th>Categoria</th><th>Descrição</th>
-            <th style="text-align:right">Valor</th>
-            <th style="text-align:center">Ações</th>
+            <th data-i18n="col.data_hora">Data/Hora</th><th data-i18n="col.categoria">Categoria</th><th data-i18n="col.descricao">Descrição</th>
+            <th style="text-align:right" data-i18n="col.valor">Valor</th>
+            <th style="text-align:center" data-i18n="col.acoes">Ações</th>
           </tr>
         </thead>
         <tbody id="lista-despesas-caixa">
@@ -927,14 +922,14 @@
 
   <!-- ===== TABELA MOTOBOYS ===== -->
   <div class="card" style="margin-top: 20px">
-    <h3>🏍️ Relatório Motoboys</h3>
+    <h3 data-i18n="fin.motoboys">🏍️ Relatório Motoboys</h3>
     <table class="table">
       <thead>
         <tr>
-          <th>Nome</th>
-          <th>Qtd Entregas</th>
-          <th>Taxa Unitária</th>
-          <th>Total a Pagar</th>
+          <th data-i18n="col.nome">Nome</th>
+          <th data-i18n="col.qtd_entregas">Qtd Entregas</th>
+          <th data-i18n="col.taxa_unit">Taxa Unitária</th>
+          <th data-i18n="col.total_pagar">Total a Pagar</th>
         </tr>
       </thead>
       <tbody id="lista-financeiro-motoboys"></tbody>
@@ -943,22 +938,22 @@
 </div>
 
       <div id="equipe" class="tab-content">
-        <h2 class="section-title">Gestão de Equipe</h2>
+        <h2 class="section-title" data-i18n="equipe.title">Gestão de Equipe</h2>
         <div class="card">
           <div style="margin-bottom: 20px">
-            <h4 style="margin-bottom:12px">Cadastrar Usuário</h4>
+            <h4 style="margin-bottom:12px" data-i18n="equipe.cadastrar">Cadastrar Usuário</h4>
             <div class="equipe-form">
-              <input type="email" id="novo-user-email" placeholder="Email" class="form-control" />
-              <input type="text" id="novo-user-nome" placeholder="Nome de exibição (ex: João Garçom)" class="form-control" />
-              <input type="text" id="novo-user-senha" placeholder="Senha (mín. 6)" class="form-control" />
+              <input type="email" id="novo-user-email" data-i18n-ph="equipe.email_ph" placeholder="Email" class="form-control" />
+              <input type="text" id="novo-user-nome" data-i18n-ph="equipe.nome_ph" placeholder="Nome de exibição (ex: João Garçom)" class="form-control" />
+              <input type="text" id="novo-user-senha" data-i18n-ph="equipe.senha_ph" placeholder="Senha (mín. 6)" class="form-control" />
               <select id="novo-user-cargo" class="form-control">
-                <option value="garcom">🍽️ Garçom</option>
-                <option value="funcionario">👷 Funcionário</option>
-                <option value="gerente">👔 Gerente</option>
-                <option value="dono" id="opt-cargo-dono" style="display:none">🔑 Dono</option>
+                <option value="garcom" data-i18n="cargo.garcom">🍽️ Garçom</option>
+                <option value="funcionario" data-i18n="cargo.funcionario">👷 Funcionário</option>
+                <option value="gerente" data-i18n="cargo.gerente">👔 Gerente</option>
+                <option value="dono" id="opt-cargo-dono" style="display:none" data-i18n="cargo.dono">🔑 Dono</option>
               </select>
               <button class="btn btn-success" onclick="cadastrarUsuario()">
-                <i class="fas fa-user-plus"></i> Criar
+                <i class="fas fa-user-plus"></i> <span data-i18n="equipe.criar">Criar</span>
               </button>
             </div>
           </div>
@@ -966,11 +961,11 @@
             <table class="table">
               <thead>
                 <tr>
-                  <th>Nome</th>
-                  <th>Email</th>
-                  <th>Cargo</th>
-                  <th>Data</th>
-                  <th>Ações</th>
+                  <th data-i18n="col.nome">Nome</th>
+                  <th data-i18n="col.email">Email</th>
+                  <th data-i18n="col.cargo">Cargo</th>
+                  <th data-i18n="col.data">Data</th>
+                  <th data-i18n="col.acoes">Ações</th>
                 </tr>
               </thead>
               <tbody id="lista-equipe"></tbody>
@@ -1174,12 +1169,12 @@
 
   <div id="lista-motos-wrapper" class="subtab-content subtab-hidden">
       <div style="display: flex; justify-content: space-between; margin: 15px 0;">
-          <h3>Equipe Motoboys</h3>
-          <button class="btn btn-primary" onclick="abrirModalMoto()">Novo Motoboy</button>
+          <h3 data-i18n="moto.title">Equipe Motoboys</h3>
+          <button class="btn btn-primary" onclick="abrirModalMoto()" data-i18n="moto.novo">Novo Motoboy</button>
       </div>
       <div class="table-container">
           <table>
-              <thead><tr><th>Nome</th><th>Telefone</th><th>Ações</th></tr></thead>
+              <thead><tr><th data-i18n="col.nome">Nome</th><th data-i18n="col.telefone">Telefone</th><th data-i18n="col.acoes">Ações</th></tr></thead>
               <tbody id="lista-motos"></tbody>
           </table>
       </div>
@@ -1574,62 +1569,62 @@
 
       <!-- ===== ABA ADMIN MASTER ===== -->
       <div id="adminmaster" class="tab-content">
-        <h2 class="section-title" style="color:#e74c3c">🎮 Admin Master — Painel Global</h2>
+        <h2 class="section-title" style="color:#e74c3c" data-i18n="am.title">🎮 Admin Master — Painel Global</h2>
 
         <!-- ── Criar qualquer usuário ── -->
         <div class="card cfg-card" style="border:2px solid #e74c3c">
-          <div class="cfg-section-title"><i class="fas fa-user-plus"></i> Criar Usuário</div>
+          <div class="cfg-section-title"><i class="fas fa-user-plus"></i> <span data-i18n="am.criar_usuario">Criar Usuário</span></div>
           <p style="font-size:0.83rem;color:#888;margin-bottom:12px">
-            Crie qualquer cargo, incluindo <strong>Dono</strong>. Apenas o Admin Master pode criar Donos.
+            Crie qualquer cargo, incluindo <strong data-i18n="cargo.dono">Dono</strong>. Apenas o Admin Master pode criar Donos.
           </p>
           <div class="cfg-grid">
             <div class="form-group">
-              <label>Email</label>
-              <input type="email" id="am-email" class="form-control" placeholder="email@exemplo.com">
+              <label data-i18n="equipe.email">Email</label>
+              <input type="email" id="am-email" class="form-control" data-i18n-ph="am.email_ph" placeholder="email@exemplo.com">
             </div>
             <div class="form-group">
-              <label>Nome de exibição</label>
-              <input type="text" id="am-nome" class="form-control" placeholder="Ex: João Silva">
+              <label data-i18n="equipe.nome">Nome de exibição</label>
+              <input type="text" id="am-nome" class="form-control" data-i18n-ph="am.nome_ph" placeholder="Ex: João Silva">
             </div>
             <div class="form-group">
               <label>Senha (mín. 6 caracteres)</label>
-              <input type="text" id="am-senha" class="form-control" placeholder="Senha inicial">
+              <input type="text" id="am-senha" class="form-control" data-i18n-ph="am.senha_ph" placeholder="Senha inicial">
             </div>
             <div class="form-group">
-              <label>Cargo</label>
+              <label data-i18n="am.cargo_lbl">Cargo</label>
               <select id="am-cargo" class="form-control">
-                <option value="dono">🔑 Dono</option>
-                <option value="gerente">👔 Gerente</option>
-                <option value="funcionario">👷 Funcionário</option>
-                <option value="garcom">🍽️ Garçom</option>
+                <option value="dono" data-i18n="cargo.dono">🔑 Dono</option>
+                <option value="gerente" data-i18n="cargo.gerente">👔 Gerente</option>
+                <option value="funcionario" data-i18n="cargo.funcionario">👷 Funcionário</option>
+                <option value="garcom" data-i18n="cargo.garcom">🍽️ Garçom</option>
               </select>
             </div>
           </div>
           <button class="btn btn-danger" onclick="amCriarUsuario()" style="margin-top:12px">
-            <i class="fas fa-user-plus"></i> Criar Usuário
+            <i class="fas fa-user-plus"></i> <span data-i18n="am.criar_usuario">Criar Usuário</span>
           </button>
         </div>
 
         <!-- ── CRUD completo de usuários ── -->
         <div class="card cfg-card" style="margin-top:16px;border:2px solid #e74c3c">
           <div class="cfg-section-title" style="display:flex;justify-content:space-between;align-items:center">
-            <span><i class="fas fa-users-cog"></i> Gerenciar Todos os Usuários</span>
+            <span><i class="fas fa-users-cog"></i> <span data-i18n="am.gerenciar_usuarios">Gerenciar Todos os Usuários</span></span>
             <button class="btn btn-sm" style="background:#e74c3c;color:#fff" onclick="amCarregarUsuarios()">
-              <i class="fas fa-sync"></i> Atualizar
+              <i class="fas fa-sync"></i> <span data-i18n="sep.atualizar">Atualizar</span>
             </button>
           </div>
           <div class="table-container" style="margin-top:10px">
             <table class="table">
               <thead>
                 <tr>
-                  <th>Nome</th>
-                  <th>Email</th>
-                  <th>Cargo</th>
-                  <th>Ações</th>
+                  <th data-i18n="col.nome">Nome</th>
+                  <th data-i18n="col.email">Email</th>
+                  <th data-i18n="col.cargo">Cargo</th>
+                  <th data-i18n="col.acoes">Ações</th>
                 </tr>
               </thead>
               <tbody id="am-lista-usuarios">
-                <tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px">Clique em Atualizar</td></tr>
+                <tr><td colspan="4" style="text-align:center;color:#aaa;padding:20px" data-i18n="geral.carregando">Clique em Atualizar</td></tr>
               </tbody>
             </table>
           </div>
@@ -1638,13 +1633,13 @@
         <!-- ── Features / Permissões ── -->
         <div class="card cfg-card" style="margin-top:16px;border:2px solid #e74c3c">
           <div class="cfg-section-title" style="color:#e74c3c">
-            <i class="fas fa-shield-alt"></i> Controle de Features
-            <small style="font-weight:400;color:#888;font-size:0.82rem;display:block;margin-top:4px">
+            <i class="fas fa-shield-alt"></i> <span data-i18n="am.features_title">Controle de Features</span>
+            <small style="font-weight:400;color:#888;font-size:0.82rem;display:block;margin-top:4px" data-i18n="am.features_desc">
               Ative ou desative abas, tipos de produto e funcionalidades para todos os usuários deste restaurante.
             </small>
           </div>
           <div id="painel-features-master">
-            <p style="color:#aaa;font-size:0.85rem;padding:10px 0">Carregando...</p>
+            <p style="color:#aaa;font-size:0.85rem;padding:10px 0" data-i18n="geral.carregando">Carregando...</p>
           </div>
         </div>
       </div>
@@ -2052,18 +2047,18 @@
     <div id="modal-produto" class="modal-overlay">
       <div class="modal-content modal-produto-content">
         <div class="modal-produto-header">
-          <h3>Gerenciar Produto</h3>
+          <h3 data-i18n="modal.gerenciar_prod">Gerenciar Produto</h3>
           <button class="btn-modal-fechar" onclick="fecharModal('modal-produto')" aria-label="Fechar">×</button>
         </div>
         <input type="hidden" id="prod-id" />
 
         <!-- DADOS BÁSICOS -->
         <div class="form-group">
-          <label>Nome</label>
+          <label data-i18n="prod.nome">Nome</label>
           <input type="text" id="prod-nome" class="form-control" />
         </div>
         <div class="form-group">
-          <label>Descrição</label>
+          <label data-i18n="prod.descricao">Descrição</label>
           <textarea id="prod-desc" class="form-control" rows="2"></textarea>
         </div>
 
@@ -2109,15 +2104,15 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Categoria</label>
+          <label data-i18n="prod.categoria">Categoria</label>
           <select id="prod-cat" class="form-control" onchange="onCatChange()"></select>
         </div>
         <div class="form-group" id="box-subcategoria" style="display:none">
-          <label>Subcategoria <small style="color:#888">(opcional)</small></label>
+          <label data-i18n="prod.subcategoria">Subcategoria <small style="color:#888">(opcional)</small></label>
           <select id="prod-subcat" class="form-control"></select>
         </div>
         <div class="form-group">
-          <label>Imagem (Upload ou URL)</label>
+          <label data-i18n="prod.imagem">Imagem (Upload ou URL)</label>
           <input type="file" id="prod-img-file" class="form-control" onchange="previewUpload(this)" />
           <input type="text" id="prod-img" class="form-control"
             placeholder="Ou cole a URL aqui"
@@ -2286,25 +2281,25 @@
 
         <div class="modal-actions" style="margin-top:16px">
           <button class="btn btn-primary" onclick="salvarProduto()" data-i18n="prod.salvar">Salvar Produto</button>
-          <button class="btn btn-secondary" onclick="fecharModal('modal-produto')">Cancelar</button>
+          <button class="btn btn-secondary" onclick="fecharModal('modal-produto')" data-i18n="geral.cancelar">Cancelar</button>
         </div>
       </div>
     </div>
 
     <div id="modal-cat" class="modal-overlay">
       <div class="modal-content" style="max-width: 420px">
-        <h3 id="titulo-modal-cat">Categoria</h3>
+        <h3 id="titulo-modal-cat" data-i18n="modal.categoria">Categoria</h3>
         <input type="hidden" id="cat-modo-edicao" />
         <div class="form-group">
-          <label>Nome Exibição</label>
+          <label data-i18n="cat.nome">Nome Exibição</label>
           <input type="text" id="cat-nome" class="form-control" oninput="autoSlugFromNome()" />
         </div>
         <div class="form-group">
-          <label>Slug (ID único, sem espaços) <small style="color:#e67e22" id="aviso-slug-edicao" style="display:none">⚠️ Alterar atualiza todos os produtos</small></label>
+          <label data-i18n="cat.slug">Slug (ID único, sem espaços) <small style="color:#e67e22" id="aviso-slug-edicao" style="display:none">⚠️ Alterar atualiza todos os produtos</small></label>
           <input type="text" id="cat-slug" class="form-control" />
         </div>
         <div class="form-group">
-          <label>Ordem</label>
+          <label data-i18n="cat.ordem">Ordem</label>
           <input type="number" id="cat-ordem" class="form-control" />
         </div>
         <hr style="margin:12px 0; border-color:#eee">
@@ -2337,27 +2332,27 @@
           <small style="color:#888; display:block; margin-top:6px" data-i18n="grade.dias_exemplo">Ex: almoço de Seg a Sex das 11:00 às 14:30. Fora desse horário/dia, a categoria fica oculta no cardápio.</small>
         </div>
         <div class="modal-actions">
-          <button class="btn btn-primary" onclick="salvarCategoria()">Salvar</button>
-          <button class="btn btn-secondary" onclick="fecharModal('modal-cat')">Cancelar</button>
+          <button class="btn btn-primary" onclick="salvarCategoria()" data-i18n="cat.salvar">Salvar</button>
+          <button class="btn btn-secondary" onclick="fecharModal('modal-cat')" data-i18n="geral.cancelar">Cancelar</button>
         </div>
       </div>
     </div>
 
     <div id="modal-moto" class="modal-overlay">
       <div class="modal-content" style="max-width: 400px">
-        <h3>Motoboy</h3>
+        <h3 data-i18n="modal.motoboy">Motoboy</h3>
         <input type="hidden" id="moto-id" />
         <div class="form-group">
-          <label>Nome</label>
+          <label data-i18n="moto.nome">Nome</label>
           <input type="text" id="moto-nome" class="form-control" />
         </div>
         <div class="form-group">
-          <label>Telefone (WhatsApp)</label>
+          <label data-i18n="moto.telefone">Telefone (WhatsApp)</label>
           <input type="text" id="moto-tel" class="form-control" />
         </div>
         <div class="modal-actions">
-          <button class="btn btn-primary" onclick="salvarMotoboy()">Salvar</button>
-          <button class="btn btn-secondary" onclick="fecharModal('modal-moto')">Cancelar</button>
+          <button class="btn btn-primary" onclick="salvarMotoboy()" data-i18n="moto.salvar">Salvar</button>
+          <button class="btn btn-secondary" onclick="fecharModal('modal-moto')" data-i18n="geral.cancelar">Cancelar</button>
         </div>
       </div>
     </div>
@@ -2374,10 +2369,10 @@
 
     <div id="modal-caixa" class="modal-overlay" style="display:none">
       <div class="modal-content" style="max-width:420px">
-        <h3 id="titulo-caixa">Operação de Caixa</h3>
+        <h3 id="titulo-caixa" data-i18n="modal.op_caixa">Operação de Caixa</h3>
         <input type="hidden" id="tipo-caixa" value="">
         <div class="form-group">
-          <label>Valor (Gs)</label>
+          <label data-i18n="col.valor">Valor (Gs)</label>
           <input type="number" id="valor-caixa" class="form-control" placeholder="Ex: 50000" min="1">
         </div>
         <!-- Tipo de despesa (só aparece quando tipo=despesa) -->
@@ -2403,9 +2398,9 @@
           <input type="text" id="desc-caixa" class="form-control" placeholder="Detalhes opcionais">
         </div>
         <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="fecharModal('modal-caixa')">Cancelar</button>
+          <button class="btn btn-secondary" onclick="fecharModal('modal-caixa')" data-i18n="geral.cancelar">Cancelar</button>
           <button class="btn btn-primary" onclick="salvarMovimentacaoCaixa()">
-            <i class="fas fa-save"></i> Salvar
+            <i class="fas fa-save"></i> <span data-i18n="geral.salvar">Salvar</span>
           </button>
         </div>
       </div>
@@ -2704,19 +2699,19 @@
     <!-- ===== MODAL INVENTÁRIO ===== -->
     <div id="modal-inventario" class="modal-overlay" style="display:none">
       <div class="modal-content" style="max-width:500px">
-        <h3 id="modal-inv-titulo">📦 Item de Estoque</h3>
+        <h3 id="modal-inv-titulo" data-i18n="modal.item_estoque">📦 Item de Estoque</h3>
         <input type="hidden" id="inv-id">
-        <div class="form-group"><label>Nome <span style="color:red">*</span></label><input type="text" id="inv-nome" class="form-control" placeholder="Ex: Coca-Cola Zero 500ml"></div>
+        <div class="form-group"><label data-i18n="estoque.nome">Nome <span style="color:red">*</span></label><input type="text" id="inv-nome" class="form-control" placeholder="Ex: Coca-Cola Zero 500ml"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="form-group"><label>Quantidade</label><input type="number" id="inv-qtd" class="form-control" placeholder="0" min="0" step="1"></div>
-          <div class="form-group"><label>Unidade</label>
+          <div class="form-group"><label data-i18n="estoque.qtd">Quantidade</label><input type="number" id="inv-qtd" class="form-control" placeholder="0" min="0" step="1"></div>
+          <div class="form-group"><label data-i18n="estoque.unidade">Unidade</label>
             <select id="inv-unidade" class="form-control">
               <option value="un">un</option><option value="kg">kg</option><option value="g">g</option>
               <option value="L">L</option><option value="ml">ml</option><option value="cx">cx</option><option value="pct">pct</option>
             </select>
           </div>
         </div>
-        <div class="form-group"><label>Qtd. mínima (alerta)</label><input type="number" id="inv-minimo" class="form-control" placeholder="5" min="0" step="1"></div>
+        <div class="form-group"><label data-i18n="estoque.minimo">Qtd. mínima (alerta)</label><input type="number" id="inv-minimo" class="form-control" placeholder="5" min="0" step="1"></div>
         <div class="form-group" style="background:#fff8f0;border:1px solid #fde68a;border-radius:10px;padding:12px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
             <input type="checkbox" id="inv-perecivel" style="width:18px;height:18px" onchange="togglePerecivel()">
@@ -2728,14 +2723,14 @@
             <input type="date" id="inv-validade" class="form-control">
           </div>
         </div>
-        <div class="form-group"><label>Vincular a Produto</label>
+        <div class="form-group"><label data-i18n="prod.estoque">Vincular a Produto</label>
           <select id="inv-produto-id" class="form-control"><option value="">— Sem vínculo —</option></select>
           <small style="color:#888">Estoque descontado automaticamente na venda.</small>
         </div>
-        <div class="form-group"><label>Observações</label><input type="text" id="inv-obs" class="form-control" placeholder="Ex: Geladeiro 2, prateleira A"></div>
+        <div class="form-group"><label data-i18n="estoque.obs">Observações</label><input type="text" id="inv-obs" class="form-control" placeholder="Ex: Geladeiro 2, prateleira A"></div>
         <div class="modal-actions" style="margin-top:16px;padding-bottom:env(safe-area-inset-bottom,16px)">
-          <button class="btn btn-primary" onclick="salvarInventario()"><i class="fas fa-save"></i> Salvar</button>
-          <button class="btn btn-secondary" onclick="fecharModal('modal-inventario')">Cancelar</button>
+          <button class="btn btn-primary" onclick="salvarInventario()"><i class="fas fa-save"></i> <span data-i18n="estoque.salvar">Salvar</span></button>
+          <button class="btn btn-secondary" onclick="fecharModal('modal-inventario')" data-i18n="geral.cancelar">Cancelar</button>
         </div>
       </div>
     </div>
@@ -2743,27 +2738,27 @@
     <!-- ===== MODAL AJUSTE DE ESTOQUE ===== -->
     <div id="modal-ajuste-estoque" class="modal-overlay" style="display:none">
       <div class="modal-content" style="max-width:360px">
-        <h3>📊 Ajustar Estoque</h3>
+        <h3 data-i18n="modal.ajustar_estoque">📊 Ajustar Estoque</h3>
         <input type="hidden" id="ajuste-inv-id">
         <p id="ajuste-inv-nome" style="font-weight:600;font-size:1rem;color:#2c3e50;margin-bottom:14px"></p>
         <div class="form-group">
           <div style="display:flex;gap:6px">
-            <button type="button" id="btn-ajuste-add" class="btn btn-success" style="flex:1" onclick="setTipoAjuste('add')">➕ Entrada</button>
-            <button type="button" id="btn-ajuste-sub" class="btn btn-secondary" style="flex:1;opacity:0.5" onclick="setTipoAjuste('sub')">➖ Saída</button>
-            <button type="button" id="btn-ajuste-set" class="btn btn-secondary" style="flex:1;opacity:0.5" onclick="setTipoAjuste('set')">✏️ Definir</button>
+            <button type="button" id="btn-ajuste-add" class="btn btn-success" style="flex:1" onclick="setTipoAjuste('add')"><span data-i18n="estoque.adicionar">➕ Entrada</span></button>
+            <button type="button" id="btn-ajuste-sub" class="btn btn-secondary" style="flex:1;opacity:0.5" onclick="setTipoAjuste('sub')"><span data-i18n="estoque.subtrair">➖ Saída</span></button>
+            <button type="button" id="btn-ajuste-set" class="btn btn-secondary" style="flex:1;opacity:0.5" onclick="setTipoAjuste('set')"><span data-i18n="estoque.definir">✏️ Definir</span></button>
           </div>
         </div>
         <div class="form-group">
-          <label id="ajuste-qtd-label">Quantidade a adicionar</label>
+          <label id="ajuste-qtd-label" data-i18n="estoque.qtd">Quantidade a adicionar</label>
           <input type="number" id="ajuste-qtd" class="form-control" min="0" step="1" placeholder="0" style="font-size:1.4rem;text-align:center;font-weight:700">
         </div>
         <div class="form-group">
-          <label>Motivo <small style="color:#888">(garrafa quebrada, descarte...)</small></label>
+          <label data-i18n="estoque.motivo">Motivo <small style="color:#888">(garrafa quebrada, descarte...)</small></label>
           <input type="text" id="ajuste-motivo" class="form-control" placeholder="Opcional">
         </div>
         <div class="modal-actions" style="padding-bottom:env(safe-area-inset-bottom,16px)">
-          <button class="btn btn-primary" onclick="confirmarAjuste()"><i class="fas fa-check"></i> Confirmar</button>
-          <button class="btn btn-secondary" onclick="fecharModal('modal-ajuste-estoque')">Cancelar</button>
+          <button class="btn btn-primary" onclick="confirmarAjuste()"><i class="fas fa-check"></i> <span data-i18n="estoque.confirmar">Confirmar</span></button>
+          <button class="btn btn-secondary" onclick="fecharModal('modal-ajuste-estoque')" data-i18n="geral.cancelar">Cancelar</button>
         </div>
       </div>
     </div>

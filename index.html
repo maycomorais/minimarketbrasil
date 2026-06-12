@@ -38,7 +38,7 @@
   <!-- Loading Overlay -->
   <div id="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.3s;">
     <div style="width: 60px; height: 60px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary, #1a7a2e); border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <p style="margin-top: 20px; color: #666; font-weight: 500;">Carregando...</p>
+    <p style="margin-top: 20px; color: #666; font-weight: 500;" data-lang-key="carregando">Carregando...</p>
   </div>
   <style>
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -210,7 +210,19 @@ const _traducoes = {
         'entrega':           'Entrega',
         'retiro':            'Retiro',
         'seus-dados':        'Sus Datos',
-        'pagamento':         'Pago'
+        'pagamento':         'Pago',
+        // Multipagamento
+        'multi-voltar':      '🔁 Usar pago único',
+        'multi-dividir':     '≡ Divida el total entre las formas abajo',
+        'multi-add-forma':   '+ Agregar forma de pago',
+        // PWA
+        'pwa-subtitle':      'Accede más rápido desde la pantalla de inicio',
+        'pwa-agora-nao':     'Ahora no',
+        'pwa-instalar':      'Instalar',
+        // Loading
+        'carregando':        'Cargando...',
+        // Busca
+        'busca-ph':          'Buscar productos...'
     },
     pt: {
         'header-aberto':     'Aberto',
@@ -266,7 +278,19 @@ const _traducoes = {
         'entrega':           'Entrega',
         'retiro':            'Retirada',
         'seus-dados':        'Seus Dados',
-        'pagamento':         'Pagamento'
+        'pagamento':         'Pagamento',
+        // Multipagamento
+        'multi-voltar':      '🔁 Usar pagamento único',
+        'multi-dividir':     '≡ Divida o total entre as formas abaixo',
+        'multi-add-forma':   '+ Adicionar forma de pagamento',
+        // PWA
+        'pwa-subtitle':      'Acesse mais rápido pela tela inicial',
+        'pwa-agora-nao':     'Agora não',
+        'pwa-instalar':      'Instalar',
+        // Loading
+        'carregando':        'Carregando...',
+        // Busca
+        'busca-ph':          'Buscar produtos...'
     },
     en: {
         'header-aberto':     'Open',
@@ -322,7 +346,19 @@ const _traducoes = {
         'entrega':           'Delivery',
         'retiro':            'Pickup',
         'seus-dados':        'Your Information',
-        'pagamento':         'Payment'
+        'pagamento':         'Payment',
+        // Multipagamento
+        'multi-voltar':      '🔁 Use single payment',
+        'multi-dividir':     '≡ Split the total between methods below',
+        'multi-add-forma':   '+ Add payment method',
+        // PWA
+        'pwa-subtitle':      'Access faster from your home screen',
+        'pwa-agora-nao':     'Not now',
+        'pwa-instalar':      'Install',
+        // Loading
+        'carregando':        'Loading...',
+        // Busca
+        'busca-ph':          'Search products...'
     },
     de: {
         'header-aberto':     'Geöffnet',
@@ -378,7 +414,19 @@ const _traducoes = {
         'entrega':           'Lieferung',
         'retiro':            'Abholung',
         'seus-dados':        'Ihre Daten',
-        'pagamento':         'Zahlung'
+        'pagamento':         'Zahlung',
+        // Multipagamento
+        'multi-voltar':      '🔁 Einzelzahlung verwenden',
+        'multi-dividir':     '≡ Teilen Sie den Betrag auf die Zahlungsmethoden auf',
+        'multi-add-forma':   '+ Zahlungsmethode hinzufügen',
+        // PWA
+        'pwa-subtitle':      'Schneller vom Startbildschirm zugreifen',
+        'pwa-agora-nao':     'Jetzt nicht',
+        'pwa-instalar':      'Installieren',
+        // Loading
+        'carregando':        'Laden...',
+        // Busca
+        'busca-ph':          'Produkte suchen...'
     }
 };
 
@@ -486,7 +534,7 @@ window.addEventListener('DOMContentLoaded', () => {
     <!-- BARRA DE BUSCA -->
     <div class="search-bar-wrap" id="search-bar-wrap" style="margin-top:10px;">
       <i class="fas fa-search search-icon"></i>
-      <input type="text" id="search-input" placeholder="Buscar productos..." oninput="filtrarProdutos(this.value)">
+      <input type="text" id="search-input" data-lang-key-placeholder="busca-ph" placeholder="Buscar productos..." oninput="filtrarProdutos(this.value)">
     </div>
 
     <!-- ===== RASTREADOR DE PEDIDO (CARD FIXO) ===== -->
@@ -752,11 +800,13 @@ window.addEventListener('DOMContentLoaded', () => {
                             <button type="button" id="btn-usar-pagamento-unico" onclick="voltarPagamentoUnico()"
                                 style="width:100%; padding:12px; background:#eef4ff; color:#2980b9; border:2px solid #2980b9;
                                        border-radius:10px; font-weight:700; cursor:pointer; font-size:0.9rem; margin-bottom:10px;
-                                       display:flex; align-items:center; justify-content:center; gap:8px;">
+                                       display:flex; align-items:center; justify-content:center; gap:8px;"
+                                data-lang-key="multi-voltar">
                                 🔁 Usar pagamento único
                             </button>
 
-                            <p style="text-align:center; color:#888; font-size:0.82rem; margin:0 0 10px 0;">
+                            <p style="text-align:center; color:#888; font-size:0.82rem; margin:0 0 10px 0;"
+                               data-lang-key="multi-dividir">
                                 ≡ Divida o total entre as formas abaixo
                             </p>
 
@@ -766,7 +816,8 @@ window.addEventListener('DOMContentLoaded', () => {
                             <!-- Botão adicionar forma -->
                             <button type="button" onclick="adicionarPartePagamento()"
                                 style="width:100%; padding:10px; background:#f8f9fa; color:#555; border:1.5px dashed #ccc;
-                                       border-radius:10px; font-weight:600; cursor:pointer; font-size:0.87rem; margin-top:4px;">
+                                       border-radius:10px; font-weight:600; cursor:pointer; font-size:0.87rem; margin-top:4px;"
+                                data-lang-key="multi-add-forma">
                                 + Adicionar forma de pagamento
                             </button>
 
@@ -826,8 +877,8 @@ window.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
             <div style="display:flex; gap:10px;">
-                <button onclick="dismissPWAInstall()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:10px 15px; border-radius:8px; font-weight:600; cursor:pointer;">Agora não</button>
-                <button onclick="installPWA()" style="background:white; border:none; color:var(--primary, #1a7a2e); padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;">Instalar</button>
+                <button onclick="dismissPWAInstall()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:10px 15px; border-radius:8px; font-weight:600; cursor:pointer;" data-lang-key="pwa-agora-nao">Agora não</button>
+                <button onclick="installPWA()" style="background:white; border:none; color:var(--primary, #1a7a2e); padding:10px 20px; border-radius:8px; font-weight:700; cursor:pointer;" data-lang-key="pwa-instalar">Instalar</button>
             </div>
         </div>
     </div>

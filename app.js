@@ -18,6 +18,7 @@ let NOME_RESTAURANTE_APP = ""; // Nome da loja para mensagem WhatsApp
 let LIMITE_DISTANCIA_KM = null; // Limite de distância para delivery
 let TAXA_DEBITO_BR = 0; // Taxa cartão débito (%)
 let TAXA_CREDITO_BR = 0; // Taxa cartão crédito (%)
+let CFG_LOGO_URL = ""; // Logo da loja (para notificações push)
 
 async function carregarConfiguracoesLoja() {
   const { data, error } = await supa
@@ -572,6 +573,7 @@ async function verificarHorario() {
   // Logo
   const logoEl = document.getElementById("logo-app");
   const logoUrl = data.logo_url || data.icone_url || "";
+  CFG_LOGO_URL = logoUrl; // disponível para notificações push
   if (logoEl && logoUrl) {
     logoEl.src = logoUrl;
     logoEl.style.display = "block";
@@ -3337,7 +3339,8 @@ async function enviarZap() {
     const idDisplay = numeroPedido || "TEMP";
 
     // 3. Monta Mensagem WhatsApp
-    let msg = `🇧🇷 PEDIDO #${idDisplay} - PIZZERÍA LOCANDA\n`;
+    const _nomeLojaMsg = (NOME_RESTAURANTE_APP || "").trim() || "LOJA";
+    let msg = `🛒 PEDIDO #${idDisplay} - ${_nomeLojaMsg.toUpperCase()}\n`;
     msg += `--------------------------\n`;
     msg += `👤 Cliente: ${nome}\n`;
     msg += `📱 Tel: ${telCompleto}\n`;
@@ -3800,9 +3803,9 @@ function _iniciarPollingTracking(pedidoId, uid) {
         Notification.permission === "granted" &&
         TRACKER_STEPS[data.status]
       ) {
-        new Notification("Locanda Pizzeria 🇧🇷", {
+        new Notification(NOME_RESTAURANTE_APP || "Seu Pedido", {
           body: TRACKER_STEPS[data.status].msg,
-          icon: "https://instagram.fasu6-2.fna.fbcdn.net/v/t51.82787-15/573374451_17842149696611574_8991774026443342090_n.jpg?stp=dst-jpg_s150x150_tt6&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLmRqYW5nby4xMDgwLmMyIn0&_nc_ht=instagram.fasu6-2.fna.fbcdn.net&_nc_cat=106&_nc_oc=Q6cZ2QGF-zpjA8cPijPd5RSpqKxETK5rnkkDDh2p9_6yqpej9zo5GRLUgm0d3tqaeu4Q0J4&_nc_ohc=RupM1OUrZJ4Q7kNvwGnum_W&_nc_gid=FbdfUjQDJpnDTLdsOu7bcA&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_AfzONtO62cnJCGwHroepfIxL3OcBuhtF6AcdRJWoRqm39Q&oe=69ABD045&_nc_sid=7a9f4b",
+          icon: CFG_LOGO_URL || "",
         });
       }
 
