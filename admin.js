@@ -1152,6 +1152,12 @@ async function aprovarCancelamento(pedidoId) {
     return;
   }
 
+  // Bug #7 corrigido: repõe estoque ao aprovar cancelamento
+  await _reporEstoqueCancelamento(pedidoId);
+
+  // Bug #6 corrigido: estorna cashback ao aprovar cancelamento
+  await _estornarCashbackCancelamento(pedidoId);
+
   // Marca como aprovada na tabela de solicitações
   await supa
     .from("solicitacoes_cancelamento")
@@ -1221,6 +1227,12 @@ async function mudarStatus(id, novoStatus) {
   }
 
   if (novoStatus === "em_preparo") await _descontarEstoqueVenda(id, null);
+
+  // Bug #7 corrigido: repõe estoque ao cancelar
+  if (novoStatus === "cancelado") await _reporEstoqueCancelamento(id);
+
+  // Bug #6 corrigido: estorna cashback gerado ao cancelar
+  if (novoStatus === "cancelado") await _estornarCashbackCancelamento(id);
 
   if (typeof pararAlarme === "function") pararAlarme();
 
@@ -1834,6 +1846,9 @@ let _caixaState = {
   totalTransf: 0,
   totalCartao: 0,
   totalEfetivo: 0,
+  totalQrPy: 0,
+  totalCartaoBR: 0,
+  totalMultiOutros: 0,
   qtdPedidos: 0,
 };
 
@@ -2065,7 +2080,10 @@ if (_sessaoCaixaAtiva) {
     totalPix = 0,
     totalTransf = 0,
     totalCartao = 0,
-    totalEfetivo = 0;
+    totalEfetivo = 0,
+    totalQrPy = 0,
+    totalCartaoBR = 0,
+    totalMultiOutros = 0;
   let custoEntregas = 0,
     qtdPedidos = 0;
   const motoMap = {};
@@ -2075,12 +2093,38 @@ if (_sessaoCaixaAtiva) {
     faturamento += val;
     qtdPedidos++;
     const pag = (p.forma_pagamento || "").toLowerCase();
-    if (pag.includes("pix")) totalPix += val;
-    else if (pag.includes("transfer")) totalTransf += val;
-    else if (pag.includes("cartao") || pag.includes("cartão"))
-      totalCartao += val;
-    else if (pag.includes("efetivo") || pag.includes("dinheiro"))
-      totalEfetivo += val;
+    const obsPag = p.obs_pagamento || "";
+
+    // ── Multipagamento: distribui pelos métodos reais gravados em obs_pagamento ──
+    if (pag === "multipagamento" && obsPag) {
+      try {
+        const partes = JSON.parse(obsPag); // [{ forma, valor }, ...]
+        if (Array.isArray(partes)) {
+          partes.forEach((parte) => {
+            const pf = (parte.forma || "").toLowerCase();
+            const pv = Math.round(Number(parte.valor) || 0);
+            if (pf.includes("pix"))                                   totalPix     += pv;
+            else if (pf.includes("transfer"))                         totalTransf  += pv;
+            else if (pf.includes("qrpy") || pf.includes("qr"))       totalQrPy    += pv;
+            else if (pf.includes("cartaobr") || pf.includes("br"))   totalCartaoBR+= pv;
+            else if (pf.includes("cartao") || pf.includes("cartão")) totalCartao  += pv;
+            else                                                       totalEfetivo += pv;
+          });
+        } else {
+          totalMultiOutros += val; // JSON malformado — conta separado
+        }
+      } catch (_) {
+        totalMultiOutros += val; // obs_pagamento não é JSON (texto livre)
+      }
+    }
+    // ── Pagamentos simples ──────────────────────────────────────────────────
+    else if (pag.includes("pix"))                                    totalPix     += val;
+    else if (pag.includes("transfer") || pag.includes("alias"))     totalTransf  += val;
+    else if (pag === "qrpy")                                         totalQrPy    += val;
+    else if (pag === "cartaobr")                                     totalCartaoBR+= val;
+    else if (pag.includes("cartao") || pag.includes("cartão"))      totalCartao  += val;
+    else if (pag.includes("efetivo") || pag.includes("dinheiro"))   totalEfetivo += val;
+    else                                                             totalMultiOutros += val;
     if (p.tipo_entrega === "delivery") {
       const taxa = safeNum(p.frete_motoboy) || TAXA_MOTOBOY || 0;
       custoEntregas += taxa;
@@ -2159,6 +2203,9 @@ if (_sessaoCaixaAtiva) {
     totalTransf,
     totalCartao,
     totalEfetivo,
+    totalQrPy,
+    totalCartaoBR,
+    totalMultiOutros,
     qtdPedidos,
     totalSangria,
     lucroBrutoVendas: lucroBrutoVendas || 0,
@@ -2191,6 +2238,9 @@ if (_sessaoCaixaAtiva) {
   setV("total-transf", fmt(totalTransf));
   setV("total-cartao", fmt(totalCartao));
   setV("total-efetivo", fmt(totalEfetivo));
+  setV("total-qrpy", fmt(totalQrPy));
+  setV("total-cartaobr", fmt(totalCartaoBR));
+  setV("total-multi-outros", fmt(totalMultiOutros));
   setV("card-qtd-pedidos", qtdPedidos);
   setV("card-ticket-medio", fmt(qtdPedidos > 0 ? faturamento / qtdPedidos : 0));
 
@@ -2934,9 +2984,11 @@ Faturamento Total: ${fmt(s.faturamento)}
 💰 Por Método:
   💵 Dinheiro:      ${fmt(s.totalEfetivo)}
   📱 Pix:           ${fmt(s.totalPix)}
-  💳 Cartão:        ${fmt(s.totalCartao)}
+  💳 Cartão PY:     ${fmt(s.totalCartao)}
+  💳 Cartão BR:     ${fmt(s.totalCartaoBR)}
   🏦 Transferência: ${fmt(s.totalTransf)}
-
+  📲 QR Paraguay:   ${fmt(s.totalQrPy)}
+${s.totalMultiOutros > 0 ? `  🔀 Multi/Outros:  ${fmt(s.totalMultiOutros)}\n` : ""}\
 📦 Pedidos: ${s.qtdPedidos}
 🏍️ Custo Entregas: ${fmt(s.custoEntregas)}
 💸 Saídas (despesas/sangrias): ${fmt(s.totalSaidas)}
@@ -2983,6 +3035,9 @@ Sessão encerrada!`);
     totalTransf: 0,
     totalCartao: 0,
     totalEfetivo: 0,
+    totalQrPy: 0,
+    totalCartaoBR: 0,
+    totalMultiOutros: 0,
     qtdPedidos: 0,
     lucroBrutoVendas: 0,
     markupMedioVendas: null,
@@ -3122,19 +3177,38 @@ async function exportarPDF() {
 
   const fmt = (n) => "Gs " + (n || 0).toLocaleString("es-PY");
   const total = pedidos.reduce((a, p) => a + (p.total_geral || 0), 0);
-  const totalPix = pedidos
-    .filter((p) => (p.forma_pagamento || "").toLowerCase().includes("pix"))
-    .reduce((a, p) => a + (p.total_geral || 0), 0);
-  const totalEfet = pedidos
-    .filter(
-      (p) =>
-        (p.forma_pagamento || "").toLowerCase().includes("efetivo") ||
-        (p.forma_pagamento || "").toLowerCase().includes("dinheiro"),
-    )
-    .reduce((a, p) => a + (p.total_geral || 0), 0);
-  const totalCard = pedidos
-    .filter((p) => (p.forma_pagamento || "").toLowerCase().includes("cart"))
-    .reduce((a, p) => a + (p.total_geral || 0), 0);
+
+  // Reutiliza a mesma lógica de classificação do calcularFinanceiro
+  let totalPix = 0, totalEfet = 0, totalCard = 0, totalTransf = 0,
+      totalQrPy = 0, totalCartaoBR = 0, totalMulti = 0;
+  pedidos.forEach((p) => {
+    const pag = (p.forma_pagamento || "").toLowerCase();
+    const obsPag = p.obs_pagamento || "";
+    const val = p.total_geral || 0;
+    if (pag === "multipagamento" && obsPag) {
+      try {
+        const partes = JSON.parse(obsPag);
+        if (Array.isArray(partes)) {
+          partes.forEach((parte) => {
+            const pf = (parte.forma || "").toLowerCase();
+            const pv = Number(parte.valor) || 0;
+            if (pf.includes("pix"))                                   totalPix     += pv;
+            else if (pf.includes("transfer"))                         totalTransf  += pv;
+            else if (pf.includes("qrpy") || pf.includes("qr"))       totalQrPy    += pv;
+            else if (pf.includes("cartaobr") || pf.includes("br"))   totalCartaoBR+= pv;
+            else if (pf.includes("cartao") || pf.includes("cartão")) totalCard    += pv;
+            else                                                       totalEfet   += pv;
+          });
+        } else { totalMulti += val; }
+      } catch (_) { totalMulti += val; }
+    } else if (pag.includes("pix"))                                   totalPix     += val;
+    else if (pag.includes("transfer") || pag.includes("alias"))      totalTransf  += val;
+    else if (pag === "qrpy")                                          totalQrPy    += val;
+    else if (pag === "cartaobr")                                      totalCartaoBR+= val;
+    else if (pag.includes("cart"))                                    totalCard    += val;
+    else if (pag.includes("efetivo") || pag.includes("dinheiro"))    totalEfet    += val;
+    else                                                              totalMulti   += val;
+  });
 
   const rows = pedidos
     .map((p) => {
@@ -3184,7 +3258,11 @@ async function exportarPDF() {
     <div class="card"><div class="lbl">Ticket Médio</div><div class="val">${fmt(pedidos.length ? Math.round(total / pedidos.length) : 0)}</div></div>
     <div class="card"><div class="lbl">Pix</div><div class="val">${fmt(totalPix)}</div></div>
     <div class="card"><div class="lbl">Dinheiro</div><div class="val">${fmt(totalEfet)}</div></div>
-    <div class="card"><div class="lbl">Cartão</div><div class="val">${fmt(totalCard)}</div></div>
+    <div class="card"><div class="lbl">Cartão PY</div><div class="val">${fmt(totalCard)}</div></div>
+    <div class="card"><div class="lbl">Cartão BR</div><div class="val">${fmt(totalCartaoBR)}</div></div>
+    <div class="card"><div class="lbl">Transferência</div><div class="val">${fmt(totalTransf)}</div></div>
+    <div class="card"><div class="lbl">QR Paraguay</div><div class="val">${fmt(totalQrPy)}</div></div>
+    ${totalMulti > 0 ? `<div class="card"><div class="lbl">Multi/Outros</div><div class="val">${fmt(totalMulti)}</div></div>` : ""}
   </div>
   <table>
     <thead><tr><th>#</th><th>Data/Hora</th><th>Cliente</th><th>Itens</th><th>Pagamento</th><th>Total</th></tr></thead>
@@ -3940,7 +4018,7 @@ function renderizarCardsProdutos(lista) {
       </div>
       <!-- Col 6: Ações -->
       <div class="produto-card-actions">
-        <button class="btn-print-barcode" onclick="imprimirCodigoBarras('7891234567890', 'Açúcar Refinado 1kg', 'Gs 6.000')">
+        <button class="btn-print-barcode" onclick="imprimirCodigoBarras('${p.codigo_barras || ''}', '${p.nome.replace(/'/g, "\\'")}', 'Gs ${(p.preco || 0).toLocaleString('es-PY')}')">
             <i class="fas fa-barcode"></i> Imprimir Etiqueta
         </button>
         <button class="btn btn-sm btn-primary" onclick="editarProdutoById(${p.id})" title="Editar">
@@ -7561,10 +7639,20 @@ async function carregarDashboard() {
   };
   setVal("kpi-vendas", `Gs ${total.toLocaleString("es-PY")}`);
   setVal("kpi-pedidos", pedidos ? pedidos.length : 0);
-  setVal(
-    "kpi-moto",
-    `Gs ${((pedidos?.length || 0) * TAXA_MOTOBOY + (pedidos?.length > 0 ? AJUDA_COMBUSTIVEL : 0)).toLocaleString("es-PY")}`,
-  );
+
+  // Bug #8 corrigido: soma frete_motoboy real de cada delivery.
+  // A versão anterior multiplicava TAXA_MOTOBOY × total de pedidos,
+  // incluindo balcão/retirada/local que não têm motoboy.
+  const custoMotoReal = (pedidos || [])
+    .filter((p) => p.tipo_entrega === "delivery")
+    .reduce((acc, p) => acc + (Number(p.frete_motoboy) || TAXA_MOTOBOY || 0), 0);
+  const qtdMotoboyUnicos = new Set(
+    (pedidos || [])
+      .filter((p) => p.tipo_entrega === "delivery" && p.motoboy_id)
+      .map((p) => p.motoboy_id),
+  ).size;
+  const custoMotoTotal = custoMotoReal + (AJUDA_COMBUSTIVEL || 0) * (qtdMotoboyUnicos || 0);
+  setVal("kpi-moto", `Gs ${custoMotoTotal.toLocaleString("es-PY")}`);
   setVal("kpi-em-preparo", emPreparo || 0);
 
   // === RANKING PRODUTOS ===
@@ -7591,7 +7679,12 @@ async function carregarRankingProdutos() {
     "rank-prod-fim",
   );
 
-  let query = supa.from("pedidos").select("itens").eq("status", "entregue");
+  // Conta vendas de todos os pedidos finalizados (exceto cancelado).
+  // Usar só "entregue" excluía todas as vendas de balcão/PDV. (bug #3 corrigido)
+  let query = supa
+    .from("pedidos")
+    .select("itens")
+    .not("status", "eq", "cancelado");
   if (inicio) query = query.gte("created_at", inicio);
   if (fim) query = query.lte("created_at", fim);
   const { data } = await query;
@@ -7645,10 +7738,11 @@ async function carregarRankingClientes() {
     "rank-cli-fim",
   );
 
+  // Conta clientes de todos os pedidos não cancelados. (bug #4 corrigido)
   let query = supa
     .from("pedidos")
     .select("cliente_nome, cliente_telefone, total_geral")
-    .eq("status", "entregue")
+    .not("status", "eq", "cancelado")
     .order("created_at", { ascending: false })
     .limit(1000);
   if (inicio) query = query.gte("created_at", inicio);
@@ -12644,6 +12738,125 @@ async function _descontarEstoqueVenda(pedidoId, itensDireto) {
     );
   } catch (e) {
     console.warn("Estoque desconto:", e.message);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUG #7 CORRIGIDO — Repõe estoque quando um pedido é cancelado
+   ══════════════════════════════════════════════════════════════ */
+async function _reporEstoqueCancelamento(pedidoId) {
+  try {
+    const { data: pedido } = await supa
+      .from("pedidos")
+      .select("itens")
+      .eq("id", pedidoId)
+      .single();
+    const itens = pedido?.itens;
+    if (!itens?.length) return;
+
+    const prodIds = [
+      ...new Set(itens.map((i) => i.produto_id || i.id).filter(Boolean)),
+    ];
+    if (!prodIds.length) return;
+
+    const { data: prods } = await supa
+      .from("produtos")
+      .select("id, inventario_id")
+      .in("id", prodIds)
+      .not("inventario_id", "is", null);
+    if (!prods?.length) return;
+
+    const reposicoes = {};
+    itens.forEach((item) => {
+      const pid = item.produto_id || item.id;
+      const prod = prods.find((p) => p.id == pid);
+      if (!prod) return;
+      reposicoes[prod.inventario_id] =
+        (reposicoes[prod.inventario_id] || 0) + (item.qtd || item.q || 1);
+    });
+
+    const invIds = Object.keys(reposicoes).map(Number);
+    const { data: estoques } = await supa
+      .from("inventario")
+      .select("id, quantidade")
+      .in("id", invIds);
+    if (!estoques?.length) return;
+
+    for (const est of estoques) {
+      const nova = (est.quantidade ?? 0) + reposicoes[est.id];
+      await supa.from("inventario").update({ quantidade: nova }).eq("id", est.id);
+      await supa
+        .from("inventario_movimentos")
+        .insert([{
+          inventario_id: est.id,
+          tipo: "ajuste",
+          quantidade: reposicoes[est.id],
+          motivo: `Cancelamento — Pedido #${pedidoId}`,
+          usuario_email: "sistema",
+        }])
+        .then(() => {})
+        .catch(() => {});
+    }
+    console.log(`✅ Estoque reposto: pedido cancelado #${pedidoId}`);
+  } catch (e) {
+    console.warn("_reporEstoqueCancelamento:", e.message);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BUG #6 CORRIGIDO — Estorna cashback gerado ao cancelar pedido.
+   Busca a transação de crédito vinculada ao pedido e:
+   1. Insere um débito igual para zerar o saldo.
+   2. Atualiza clientes.cashback_saldo subtraindo o valor.
+   ══════════════════════════════════════════════════════════════ */
+async function _estornarCashbackCancelamento(pedidoId) {
+  try {
+    const { data: txs } = await supa
+      .from("cashback_transacoes")
+      .select("id, cliente_id, cliente_telefone, valor")
+      .eq("pedido_id", pedidoId)
+      .eq("tipo", "credito")
+      .eq("usado", false); // só estorna crédito ainda não utilizado
+
+    if (!txs?.length) return;
+
+    for (const tx of txs) {
+      // Marca a transação original como estornada
+      await supa
+        .from("cashback_transacoes")
+        .update({ usado: true })
+        .eq("id", tx.id);
+
+      // Insere débito de estorno
+      await supa.from("cashback_transacoes").insert([{
+        cliente_id:       tx.cliente_id,
+        cliente_telefone: tx.cliente_telefone,
+        pedido_id:        pedidoId,
+        tipo:             "debito",
+        valor:            tx.valor,
+        validade_dias:    0,
+        usado:            true,
+      }]);
+
+      // Atualiza saldo do cliente
+      if (tx.cliente_id) {
+        const { data: cli } = await supa
+          .from("clientes")
+          .select("cashback_saldo")
+          .eq("id", tx.cliente_id)
+          .single();
+        if (cli) {
+          const novoSaldo = Math.max(0, (cli.cashback_saldo || 0) - tx.valor);
+          await supa
+            .from("clientes")
+            .update({ cashback_saldo: novoSaldo })
+            .eq("id", tx.cliente_id);
+        }
+      }
+      console.log(`✅ Cashback estornado: Gs ${tx.valor} — pedido #${pedidoId}`);
+    }
+  } catch (e) {
+    console.warn("_estornarCashbackCancelamento:", e.message);
   }
 }
 
