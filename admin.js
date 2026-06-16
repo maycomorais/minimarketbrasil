@@ -2346,6 +2346,257 @@ if (badgeCaixa) {
       }
     }
   }
+
+  // ── Relatório Detalhado de Vendas: popula com os pedidos já carregados ──
+  // Não faz nova query ao banco — reutiliza `peds` (já filtrados por data e forma de pagamento).
+  _finRelPopular(peds);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RELATÓRIO DETALHADO DE VENDAS  (aba Financeiro)
+// ── Integrado com calcularFinanceiro(): reutiliza utcI/utcF e
+//    tipoFiltro já resolvidos; chamado no final de calcularFinanceiro.
+// ══════════════════════════════════════════════════════════════════
+
+/** Estado interno do relatório — isolado do restante do módulo */
+const _finRel = {
+  linhas: [],          // todas as linhas expandidas (1 por item × pedido)
+  linhasFiltradas: [], // subconjunto após busca livre
+  pagina: 0,
+  PAGE_SIZE: 50,
+  aberto: false,       // painel colapsado por padrão
+};
+
+/**
+ * Ponto de entrada: chamado ao final de calcularFinanceiro().
+ * Recebe os mesmos pedidos já carregados para evitar segunda query.
+ *
+ * @param {Array}  peds     - array de pedidos já filtrados
+ * @param {string} utcI     - ISO string início (UTC)
+ * @param {string} utcF     - ISO string fim (UTC)
+ */
+function _finRelPopular(peds) {
+  // Expande cada pedido em N linhas (uma por item)
+  const fmt = (n) => "Gs " + Math.round(n).toLocaleString("es-PY");
+
+  const linhas = [];
+  (peds || []).forEach((p) => {
+    const itens = Array.isArray(p.itens) ? p.itens : [];
+    const dataHora = new Date(p.created_at).toLocaleString("pt-BR", {
+      day: "2-digit", month: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    });
+    const pedidoLabel = p.uid_temporal || `#${p.id}`;
+    const cliente    = p.cliente_nome || "—";
+
+    // Forma de pagamento — resolve multipagamento
+    let pgtoLabel;
+    const pag    = (p.forma_pagamento || "").toLowerCase();
+    const obsPag = p.obs_pagamento || "";
+    if (pag === "multipagamento" && obsPag) {
+      try {
+        const partes = JSON.parse(obsPag);
+        if (Array.isArray(partes)) {
+          pgtoLabel = partes
+            .map((pt) => `${_sepIconePgto(pt.forma)} ${pt.forma} (Gs ${Math.round(Number(pt.valor) || 0).toLocaleString("es-PY")})`)
+            .join(" + ");
+        } else {
+          pgtoLabel = p.forma_pagamento || "—";
+        }
+      } catch (_) {
+        pgtoLabel = p.forma_pagamento || "—";
+      }
+    } else {
+      pgtoLabel = `${_sepIconePgto(p.forma_pagamento)} ${p.forma_pagamento || "—"}`;
+    }
+
+    if (!itens.length) {
+      // Pedido sem itens — inclui uma linha representando o total
+      linhas.push({
+        pedidoLabel, dataHora, cliente,
+        nome: "(sem itens)", qtd: "—",
+        vlUnit: "—", subtotal: fmt(p.total_geral || 0),
+        pgtoLabel, pedidoId: p.id,
+        _subtotalNum: p.total_geral || 0,
+      });
+      return;
+    }
+
+    itens.forEach((item) => {
+      const qtd     = item.qtd  || item.q  || 1;
+      const nome    = item.nome || item.n  || "Item";
+      const vlUnit  = item.preco || item.p  || 0;
+      const variacao = item.variacao ? ` (${item.variacao})` : "";
+      linhas.push({
+        pedidoLabel, dataHora, cliente,
+        nome: nome + variacao,
+        qtd,
+        vlUnit: fmt(vlUnit),
+        subtotal: fmt(vlUnit * qtd),
+        pgtoLabel, pedidoId: p.id,
+        _subtotalNum: vlUnit * qtd,
+      });
+    });
+  });
+
+  _finRel.linhas = linhas;
+  _finRel.pagina = 0;
+
+  // Aplica filtro de busca livre (mantém o que o usuário já digitou)
+  _finRelFiltrarTabela();
+
+  // Atualiza o badge com a contagem total de linhas
+  const elContador = document.getElementById("fin-rel-contador");
+  if (elContador) {
+    elContador.textContent = `${linhas.length} linha${linhas.length !== 1 ? "s" : ""}`;
+    elContador.style.display = linhas.length ? "inline" : "none";
+  }
+}
+
+/**
+ * Filtra _finRel.linhas pela busca livre e re-renderiza.
+ * Chamada pelo oninput do campo de busca e por _finRelPopular.
+ */
+function _finRelFiltrarTabela() {
+  const busca = (document.getElementById("fin-rel-busca")?.value || "").toLowerCase().trim();
+
+  _finRel.linhasFiltradas = busca
+    ? _finRel.linhas.filter(
+        (l) =>
+          l.nome.toLowerCase().includes(busca) ||
+          l.cliente.toLowerCase().includes(busca) ||
+          l.pedidoLabel.toLowerCase().includes(busca)
+      )
+    : [..._finRel.linhas];
+
+  _finRel.pagina = 0;
+  _finRelRenderizar();
+}
+
+/**
+ * Renderiza a página atual da tabela e atualiza os totalizadores.
+ */
+function _finRelRenderizar() {
+  const tbody   = document.getElementById("fin-rel-tbody");
+  const elInfo  = document.getElementById("fin-rel-pag-info");
+  const btnPrev = document.getElementById("fin-rel-btn-prev");
+  const btnNext = document.getElementById("fin-rel-btn-next");
+  if (!tbody) return;
+
+  const { linhasFiltradas, pagina, PAGE_SIZE } = _finRel;
+  const total  = linhasFiltradas.length;
+  const inicio = pagina * PAGE_SIZE;
+  const fim    = Math.min(inicio + PAGE_SIZE, total);
+  const slice  = linhasFiltradas.slice(inicio, fim);
+
+  if (!total) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#bbb;padding:24px;font-size:0.85rem;">
+      Nenhum item encontrado para os filtros aplicados.
+    </td></tr>`;
+    if (elInfo)  elInfo.textContent = "";
+    if (btnPrev) btnPrev.disabled = true;
+    if (btnNext) btnNext.disabled = true;
+    _finRelAtualizarTotais([]);
+    return;
+  }
+
+  // Agrupa linhas por pedido para zebrar visualmente por pedido
+  let lastPedido = null;
+  let zebraClass = "rel-row-a";
+
+  tbody.innerHTML = slice.map((l) => {
+    if (l.pedidoId !== lastPedido) {
+      lastPedido = l.pedidoId;
+      zebraClass = zebraClass === "rel-row-a" ? "rel-row-b" : "rel-row-a";
+    }
+    const bg = zebraClass === "rel-row-a" ? "#fff" : "#f9fafb";
+    return `
+      <tr style="background:${bg};">
+        <td style="white-space:nowrap; font-size:0.78rem; color:#888;">${l.pedidoLabel}</td>
+        <td style="white-space:nowrap; font-size:0.78rem; color:#888;">${l.dataHora}</td>
+        <td style="font-size:0.82rem; max-width:130px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${l.cliente}">${l.cliente}</td>
+        <td style="font-size:0.85rem; font-weight:500;">${l.nome}</td>
+        <td style="text-align:center; font-size:0.85rem;">${l.qtd}</td>
+        <td style="text-align:right; white-space:nowrap; font-size:0.85rem;">${l.vlUnit}</td>
+        <td style="text-align:right; white-space:nowrap; font-size:0.85rem; font-weight:700; color:#2d6a4f;">${l.subtotal}</td>
+        <td style="font-size:0.78rem; color:#555; white-space:nowrap;">${l.pgtoLabel}</td>
+      </tr>`;
+  }).join("");
+
+  // Paginação
+  const totalPags = Math.ceil(total / PAGE_SIZE);
+  if (elInfo)  elInfo.textContent = `Exibindo ${inicio + 1}–${fim} de ${total} linha${total !== 1 ? "s" : ""} (pág. ${pagina + 1}/${totalPags})`;
+  if (btnPrev) btnPrev.disabled = pagina === 0;
+  if (btnNext) btnNext.disabled = fim >= total;
+
+  // Totalizadores
+  _finRelAtualizarTotais(linhasFiltradas);
+}
+
+/** Atualiza os totalizadores do cabeçalho do painel */
+function _finRelAtualizarTotais(linhas) {
+  const fmt = (n) => "Gs " + Math.round(n).toLocaleString("es-PY");
+  const receita = linhas.reduce((s, l) => s + (l._subtotalNum || 0), 0);
+  const qtdItens = linhas.reduce((s, l) => s + (typeof l.qtd === "number" ? l.qtd : 0), 0);
+  const ticket   = qtdItens > 0 ? receita / qtdItens : 0;
+
+  const el = (id) => document.getElementById(id);
+  if (el("fin-rel-tot-itens"))   el("fin-rel-tot-itens").textContent   = qtdItens.toLocaleString("es-PY");
+  if (el("fin-rel-tot-receita")) el("fin-rel-tot-receita").textContent = fmt(receita);
+  if (el("fin-rel-tot-ticket"))  el("fin-rel-tot-ticket").textContent  = fmt(ticket);
+}
+
+/** Navega entre páginas: delta = -1 (anterior) ou +1 (próxima) */
+function _finRelPagina(delta) {
+  const total    = _finRel.linhasFiltradas.length;
+  const maxPag   = Math.max(0, Math.ceil(total / _finRel.PAGE_SIZE) - 1);
+  _finRel.pagina = Math.min(maxPag, Math.max(0, _finRel.pagina + delta));
+  _finRelRenderizar();
+}
+
+/** Expande / colapsa o painel do relatório */
+function _finRelToggle(btn) {
+  const body = document.getElementById("fin-rel-body");
+  if (!body) return;
+  _finRel.aberto = !_finRel.aberto;
+
+  if (_finRel.aberto) {
+    body.style.display = "block";
+    btn.innerHTML = '<i class="fas fa-chevron-up"></i> Recolher';
+    btn.style.background = "#495057";
+    // Renderiza pela primeira vez ao expandir
+    _finRelRenderizar();
+  } else {
+    body.style.display = "none";
+    btn.innerHTML = '<i class="fas fa-chevron-down"></i> Expandir';
+    btn.style.background = "#6c757d";
+  }
+}
+
+/** Exporta as linhas filtradas como CSV UTF-8 com BOM (abre corretamente no Excel) */
+function _finRelExportarCSV() {
+  const linhas = _finRel.linhasFiltradas;
+  if (!linhas.length) { alert("Nenhum dado para exportar."); return; }
+
+  const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const header = ["Pedido", "Data/Hora", "Cliente", "Produto", "Qtd", "Vl. Unit. (Gs)", "Subtotal (Gs)", "Pagamento"];
+
+  const rows = linhas.map((l) => [
+    l.pedidoLabel, l.dataHora, l.cliente, l.nome, l.qtd,
+    Math.round(parseFloat(String(l.vlUnit).replace(/[^\d.]/g, "")) || 0),
+    Math.round(l._subtotalNum || 0),
+    l.pgtoLabel,
+  ].map(escape).join(";"));
+
+  const csv  = "\uFEFF" + [header.map(escape).join(";"), ...rows].join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  const hoje = new Date().toISOString().split("T")[0];
+  a.href     = url;
+  a.download = `relatorio_vendas_${hoje}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── Verifica bloqueio por sangria limite ───────────────────────────
