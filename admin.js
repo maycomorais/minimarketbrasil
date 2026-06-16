@@ -1059,15 +1059,26 @@ async function carregarPedidos(silencioso = false) {
                     </div>`
             : "";
 
+        // ── Lista de itens do pedido para o card mobile ──────────────────
+        const _itensCardHtml = (p.itens || []).map((item) => {
+          const _q  = item.qtd || item.q || 1;
+          const _n  = item.nome || item.n || "?";
+          const _v  = item.variacao || item.t || "";
+          return `<div style="font-size:0.75rem;color:#444;line-height:1.4">
+            <span style="font-weight:700;color:#1a7a2e">${_q}×</span> ${_n}${_v && _v !== _n ? ` <span style="color:#e67e22">▸ ${_v}</span>` : ""}
+          </div>`;
+        }).join("");
+
         cardsDiv.innerHTML += `
                     <div style="background:${cardBg}; border-radius:10px; padding:14px 16px; box-shadow:0 2px 8px rgba(0,0,0,0.07); border-left:4px solid ${p.status === "pendente" ? "#f59e0b" : p.status === "pronto_entrega" ? "#22c55e" : p.status === "saiu_entrega" ? "#3498db" : "#94a3b8"};">
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
                             <div>
-                                <div style="font-weight:700;font-size:1rem">#${p.uid_temporal || p.id} — ${p.cliente_nome || "Cliente"}</div>
+                                <div style="font-weight:700;font-size:1rem">Pedido #${p.id} — ${p.cliente_nome || "Cliente"}</div>
                                 <div style="font-size:0.78rem;color:#666;margin-top:2px">${p.endereco_entrega || (p.tipo_entrega === "balcao" ? "🏪 Balcão" : "")}</div>
                             </div>
                             <span class="status-badge st-${p.status}" style="font-size:0.7rem">${statusLabel}</span>
                         </div>
+                        ${_itensCardHtml ? `<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:7px;padding:7px 10px;margin-bottom:8px">${_itensCardHtml}</div>` : ""}
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
                               <strong style="font-size:1rem;color:var(--dark)">Gs ${(p.total_geral || 0).toLocaleString("es-PY")}</strong>
@@ -1226,7 +1237,11 @@ async function mudarStatus(id, novoStatus) {
     return;
   }
 
-  if (novoStatus === "em_preparo") await _descontarEstoqueVenda(id, null);
+  if (novoStatus === "em_preparo") {
+    await _descontarEstoqueVenda(id, null);
+    // Marca como descontado para evitar duplo desconto em finalizarMesa
+    await supa.from("pedidos").update({ estoque_descontado: true }).eq("id", id);
+  }
 
   // Bug #7 corrigido: repõe estoque ao cancelar
   if (novoStatus === "cancelado") await _reporEstoqueCancelamento(id);
@@ -2386,7 +2401,7 @@ function _finRelPopular(peds) {
       day: "2-digit", month: "2-digit",
       hour: "2-digit", minute: "2-digit",
     });
-    const pedidoLabel = p.uid_temporal || `#${p.id}`;
+    const pedidoLabel = `#${p.id}`;
     const cliente    = p.cliente_nome || "—";
 
     // Forma de pagamento — resolve multipagamento
@@ -10435,11 +10450,43 @@ function _coletarMultiPagamentoPDV() {
   return partes;
 }
 
+// ── trava anti-duplo-clique do PDV ─────────────────────────────────────
+let _pdvEnviando = false;
+
 async function salvarPedidoBalcao() {
-  if (carrinhoPDV.length === 0 && !window._mesaAbertaId)
-    return alert(t("alert.carrinho_vazio"));
-  if (carrinhoPDV.length === 0 && window._mesaAbertaId)
-    return alert("Adicione ao menos 1 novo item antes de lançar.");
+  if (_pdvEnviando) return; // bloqueia duplo-clique
+  _pdvEnviando = true;
+
+  // Feedback visual imediato no botão
+  const _btnLancar = document.querySelector(".pdv-btn-lancar");
+  const _txtOrigBtn = _btnLancar ? _btnLancar.innerHTML : "";
+  if (_btnLancar) {
+    _btnLancar.disabled = true;
+    _btnLancar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
+    _btnLancar.style.opacity = "0.65";
+  }
+  const _liberarPDV = () => {
+    _pdvEnviando = false;
+    if (_btnLancar) {
+      _btnLancar.disabled = false;
+      _btnLancar.innerHTML = _txtOrigBtn;
+      _btnLancar.style.opacity = "1";
+    }
+  };
+  // Segurança: libera em 30s mesmo se algo travar
+  const _timerPDV = setTimeout(_liberarPDV, 30000);
+
+  // Envolve o corpo da função em try/finally para garantir liberação
+  try {
+
+  if (carrinhoPDV.length === 0 && !window._mesaAbertaId) {
+    alert(t("alert.carrinho_vazio"));
+    return;
+  }
+  if (carrinhoPDV.length === 0 && window._mesaAbertaId) {
+    alert("Adicione ao menos 1 novo item antes de lançar.");
+    return;
+  }
 
   const _soKg = carrinhoPDV.length > 0 && carrinhoPDV.every((i) => i._isKg);
 
@@ -10638,6 +10685,8 @@ async function salvarPedidoBalcao() {
     tempo_preparo_iniciado:  _isPdvDelivery ? _agora : null,
     ..._tsDelivery,
     ...(_soKg ? { tempo_pronto: _agora, tempo_entregue: _agora } : {}),
+    // PDV já desconta o estoque logo após o insert; marca para evitar duplo desconto
+    estoque_descontado: true,
   };
 
   const { data: novoPedido, error } = await supa
@@ -10762,6 +10811,11 @@ async function salvarPedidoBalcao() {
       ? "✅ Só bebidas — direto ao balcão."
       : "✅ Enviado para separação!";
   _pdvToast(_msgFinal);
+
+  } finally {
+    clearTimeout(_timerPDV);
+    _liberarPDV();
+  }
 }
 
 // ── Toast não-bloqueante do PDV ───────────────────────────────
@@ -11001,15 +11055,32 @@ async function baixarItemMesa(pedidoId, itemIdx) {
 // Função para dar baixa na mesa (Muda status para 'entregue' e sai da lista)
 async function finalizarMesa(id) {
   if (confirm("Confirmar entrega e pagamento desta mesa?")) {
+    // Busca pedido para checar se estoque já foi descontado (PDV balcao desconta na criação)
+    const { data: pedAtual } = await supa
+      .from("pedidos")
+      .select("estoque_descontado")
+      .eq("id", id)
+      .single();
+
     await supa
       .from("pedidos")
       .update({
         status: "entregue",
-        tempo_entregue: new Date().toISOString(), // ← registra hora de fechamento
+        tempo_entregue: new Date().toISOString(),
+        estoque_descontado: true,
       })
       .eq("id", id);
+
+    // Desconta estoque apenas se ainda não foi descontado
+    // PDV balcão desconta em salvarPedidoBalcao(); demais pedidos balcão descontam aqui
+    if (!pedAtual?.estoque_descontado) {
+      await _descontarEstoqueVenda(id, null);
+    }
+
     carregarMonitorMesas();
     if (typeof calcularFinanceiro === "function") calcularFinanceiro();
+    const abaAtual = localStorage.getItem("app_lastTab");
+    if (abaAtual === "pedidos") carregarPedidos();
   }
 }
 

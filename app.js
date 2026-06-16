@@ -124,7 +124,12 @@ async function confirmarEntregaAutomatica(pedidoId) {
 }
 
 // ===== CONFIRMAÇÃO MANUAL (CLIENTE) =====
+// ── trava anti-duplo-clique para confirmação de entrega ──────────────
+let _confirmandoEntrega = false;
+
 async function confirmarEntregaCliente() {
+  if (_confirmandoEntrega) return; // duplo-clique bloqueado
+
   const pedidoId = localStorage.getItem("locanda_pedido_id");
   if (!pedidoId) {
     alert("Erro: Pedido não encontrado");
@@ -135,6 +140,17 @@ async function confirmarEntregaCliente() {
     return;
   }
 
+  _confirmandoEntrega = true;
+
+  // Desabilita o botão visualmente enquanto processa
+  const _btnConf = document.getElementById("btn-confirmar-entrega");
+  const _txtOrig = _btnConf ? _btnConf.innerHTML : "";
+  if (_btnConf) {
+    _btnConf.disabled = true;
+    _btnConf.innerHTML = "⏳ Confirmando...";
+    _btnConf.style.opacity = "0.6";
+  }
+
   try {
     const { error } = await supa
       .from("pedidos")
@@ -142,7 +158,7 @@ async function confirmarEntregaCliente() {
         status: "entregue",
         tempo_entregue: new Date().toISOString(),
       })
-      .eq("id", parseInt(pedidoId)); // parseInt garante tipo correto
+      .eq("id", parseInt(pedidoId));
 
     if (error) throw error;
 
@@ -164,6 +180,13 @@ async function confirmarEntregaCliente() {
   } catch (err) {
     console.error("Erro ao confirmar entrega:", err);
     alert("Erro ao confirmar entrega. Tente novamente.");
+    // Reabilita em caso de erro para o cliente poder tentar de novo
+    _confirmandoEntrega = false;
+    if (_btnConf) {
+      _btnConf.disabled = false;
+      _btnConf.innerHTML = _txtOrig;
+      _btnConf.style.opacity = "1";
+    }
   }
 }
 
@@ -3176,6 +3199,7 @@ async function enviarZap() {
     }
 
     // Pedido duplo: bloqueia se mesmo carrinho enviado no último 1h
+    // Verificado ANTES do insert para cobrir múltiplas abas simultâneas
     const _agora = Date.now();
     const _ultimoHash = localStorage.getItem("locanda_last_hash");
     const _ultimoTs = parseInt(localStorage.getItem("locanda_last_ts") || "0");
@@ -3188,6 +3212,9 @@ async function enviarZap() {
         "🚫 Seu pedido anterior foi computado, estamos bloqueando esta segunda tentativa.",
       );
     }
+    // Grava o hash ANTES do insert (protege múltiplas abas abertas ao mesmo tempo)
+    localStorage.setItem("locanda_last_hash", _hashAtual);
+    localStorage.setItem("locanda_last_ts", _agora.toString());
 
     // Valida multipagamento
     if (pag === "Multipagamento") {
@@ -3263,8 +3290,15 @@ async function enviarZap() {
     let numeroPedido = null;
 
     if (typeof supa !== "undefined") {
+      // Chave de idempotência: hash do carrinho + telefone + minuto atual
+      // Garante que mesmo se o cliente enviar duas vezes em < 2 min, só 1 pedido é criado
+      const _iKey = btoa(encodeURIComponent(
+        _hashAtual + "|" + telCompleto + "|" + Math.floor(Date.now() / 60000)
+      )).slice(0, 64);
+
       const pedidoDb = {
         status: "pendente",
+        idempotency_key: _iKey,
         tipo_entrega: modoEntrega,
         subtotal: totalItens,
         frete_cobrado_cliente: modoEntrega === "delivery" ? freteAplicado : 0,
@@ -3453,13 +3487,7 @@ async function enviarZap() {
       msg += `\n📄 RUC: ${document.getElementById("cli-ruc").value}\nRazão: ${document.getElementById("cli-zao").value}\n`;
     }
 
-    // Salva hash anti-duplicata ANTES de enviar
-    const _hashFinal = carrinho
-      .map((i) => i.nome + i.qtd)
-      .sort()
-      .join("|");
-    localStorage.setItem("locanda_last_hash", _hashFinal);
-    localStorage.setItem("locanda_last_ts", Date.now().toString());
+    // Hash anti-duplicata já foi salvo acima antes do insert
 
     // Verifica se o pagamento exige envio de comprovante pelo WhatsApp
     const _precisaZap = (() => {

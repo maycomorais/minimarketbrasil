@@ -1261,3 +1261,6 @@ WHERE codigo_barras IS NOT NULL AND codigo_barras <> '';
 -- ═══════════════════════════════════════════════════════════════════════
 ALTER TABLE clientes
   ADD COLUMN nascimento DATE;
+
+  ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS idempotency_key text;
+CREATE INDEX IF NOT EXISTS idx_pedidos_idempotency ON pedidos(idempotency_key) WHERE idempotency_key IS NOT NULL;

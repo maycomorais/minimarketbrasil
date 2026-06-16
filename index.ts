@@ -139,6 +139,27 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Idempotência: bloqueia pedidos duplicados no servidor ───────────
+    // O app envia um idempotency_key (hash do carrinho + telefone + timestamp-minuto).
+    // Se já existe um pedido com esse hash nos últimos 2 minutos, retorna o ID existente.
+    const idempotencyKey = payload.idempotency_key as string | undefined;
+    if (idempotencyKey) {
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+      const { data: existing } = await supa
+        .from("pedidos")
+        .select("id, frete_cobrado_cliente")
+        .eq("idempotency_key", idempotencyKey)
+        .gte("created_at", twoMinutesAgo)
+        .maybeSingle();
+      if (existing) {
+        console.warn(`[validar-pedido] Pedido duplicado bloqueado — key=${idempotencyKey} id=${existing.id}`);
+        return new Response(
+          JSON.stringify({ id: existing.id, frete_cobrado_cliente: existing.frete_cobrado_cliente, frete_a_combinar: freteACombinar, duplicate: true }),
+          { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // ── Monta pedido ──────────────────────────────────────────────────────
     const pedido = {
       ...payload,
