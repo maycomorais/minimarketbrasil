@@ -10599,13 +10599,23 @@ async function salvarPedidoBalcao() {
   const subtotalLiquido = subtotalBruto - descontoAplicado;
   const totalNovo = subtotalLiquido + fretePDV;
   const _agora = new Date().toISOString();
+  // ── Lógica de status inicial ───────────────────────────────────
+  // PDV delivery: precisa passar por preparo → em_preparo (ou pronto se todos sem cozinha)
+  // PDV balcão / mesa / retirada: cliente já comprou e saiu → entregue direto
+  const _isPdvDelivery = tipoEntregaPDV === "delivery";
+  const _statusInicial = _isPdvDelivery
+    ? (_todosSemCozinha(carrinhoPDV) ? "pronto_entrega" : "em_preparo")
+    : "entregue"; // balcão/mesa/retirada: venda concluída na hora
+
+  // Timestamps: delivery recebe só os tempos iniciais; balcão fecha todos de uma vez
+  const _tsDelivery = _isPdvDelivery ? {} : {
+    tempo_pronto:    _agora,
+    tempo_entregue:  _agora,
+  };
+
   const pedido = {
     uid_temporal: `BALC-${Math.floor(Math.random() * 1000)}`,
-    status: _soKg
-      ? "entregue"
-      : _todosSemCozinha(carrinhoPDV)
-        ? "pronto_entrega"
-        : "em_preparo",
+    status: _soKg ? "entregue" : _statusInicial,
     tipo_entrega: tipoEntregaPDV,
     subtotal: subtotalBruto,
     desconto_pdv_valor: descontoAplicado,
@@ -10623,9 +10633,10 @@ async function salvarPedidoBalcao() {
     ...(tipoEntregaPDV === "delivery" && _geoLat && _geoLng
       ? { geo_lat: _geoLat, geo_lng: _geoLng }
       : {}),
-    tempo_recebido: _agora,
-    tempo_confirmado: _agora,
-    tempo_preparo_iniciado: _agora,
+    tempo_recebido:          _agora,
+    tempo_confirmado:        _agora,
+    tempo_preparo_iniciado:  _isPdvDelivery ? _agora : null,
+    ..._tsDelivery,
     ...(_soKg ? { tempo_pronto: _agora, tempo_entregue: _agora } : {}),
   };
 

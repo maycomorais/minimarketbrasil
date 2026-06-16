@@ -1259,3 +1259,5 @@ WHERE codigo_barras IS NOT NULL AND codigo_barras <> '';
 --  idempotentes (CREATE IF NOT EXISTS, ADD COLUMN IF NOT EXISTS,
 --  ON CONFLICT DO NOTHING, DROP + CREATE para triggers/functions).
 -- ═══════════════════════════════════════════════════════════════════════
+ALTER TABLE clientes
+  ADD COLUMN nascimento DATE;
