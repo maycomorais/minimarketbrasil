@@ -1149,6 +1149,16 @@ async function aprovarCancelamento(pedidoId) {
   const user = await supa.auth.getUser();
   const email = user?.data?.user?.email || "dono" || "gerente";
 
+  // Verifica ANTES do update se o estoque deste pedido já tinha sido
+  // descontado. Pedidos ainda "pendente" (nunca passaram por em_preparo,
+  // PDV balcão, ou mesa) nunca tiveram estoque baixado — repor nesse caso
+  // criaria estoque fantasma (a mais).
+  const { data: _pedAntesCancelamento } = await supa
+    .from("pedidos")
+    .select("estoque_descontado")
+    .eq("id", pedidoId)
+    .single();
+
   const { error } = await supa
     .from("pedidos")
     .update({
@@ -1163,9 +1173,16 @@ async function aprovarCancelamento(pedidoId) {
     return;
   }
 
-  // Bug #7 corrigido: repõe estoque ao aprovar cancelamento
-  await _reporEstoqueCancelamento(pedidoId);
-
+  // Bug #7 corrigido: repõe estoque ao aprovar cancelamento —
+  // SOMENTE se o estoque deste pedido tinha sido efetivamente descontado.
+  if (_pedAntesCancelamento?.estoque_descontado) {
+    await _reporEstoqueCancelamento(pedidoId);
+    // Zera a flag: este pedido voltou a "não ter estoque comprometido"
+    await supa
+      .from("pedidos")
+      .update({ estoque_descontado: false })
+      .eq("id", pedidoId);
+  }
   // Bug #6 corrigido: estorna cashback ao aprovar cancelamento
   await _estornarCashbackCancelamento(pedidoId);
 
@@ -1221,6 +1238,18 @@ async function mudarStatus(id, novoStatus) {
     entregue: "tempo_entregue",
   };
 
+  // Se for cancelamento, verifica ANTES se o estoque deste pedido já foi
+  // descontado — necessário para decidir se deve repor depois do update.
+  let _estoqueJaDescontadoAntes = false;
+  if (novoStatus === "cancelado") {
+    const { data: _pedAntesCancel } = await supa
+      .from("pedidos")
+      .select("estoque_descontado")
+      .eq("id", id)
+      .single();
+    _estoqueJaDescontadoAntes = !!_pedAntesCancel?.estoque_descontado;
+  }
+
   const updateData = { status: novoStatus };
   const campos = camposTimestamp[novoStatus];
   if (campos) {
@@ -1243,8 +1272,13 @@ async function mudarStatus(id, novoStatus) {
     await supa.from("pedidos").update({ estoque_descontado: true }).eq("id", id);
   }
 
-  // Bug #7 corrigido: repõe estoque ao cancelar
-  if (novoStatus === "cancelado") await _reporEstoqueCancelamento(id);
+  // Bug #7 corrigido: repõe estoque ao cancelar — SOMENTE se já tinha
+  // sido descontado antes (pedidos "pendente" cancelados direto nunca
+  // descontaram, então não devem repor nada).
+  if (novoStatus === "cancelado" && _estoqueJaDescontadoAntes) {
+    await _reporEstoqueCancelamento(id);
+    await supa.from("pedidos").update({ estoque_descontado: false }).eq("id", id);
+  }
 
   // Bug #6 corrigido: estorna cashback gerado ao cancelar
   if (novoStatus === "cancelado") await _estornarCashbackCancelamento(id);
@@ -1866,8 +1900,6 @@ let _caixaState = {
   totalMultiOutros: 0,
   qtdPedidos: 0,
 };
-// Aviso de markup incompleto (produtos sem preco_compra)
-let _caixaLucroAviso = null;
 
 // Sessão de caixa ativa (carregada ao abrir a aba financeiro)
 let _sessaoCaixaAtiva = null;
@@ -2158,10 +2190,16 @@ if (_sessaoCaixaAtiva) {
   custoEntregas += (AJUDA_COMBUSTIVEL || 0) * qtdMotoboyUnicos;
 
   // ── Lucro sobre Vendas (usando preco_compra cadastrado nos produtos) ──
+  // ATENÇÃO: este cálculo só considera itens cujo produto tem preco_compra
+  // cadastrado. Itens SEM preco_compra são excluídos do cálculo (não dá
+  // pra estimar lucro sem custo) — mas isso significa que o markup exibido
+  // é uma média APENAS dos produtos com custo cadastrado, não de 100% das
+  // vendas. Por isso agora rastreamos e exibimos a cobertura (% do
+  // faturamento que entrou no cálculo), para não dar falsa precisão.
   let lucroBrutoVendas = 0;
   let markupMedioVendas = null;
-  let faturamentoComCusto = 0;   // faturamento apenas dos itens COM preco_compra
-  let faturamentoSemCusto = 0;   // faturamento dos itens SEM preco_compra (lucro desconhecido)
+  let faturamentoComCusto = 0;
+  let faturamentoSemCusto = 0;
   let qtdItensSemCusto = 0;
   try {
     const prodIdsSet = new Set();
@@ -2189,13 +2227,16 @@ if (_sessaoCaixaAtiva) {
         const qtd = i.qtd || i.q || 1;
         const precoVenda = safeNum(i.preco || i.p || 0);
         const precoCompra = precosCompra[pid] || 0;
+        const valorItem = precoVenda * qtd;
         if (precoVenda > 0 && precoCompra > 0) {
           lucroBrutoVendas += (precoVenda - precoCompra) * qtd;
           custoTotal += precoCompra * qtd;
-          faturamentoComCusto += precoVenda * qtd;
-        } else if (precoVenda > 0 && !precoCompra) {
-          faturamentoSemCusto += precoVenda * qtd;
-          qtdItensSemCusto += qtd;
+          faturamentoComCusto += valorItem;
+        } else if (precoVenda > 0) {
+          // Item vendido mas sem preco_compra cadastrado — fica de fora
+          // do cálculo de lucro. Contabiliza para mostrar a cobertura real.
+          faturamentoSemCusto += valorItem;
+          qtdItensSemCusto++;
         }
       });
     });
@@ -2204,10 +2245,13 @@ if (_sessaoCaixaAtiva) {
   } catch (e) {
     console.warn("Erro calcular lucro vendas:", e);
   }
-  // Armazena para uso no aviso do card de lucro
-  _caixaLucroAviso = qtdItensSemCusto > 0
-    ? `⚠️ ${qtdItensSemCusto} item(s) sem preço de compra — Gs ${fmt(faturamentoSemCusto)} faturados não entram no lucro estimado`
-    : null;
+
+  // % do faturamento de itens que efetivamente entrou no cálculo de lucro
+  const _baseCobertura = faturamentoComCusto + faturamentoSemCusto;
+  const coberturaLucroPct =
+    _baseCobertura > 0
+      ? Math.round((faturamentoComCusto / _baseCobertura) * 100)
+      : null;
 
   let totalSaidas = 0,
     totalEntradas = 0,
@@ -2238,6 +2282,9 @@ if (_sessaoCaixaAtiva) {
     totalSangria,
     lucroBrutoVendas: lucroBrutoVendas || 0,
     markupMedioVendas,
+    coberturaLucroPct,
+    faturamentoSemCusto,
+    qtdItensSemCusto,
   };
 
   const lucro = faturamento + totalEntradas - custoEntregas - totalSaidas;
@@ -2252,28 +2299,26 @@ if (_sessaoCaixaAtiva) {
   setV("card-lucro-vendas", fmt(lucroBrutoVendas || 0));
   const elLvPct = document.getElementById("card-lucro-vendas-pct");
   if (elLvPct) {
+    // Avisa quando o markup foi calculado sobre só uma fração das vendas
+    // (produtos sem preco_compra cadastrado ficam fora da conta) — isso
+    // evita comparar números de cobertura diferente entre lojas/sistemas
+    // e achar que o lucro "não bate" quando na verdade é a base de cálculo
+    // que é diferente.
+    const avisoCobertura =
+      coberturaLucroPct !== null && coberturaLucroPct < 95
+        ? ` · cálculo cobre só ${coberturaLucroPct}% das vendas (${qtdItensSemCusto} item(s) sem custo cadastrado)`
+        : "";
     if (lucroBrutoVendas > 0 && markupMedioVendas !== null) {
-      elLvPct.style.color = "#388e3c";
-      elLvPct.textContent = `markup médio ${markupMedioVendas}%`;
+      elLvPct.style.color = coberturaLucroPct !== null && coberturaLucroPct < 95 ? "#d97706" : "#388e3c";
+      elLvPct.textContent = `markup médio ${markupMedioVendas}%${avisoCobertura}`;
+      elLvPct.title = avisoCobertura
+        ? `Faturamento sem custo cadastrado: ${fmt(faturamentoSemCusto)}. Cadastre o "preço de compra" nesses produtos para um markup mais preciso.`
+        : "";
     } else if (lucroBrutoVendas > 0) {
-      elLvPct.textContent = "com base nos custos";
+      elLvPct.textContent = `com base nos custos${avisoCobertura}`;
     } else {
       elLvPct.style.color = "#9ca3af";
       elLvPct.textContent = "cadastre o preço de compra nos produtos";
-    }
-  }
-  // ── Aviso visual: produtos sem preço de compra ──────────────────────
-  const elLvAviso = document.getElementById("card-lucro-vendas-aviso");
-  if (elLvAviso) {
-    if (_caixaLucroAviso) {
-      elLvAviso.style.display = "block";
-      elLvAviso.style.color = "#d97706";
-      elLvAviso.style.fontSize = "0.78rem";
-      elLvAviso.style.marginTop = "4px";
-      elLvAviso.textContent = _caixaLucroAviso;
-    } else {
-      elLvAviso.style.display = "none";
-      elLvAviso.textContent = "";
     }
   }
   setV("total-pix", fmt(totalPix));
@@ -3272,7 +3317,8 @@ async function fecharCaixaResumo() {
   alert(`📊 FECHAMENTO DA SESSÃO #${_sessaoCaixaAtiva.id}
 ═══════════════════════════
 Faturamento Total: ${fmt(s.faturamento)}
-💰 Lucro s/ Vendas: ${fmt(s.lucroBrutoVendas || 0)}${s.markupMedioVendas ? ` (markup ${s.markupMedioVendas}%)` : ""}
+💰 Lucro s/ Vendas: ${fmt(s.lucroBrutoVendas || 0)}${s.markupMedioVendas ? ` (markup ${s.markupMedioVendas}%)` : ""}${s.coberturaLucroPct !== null && s.coberturaLucroPct < 95 ? `
+⚠️ Cálculo cobre ${s.coberturaLucroPct}% das vendas (${s.qtdItensSemCusto} item(s) sem "preço de compra" cadastrado, totalizando ${fmt(s.faturamentoSemCusto)})` : ""}
 
 💰 Por Método:
   💵 Dinheiro:      ${fmt(s.totalEfetivo)}
@@ -10478,22 +10524,10 @@ function _coletarMultiPagamentoPDV() {
 }
 
 // ── trava anti-duplo-clique do PDV ─────────────────────────────────────
-// Usamos um TOKEN em vez de um simples booleano.
-// Cada chamada gera um token único; se um segundo clique chegar enquanto
-// o primeiro ainda processa, ele terá um token DIFERENTE do que está
-// registrado em _pdvTokenAtual e será ignorado imediatamente.
-// Isso garante idempotência mesmo que o flag booleano seja redefinido
-// por algum caminho inesperado no meio do fluxo.
 let _pdvEnviando = false;
-let _pdvTokenAtual = null;
 
 async function salvarPedidoBalcao() {
-  // ── Guard duplo-clique: token de idempotência ─────────────────────
-  // Gera um token único para este clique. Se _pdvEnviando já estiver
-  // true OU se o token mudar antes de terminar, a execução é abortada.
-  if (_pdvEnviando) return; // bloqueia re-entradas imediatas
-  const _meuToken = `${Date.now()}-${Math.random()}`;
-  _pdvTokenAtual = _meuToken;
+  if (_pdvEnviando) return; // bloqueia duplo-clique
   _pdvEnviando = true;
 
   // Feedback visual imediato no botão
@@ -10646,6 +10680,12 @@ async function salvarPedidoBalcao() {
     }
     // Descontar estoque dos novos itens adicionados
     await _descontarEstoqueVendaItens(novosItens);
+    // Marca a flag para manter rastreabilidade e evitar duplo desconto
+    // (ex: se este pedido depois passar por mudarStatus('em_preparo'))
+    await supa
+      .from("pedidos")
+      .update({ estoque_descontado: true })
+      .eq("id", window._mesaAbertaId);
 
     // Reset
     window._mesaAbertaId = null;
@@ -10699,8 +10739,35 @@ async function salvarPedidoBalcao() {
     tempo_entregue:  _agora,
   };
 
+  // ── Chave de idempotência do PDV ────────────────────────────────────
+  // Protege contra inserts duplicados quando o operador clica várias vezes
+  // (rede lenta, F5 no meio do envio, etc). Hash determinístico do carrinho
+  // + cliente + minuto atual: se o MESMO carrinho for enviado de novo dentro
+  // da mesma janela de 1 minuto, o backend recusa o segundo insert.
+  const _hashCarrinhoPDV = novosItens
+    .map((i) => `${i.id}-${i.qtd}-${i.preco}`)
+    .sort()
+    .join("|");
+  const _pdvIdempKey = `pdv-${_hashCarrinhoPDV}-${tel || cli}-${Math.floor(Date.now() / 60000)}`;
+
+  // Verifica no banco se já existe um pedido idêntico nos últimos 60s
+  const { data: _pedidoExistente } = await supa
+    .from("pedidos")
+    .select("id")
+    .eq("idempotency_key", _pdvIdempKey)
+    .maybeSingle();
+
+  if (_pedidoExistente) {
+    console.warn(`[PDV] Envio duplicado bloqueado — pedido já existe: #${_pedidoExistente.id}`);
+    alert(`⚠️ Esta venda já foi registrada (Pedido #${_pedidoExistente.id}). Evite clicar várias vezes.`);
+    carrinhoPDV = [];
+    atualizarCarrinhoPDV();
+    return;
+  }
+
   const pedido = {
     uid_temporal: `BALC-${Math.floor(Math.random() * 1000)}`,
+    idempotency_key: _pdvIdempKey,
     status: _soKg ? "entregue" : _statusInicial,
     tipo_entrega: tipoEntregaPDV,
     subtotal: subtotalBruto,
@@ -10728,20 +10795,21 @@ async function salvarPedidoBalcao() {
     estoque_descontado: true,
   };
 
-  // ── Verificação final de token antes do INSERT ────────────────────
-  // Se entre o início da função e aqui outro clique gerou um novo token,
-  // este fluxo está obsoleto — abortar sem gravar nada.
-  if (_pdvTokenAtual !== _meuToken) {
-    console.warn("PDV: execução cancelada — token obsoleto (clique duplicado detectado)");
-    return;
-  }
-
   const { data: novoPedido, error } = await supa
     .from("pedidos")
     .insert([pedido])
     .select("id")
     .single();
   if (error) {
+    // Se o erro for de chave duplicada (unique constraint), é uma tentativa
+    // de duplo-envio que passou pela checagem acima por race condition —
+    // trata como sucesso silencioso em vez de erro confuso pro operador.
+    if (error.code === "23505" || /duplicate key/i.test(error.message || "")) {
+      alert("⚠️ Esta venda já estava sendo processada. Verifique a lista de pedidos antes de tentar novamente.");
+      carrinhoPDV = [];
+      atualizarCarrinhoPDV();
+      return;
+    }
     alert("Erro: " + error.message);
     return;
   }
@@ -13001,6 +13069,9 @@ function _todosBebidas(itens) {
 }
 
 // Desconta estoque a partir de uma lista de itens (para UPDATE de mesa)
+// CORREÇÃO: agora também desconta produtos que controlam estoque via
+// produtos.estoque_qtd (não só via inventario_id) — ver nota em
+// _descontarEstoqueVenda() acima para o contexto completo do bug.
 async function _descontarEstoqueVendaItens(itens) {
   try {
     if (!itens?.length) return;
@@ -13008,77 +13079,85 @@ async function _descontarEstoqueVendaItens(itens) {
       ...new Set(itens.map((i) => i.id || i.produto_id).filter(Boolean)),
     ];
     if (!prodIds.length) return;
-
-    // Busca AMBOS os mecanismos de estoque
     const { data: prods } = await supa
       .from("produtos")
       .select("id, inventario_id, estoque_qtd")
       .in("id", prodIds);
     if (!prods?.length) return;
 
-    const descontosInv = {};   // { inventario_id: qtd }
-    const descontosSimples = {}; // { produto_id: qtd }
-
+    const qtdVendidaPorProduto = {};
     itens.forEach((item) => {
-      const pid = item.id || item.produto_id;
-      const prod = prods.find((p) => p.id == pid);
-      if (!prod) return;
-      const qtd = item.qtd || 1;
-      if (prod.inventario_id) {
-        descontosInv[prod.inventario_id] = (descontosInv[prod.inventario_id] || 0) + qtd;
-      } else if (prod.estoque_qtd !== null && prod.estoque_qtd !== undefined) {
-        descontosSimples[prod.id] = (descontosSimples[prod.id] || 0) + qtd;
-      }
+      const pid = Number(item.id || item.produto_id);
+      if (!pid) return;
+      qtdVendidaPorProduto[pid] =
+        (qtdVendidaPorProduto[pid] || 0) + (item.qtd || 1);
     });
 
-    // ── Descontar inventário ──────────────────────────────────────────
-    const invIds = Object.keys(descontosInv).map(Number);
-    if (invIds.length > 0) {
+    // ── Caminho 1: inventario_id ──────────────────────────────────────
+    const descontos = {};
+    prods.forEach((prod) => {
+      if (!prod.inventario_id) return;
+      const qtdVendida = qtdVendidaPorProduto[prod.id];
+      if (!qtdVendida) return;
+      descontos[prod.inventario_id] =
+        (descontos[prod.inventario_id] || 0) + qtdVendida;
+    });
+
+    if (Object.keys(descontos).length > 0) {
+      const invIds = Object.keys(descontos).map(Number);
       const { data: estoques } = await supa
         .from("inventario")
         .select("id, quantidade")
         .in("id", invIds);
-      if (estoques?.length) {
-        for (const est of estoques) {
-          const nova = Math.max(0, (est.quantidade ?? 0) - descontosInv[est.id]);
-          await supa.from("inventario").update({ quantidade: nova }).eq("id", est.id);
-          await supa
-            .from("inventario_movimentos")
-            .insert([{
+      for (const est of estoques || []) {
+        const nova = Math.max(0, (est.quantidade ?? 0) - descontos[est.id]);
+        await supa.from("inventario").update({ quantidade: nova }).eq("id", est.id);
+        await supa
+          .from("inventario_movimentos")
+          .insert([
+            {
               inventario_id: est.id,
               tipo: "sub",
-              quantidade: descontosInv[est.id],
+              quantidade: descontos[est.id],
               motivo: "Venda PDV (balcão)",
               usuario_email: "sistema",
-            }])
-            .then(() => {}).catch(() => {});
-        }
+            },
+          ])
+          .then(() => {})
+          .catch(() => {});
       }
     }
 
-    // ── Descontar estoque_qtd (produtos simples) ──────────────────────
-    const simplesIds = Object.keys(descontosSimples).map(Number);
-    if (simplesIds.length > 0) {
-      const { data: prodsSimples } = await supa
-        .from("produtos")
-        .select("id, estoque_qtd")
-        .in("id", simplesIds);
-      if (prodsSimples?.length) {
-        for (const ps of prodsSimples) {
-          const novaQtd = Math.max(0, (ps.estoque_qtd ?? 0) - descontosSimples[ps.id]);
-          await supa.from("produtos").update({ estoque_qtd: novaQtd }).eq("id", ps.id);
-        }
-      }
+    // ── Caminho 2: estoque_qtd direto no produto ─────────────────────
+    const produtosComEstoqueQtd = prods.filter(
+      (p) => p.estoque_qtd !== null && p.estoque_qtd !== undefined,
+    );
+    for (const prod of produtosComEstoqueQtd) {
+      const qtdVendida = qtdVendidaPorProduto[prod.id];
+      if (!qtdVendida) continue;
+      const novaQtd = Math.max(0, (prod.estoque_qtd || 0) - qtdVendida);
+      await supa.from("produtos").update({ estoque_qtd: novaQtd }).eq("id", prod.id);
     }
 
-    console.log(`✅ Estoque descontado (PDV balcão): inv=${invIds.length} simples=${simplesIds.length}`);
+    console.log(
+      `✅ Estoque descontado: ${Object.keys(descontos).length + produtosComEstoqueQtd.length} item(s)`,
+    );
   } catch (e) {
     console.warn("Estoque desconto (itens):", e.message);
   }
 }
 
 // Desconta estoque a partir de pedidoId OU lista de itens
-// Suporta DOIS mecanismos: inventario_id (produtos compostos) e estoque_qtd (produtos simples)
+//
+// CORREÇÃO IMPORTANTE: o sistema tem DOIS mecanismos de controle de estoque
+// que não se comunicavam:
+//   1) produtos.inventario_id → tabela `inventario` (estoque vinculado/insumo)
+//   2) produtos.estoque_qtd   → controle direto na própria linha do produto
+//      (usado pela tela "Gestão de Estoque" / cadastro de produto simples)
+// A função antiga só descontava (1), então produtos cadastrados com (2)
+// — como a maioria dos produtos simples — nunca tinham o estoque baixado.
+// Agora a função verifica e desconta em AMBOS, dependendo de qual campo
+// o produto usa.
 async function _descontarEstoqueVenda(pedidoId, itensDireto) {
   try {
     let itens = itensDireto;
@@ -13098,70 +13177,80 @@ async function _descontarEstoqueVenda(pedidoId, itensDireto) {
     ];
     if (!prodIds.length) return;
 
-    // Busca AMBOS os mecanismos de estoque
+    // Busca TODOS os produtos vendidos (não filtra por inventario_id aqui,
+    // porque também precisamos dos que controlam estoque via estoque_qtd)
     const { data: prods } = await supa
       .from("produtos")
       .select("id, inventario_id, estoque_qtd")
       .in("id", prodIds);
     if (!prods?.length) return;
 
-    const descontosInv = {};     // { inventario_id: qtd }
-    const descontosSimples = {}; // { produto_id: qtd }
-
+    // Soma quantidades vendidas por produto
+    const qtdVendidaPorProduto = {};
     itens.forEach((item) => {
-      const pid = item.produto_id || item.id;
-      const prod = prods.find((p) => p.id == pid);
-      if (!prod) return;
-      const qtd = item.qtd || item.q || 1;
-      if (prod.inventario_id) {
-        descontosInv[prod.inventario_id] = (descontosInv[prod.inventario_id] || 0) + qtd;
-      } else if (prod.estoque_qtd !== null && prod.estoque_qtd !== undefined) {
-        descontosSimples[prod.id] = (descontosSimples[prod.id] || 0) + qtd;
-      }
+      const pid = Number(item.produto_id || item.id);
+      if (!pid) return;
+      qtdVendidaPorProduto[pid] =
+        (qtdVendidaPorProduto[pid] || 0) + (item.qtd || item.q || 1);
     });
 
-    // ── Descontar inventário ──────────────────────────────────────────
-    const invIds = Object.keys(descontosInv).map(Number);
-    if (invIds.length > 0) {
+    // ── Caminho 1: produtos com inventario_id (estoque vinculado) ────────
+    const descontosInventario = {};
+    prods.forEach((prod) => {
+      if (!prod.inventario_id) return;
+      const qtdVendida = qtdVendidaPorProduto[prod.id];
+      if (!qtdVendida) return;
+      descontosInventario[prod.inventario_id] =
+        (descontosInventario[prod.inventario_id] || 0) + qtdVendida;
+    });
+
+    if (Object.keys(descontosInventario).length > 0) {
+      const invIds = Object.keys(descontosInventario).map(Number);
       const { data: estoques } = await supa
         .from("inventario")
         .select("id, quantidade")
         .in("id", invIds);
-      if (estoques?.length) {
-        for (const est of estoques) {
-          const nova = Math.max(0, (est.quantidade ?? 0) - descontosInv[est.id]);
-          await supa.from("inventario").update({ quantidade: nova }).eq("id", est.id);
-          await supa
-            .from("inventario_movimentos")
-            .insert([{
+      for (const est of estoques || []) {
+        const nova = Math.max(
+          0,
+          (est.quantidade ?? 0) - descontosInventario[est.id],
+        );
+        await supa.from("inventario").update({ quantidade: nova }).eq("id", est.id);
+        await supa
+          .from("inventario_movimentos")
+          .insert([
+            {
               inventario_id: est.id,
               tipo: "sub",
-              quantidade: descontosInv[est.id],
+              quantidade: descontosInventario[est.id],
               motivo: pedidoId ? `Venda — Pedido #${pedidoId}` : "Venda PDV",
               usuario_email: "sistema",
-            }])
-            .then(() => {}).catch(() => {});
-        }
+            },
+          ])
+          .then(() => {})
+          .catch(() => {});
       }
     }
 
-    // ── Descontar estoque_qtd (produtos simples) ──────────────────────
-    const simplesIds = Object.keys(descontosSimples).map(Number);
-    if (simplesIds.length > 0) {
-      const { data: prodsSimples } = await supa
+    // ── Caminho 2: produtos com estoque_qtd (controle direto no produto) ─
+    // Só desconta se o produto efetivamente controla estoque (campo não nulo)
+    const produtosComEstoqueQtd = prods.filter(
+      (p) => p.estoque_qtd !== null && p.estoque_qtd !== undefined,
+    );
+    for (const prod of produtosComEstoqueQtd) {
+      const qtdVendida = qtdVendidaPorProduto[prod.id];
+      if (!qtdVendida) continue;
+      const novaQtd = Math.max(0, (prod.estoque_qtd || 0) - qtdVendida);
+      await supa
         .from("produtos")
-        .select("id, estoque_qtd")
-        .in("id", simplesIds);
-      if (prodsSimples?.length) {
-        for (const ps of prodsSimples) {
-          const novaQtd = Math.max(0, (ps.estoque_qtd ?? 0) - descontosSimples[ps.id]);
-          await supa.from("produtos").update({ estoque_qtd: novaQtd }).eq("id", ps.id);
-        }
-      }
+        .update({ estoque_qtd: novaQtd })
+        .eq("id", prod.id);
     }
 
+    const totalDescontado =
+      Object.keys(descontosInventario).length + produtosComEstoqueQtd.length;
     console.log(
-      `✅ Estoque descontado: pedido ${pedidoId || "(PDV)"} — inv=${invIds.length} simples=${simplesIds.length}`,
+      `✅ Estoque descontado: pedido ${pedidoId || "(PDV)"}, ${totalDescontado} item(s)`,
     );
   } catch (e) {
     console.warn("Estoque desconto:", e.message);
@@ -13169,11 +13258,11 @@ async function _descontarEstoqueVenda(pedidoId, itensDireto) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Repõe estoque quando um pedido é cancelado.
-   Suporta DOIS mecanismos:
-     1. inventario_id  → tabela `inventario`  (produtos compostos/insumos)
-     2. estoque_qtd    → coluna em `produtos` (produtos simples)
+   BUG #7 CORRIGIDO — Repõe estoque quando um pedido é cancelado
    ══════════════════════════════════════════════════════════════ */
+// CORREÇÃO: repõe estoque tanto via inventario_id quanto via estoque_qtd
+// (mesmo bug do desconto na venda existia aqui — produtos cadastrados com
+// controle direto em produtos.estoque_qtd nunca recebiam a reposição).
 async function _reporEstoqueCancelamento(pedidoId) {
   try {
     const { data: pedido } = await supa
@@ -13189,87 +13278,62 @@ async function _reporEstoqueCancelamento(pedidoId) {
     ];
     if (!prodIds.length) return;
 
-    // Busca AMBOS os campos de estoque de uma vez só
     const { data: prods } = await supa
       .from("produtos")
       .select("id, inventario_id, estoque_qtd")
       .in("id", prodIds);
     if (!prods?.length) return;
 
-    // ── 1. Reposição via inventario_id (produtos compostos) ──────────
-    const repoInventario = {};
-    // ── 2. Reposição via estoque_qtd (produtos simples) ──────────────
-    const repoSimples = {}; // { produto_id: qtd_a_repor }
-
+    const qtdPorProduto = {};
     itens.forEach((item) => {
-      const pid = item.produto_id || item.id;
-      const prod = prods.find((p) => p.id == pid);
-      if (!prod) return;
-      const qtd = item.qtd || item.q || 1;
-
-      if (prod.inventario_id) {
-        // Produto vinculado ao inventário
-        repoInventario[prod.inventario_id] =
-          (repoInventario[prod.inventario_id] || 0) + qtd;
-      } else if (prod.estoque_qtd !== null && prod.estoque_qtd !== undefined) {
-        // Produto simples com controle de estoque direto
-        repoSimples[prod.id] = (repoSimples[prod.id] || 0) + qtd;
-      }
+      const pid = Number(item.produto_id || item.id);
+      if (!pid) return;
+      qtdPorProduto[pid] = (qtdPorProduto[pid] || 0) + (item.qtd || item.q || 1);
     });
 
-    // ── Repor inventário (tabela inventario) ─────────────────────────
-    const invIds = Object.keys(repoInventario).map(Number);
-    if (invIds.length > 0) {
+    // ── Caminho 1: inventario_id ──────────────────────────────────────
+    const reposicoes = {};
+    prods.forEach((prod) => {
+      if (!prod.inventario_id) return;
+      const qtd = qtdPorProduto[prod.id];
+      if (!qtd) return;
+      reposicoes[prod.inventario_id] = (reposicoes[prod.inventario_id] || 0) + qtd;
+    });
+
+    if (Object.keys(reposicoes).length > 0) {
+      const invIds = Object.keys(reposicoes).map(Number);
       const { data: estoques } = await supa
         .from("inventario")
         .select("id, quantidade")
         .in("id", invIds);
-      if (estoques?.length) {
-        for (const est of estoques) {
-          const nova = (est.quantidade ?? 0) + repoInventario[est.id];
-          await supa
-            .from("inventario")
-            .update({ quantidade: nova })
-            .eq("id", est.id);
-          await supa
-            .from("inventario_movimentos")
-            .insert([{
-              inventario_id: est.id,
-              tipo: "ajuste",
-              quantidade: repoInventario[est.id],
-              motivo: `Cancelamento — Pedido #${pedidoId}`,
-              usuario_email: "sistema",
-            }])
-            .then(() => {})
-            .catch(() => {});
-        }
-        console.log(`✅ Inventário reposto: ${estoques.length} insumo(s) — pedido #${pedidoId}`);
+      for (const est of estoques || []) {
+        const nova = (est.quantidade ?? 0) + reposicoes[est.id];
+        await supa.from("inventario").update({ quantidade: nova }).eq("id", est.id);
+        await supa
+          .from("inventario_movimentos")
+          .insert([{
+            inventario_id: est.id,
+            tipo: "ajuste",
+            quantidade: reposicoes[est.id],
+            motivo: `Cancelamento — Pedido #${pedidoId}`,
+            usuario_email: "sistema",
+          }])
+          .then(() => {})
+          .catch(() => {});
       }
     }
 
-    // ── Repor estoque_qtd (tabela produtos) ──────────────────────────
-    const simplesIds = Object.keys(repoSimples).map(Number);
-    if (simplesIds.length > 0) {
-      // Busca qtd atual para somar (necessário pois não tem RPC de incremento)
-      const { data: prodsSimples } = await supa
-        .from("produtos")
-        .select("id, estoque_qtd")
-        .in("id", simplesIds);
-      if (prodsSimples?.length) {
-        for (const ps of prodsSimples) {
-          const novaQtd = (ps.estoque_qtd ?? 0) + repoSimples[ps.id];
-          await supa
-            .from("produtos")
-            .update({ estoque_qtd: novaQtd })
-            .eq("id", ps.id);
-        }
-        console.log(`✅ Estoque simples reposto: ${prodsSimples.length} produto(s) — pedido #${pedidoId}`);
-      }
+    // ── Caminho 2: estoque_qtd direto no produto ─────────────────────
+    const produtosComEstoqueQtd = prods.filter(
+      (p) => p.estoque_qtd !== null && p.estoque_qtd !== undefined,
+    );
+    for (const prod of produtosComEstoqueQtd) {
+      const qtd = qtdPorProduto[prod.id];
+      if (!qtd) continue;
+      const novaQtd = (prod.estoque_qtd || 0) + qtd;
+      await supa.from("produtos").update({ estoque_qtd: novaQtd }).eq("id", prod.id);
     }
-
-    if (invIds.length === 0 && simplesIds.length === 0) {
-      console.warn(`⚠️ _reporEstoqueCancelamento: nenhum produto com estoque controlado no pedido #${pedidoId}`);
-    }
+    console.log(`✅ Estoque reposto: pedido cancelado #${pedidoId}`);
   } catch (e) {
     console.warn("_reporEstoqueCancelamento:", e.message);
   }
