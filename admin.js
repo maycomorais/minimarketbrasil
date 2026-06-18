@@ -3043,6 +3043,8 @@ async function carregarRelatorio() {
         '<span style="background:#f7f0e8;color:#6e4a1a;border-radius:10px;padding:2px 7px;font-size:0.68rem;font-weight:700">🚶 Retirada</span>',
     };
     const tipoBadge = tipoBadges[p.tipo_entrega] || "";
+    const _podeCancelRel = ["dono", "adminMaster", "gerente"].includes(perfilUsuario);
+    const jaCancelado = p.status === "cancelado";
 
     // Timeline — PDV tem etapas diferentes
     const tl = isPDV
@@ -3152,6 +3154,11 @@ async function carregarRelatorio() {
         ${tlHtml}
         ${totalTime !== "-" ? `<div style="margin-top:5px;padding:3px 7px;background:#f0f4ff;border-radius:6px;font-size:0.75rem;font-weight:700;color:#3a4db7;text-align:center">⏱ ${totalTime}</div>` : ""}
       </td>
+      <td style="padding:10px 8px;white-space:nowrap;text-align:center;min-width:90px">
+        ${(!jaCancelado && _podeCancelRel) ? `<button class="btn btn-danger btn-sm" onclick="cancelarPedidoRelatorio(${p.id})" title="Cancelar este pedido" style="font-size:0.7rem;padding:4px 8px">
+          <i class="fas fa-times"></i> Cancelar
+        </button>` : (jaCancelado ? '<span style="color:#aaa;font-size:0.7rem">Cancelado</span>' : '')}
+      </td>
     </tr>`;
   });
   if (!pedidos || pedidos.length === 0)
@@ -3159,6 +3166,16 @@ async function carregarRelatorio() {
       '<tr><td colspan="6" style="text-align:center;padding:40px;color:#aaa">Nenhum pedido encontrado.</td></tr>';
   const el = document.getElementById("rel-total-count");
   if (el) el.textContent = (pedidos || []).length + " pedidos encontrados";
+}
+
+async function cancelarPedidoRelatorio(pedidoId) {
+  if (!confirm("⚠️ Tem certeza que deseja CANCELAR este pedido?\n\nEsta ação não pode ser desfeita e irá repor o estoque (se já tiver sido baixado).")) {
+    return;
+  }
+  // Chama a função existente, que já faz todo o tratamento
+  await mudarStatus(pedidoId, 'cancelado');
+  // Recarrega o relatório para atualizar a lista
+  carregarRelatorio();
 }
 
 function abrirModalCaixa(tipo) {
