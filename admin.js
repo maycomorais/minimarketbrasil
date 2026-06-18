@@ -3043,7 +3043,7 @@ async function carregarRelatorio() {
         '<span style="background:#f7f0e8;color:#6e4a1a;border-radius:10px;padding:2px 7px;font-size:0.68rem;font-weight:700">🚶 Retirada</span>',
     };
     const tipoBadge = tipoBadges[p.tipo_entrega] || "";
-    const _podeCancelRel = ["dono", "adminMaster", "gerente"].includes(perfilUsuario);
+    const _podeCancelRel = ["dono", "adminMaster", "gerente", "funcionario"].includes(perfilUsuario);
     const jaCancelado = p.status === "cancelado";
 
     // Timeline — PDV tem etapas diferentes
