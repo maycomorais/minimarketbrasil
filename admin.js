@@ -10193,14 +10193,20 @@ function atualizarCarrinhoPDV() {
       total += preco * qtd;
 
       const row = document.createElement("tr");
-      row.className =
-        "pdv-item-existente" + (entregue ? " pdv-item-entregue" : "");
+      row.className = "pdv-item-existente" + (entregue ? " pdv-item-entregue" : "");
       row.innerHTML = `
-        <td class="pdv-item-nome">${nome}${entregue ? ' <span class="badge-entregue">✓</span>' : ""}</td>
-        <td class="tc">${qtd}</td>
-        <td class="tr" style="font-size:0.7rem;color:#666">Gs ${preco.toLocaleString("es-PY")}</td>
-        <td class="tr">Gs ${(preco * qtd).toLocaleString("es-PY")}
-          ${!entregue ? `<button class="pdv-item-remove" title="Baixar" onclick="baixarItemMesa(${window._mesaAbertaId},${idx})"><i class="fas fa-check" style="color:#27ae60"></i></button>` : ""}
+        <td colspan="4" class="pdv-item-card">
+          <div class="pdv-item-card-header">
+            <span class="pdv-item-card-nome">${nome}${entregue ? ' <span class="badge-entregue">✓</span>' : ""}</span>
+            <span class="pdv-item-card-total" style="${entregue ? "color:#888" : ""}">Gs ${(preco * qtd).toLocaleString("es-PY")}</span>
+          </div>
+          <div class="pdv-item-card-sub">Gs ${preco.toLocaleString("es-PY")} / un. · ${qtd}x${entregue ? " · <em style='color:#27ae60;font-weight:700'>✓ Entregue</em>" : ""}</div>
+          ${!entregue ? `
+          <div class="pdv-item-card-acoes">
+            <button class="pdv-item-card-excluir" style="background:#e8f5e9;color:#27ae60;border-color:#86efac" title="Baixar item" onclick="baixarItemMesa(${window._mesaAbertaId},${idx})">
+              <i class="fas fa-check"></i> Baixar
+            </button>
+          </div>` : ""}
         </td>`;
       lista.appendChild(row);
     });
@@ -13153,7 +13159,10 @@ async function _descontarEstoqueVendaItens(itens) {
       const qtdVendida = qtdVendidaPorProduto[prod.id];
       if (!qtdVendida) continue;
       const novaQtd = Math.max(0, (prod.estoque_qtd || 0) - qtdVendida);
-      await supa.from("produtos").update({ estoque_qtd: novaQtd }).eq("id", prod.id);
+      const updatePayload = { estoque_qtd: novaQtd };
+      // Auto-pause: se zerou, pausar produto para não aparecer no APP/PDV
+      if (novaQtd === 0) updatePayload.ativo = false;
+      await supa.from("produtos").update(updatePayload).eq("id", prod.id);
     }
 
     console.log(
@@ -13258,9 +13267,12 @@ async function _descontarEstoqueVenda(pedidoId, itensDireto) {
       const qtdVendida = qtdVendidaPorProduto[prod.id];
       if (!qtdVendida) continue;
       const novaQtd = Math.max(0, (prod.estoque_qtd || 0) - qtdVendida);
+      const updatePayload = { estoque_qtd: novaQtd };
+      // Auto-pause: se zerou, pausar produto para não aparecer no APP/PDV
+      if (novaQtd === 0) updatePayload.ativo = false;
       await supa
         .from("produtos")
-        .update({ estoque_qtd: novaQtd })
+        .update(updatePayload)
         .eq("id", prod.id);
     }
 
@@ -13619,13 +13631,16 @@ function _verificarAlertasEstoque() {
     else if (m > 0 && q <= m)
       alertas.push(`${i.nome} (${q} ${i.unidade || "un"})`);
     if (i.perecivel && i.data_validade) {
-      const val = new Date(i.data_validade);
-      val.setHours(0, 0, 0, 0);
-      const dias = Math.ceil((val - hoje) / 86400000);
-      if (dias <= 7)
-        alertas.push(
-          `${i.nome} vence ${dias <= 0 ? "VENCIDO" : "em " + dias + "d"}`,
-        );
+      // Não alertar validade se item sem estoque
+      if (q > 0) {
+        const val = new Date(i.data_validade);
+        val.setHours(0, 0, 0, 0);
+        const dias = Math.ceil((val - hoje) / 86400000);
+        if (dias <= 7)
+          alertas.push(
+            `${i.nome} vence ${dias <= 0 ? "VENCIDO" : "em " + dias + "d"}`,
+          );
+      }
     }
   });
   const el = document.getElementById("alerta-estoque-baixo");
@@ -13881,6 +13896,19 @@ function toggleDeliveryRowPDV(tipo) {
 }
 
 // Toggle switch de Delivery no PDV (chamado pelo HTML via onclick)
+// ── Toggle dados do cliente no PDV ─────────────────────────────────────
+function pdvToggleDados() {
+  const painel = document.querySelector('.pdv-dir-dados');
+  const icon   = document.getElementById('pdv-toggle-dados-icon');
+  if (!painel) return;
+  const aberto = painel.classList.toggle('pdv-dados-aberto');
+  if (icon) {
+    icon.className = aberto
+      ? 'fas fa-chevron-up'
+      : 'fas fa-chevron-down';
+  }
+}
+
 function pdvToggleDelivery(el) {
   const isDelivery = !el.classList.contains("active");
   el.classList.toggle("active", isDelivery);
@@ -13888,6 +13916,15 @@ function pdvToggleDelivery(el) {
   if (inp) inp.value = isDelivery ? "delivery" : "balcao";
   const chip = document.getElementById("pdv-tipo-chip");
   if (chip) chip.textContent = isDelivery ? "🛵 Delivery" : "🏪 Balcão";
+  // Ao ativar delivery, garante que o painel de dados do cliente esteja visível
+  if (isDelivery) {
+    const painel = document.querySelector('.pdv-dir-dados');
+    const icon   = document.getElementById('pdv-toggle-dados-icon');
+    if (painel && !painel.classList.contains('pdv-dados-aberto')) {
+      painel.classList.add('pdv-dados-aberto');
+      if (icon) icon.className = 'fas fa-chevron-up';
+    }
+  }
   toggleDeliveryRowPDV(isDelivery ? "delivery" : "balcao");
 }
 
@@ -15113,6 +15150,9 @@ function ptVerificarValidadeProdutos(diasAlerta = 7) {
   const alertas = [];
   (_todosProdutos || []).forEach((p) => {
     if (!p.perecivel || !p.data_validade) return;
+    // Não alertar se produto está sem estoque (zerado ou pausado)
+    if (p.ativo === false) return;
+    if (p.estoque_qtd !== null && p.estoque_qtd !== undefined && p.estoque_qtd <= 0) return;
     const val = new Date(p.data_validade + "T00:00:00");
     const dias = Math.ceil((val - hoje) / 86400000);
     if (dias <= diasAlerta) {
@@ -15149,10 +15189,13 @@ async function veVerificarEstoqueBaixo(limiteAlerta = 5) {
 
   if (error || !data) return;
 
+  // Filtrar: não exibir se estoque = 0 (esgotado — produto pausado automaticamente)
+  const alertaveis = data.filter((v) => v.estoque_qtd > 0);
+
   const cont = document.getElementById("ve-alertas-estoque");
   if (!cont) return;
 
-  if (!data.length) {
+  if (!alertaveis.length) {
     cont.style.display = "none";
     return;
   }
@@ -15162,13 +15205,13 @@ async function veVerificarEstoqueBaixo(limiteAlerta = 5) {
     <div style="background:#fff3cd;border:1.5px solid #f0a500;border-radius:10px;padding:12px 16px;font-size:0.83rem">
       <b>⚠️ Estoque baixo (≤ ${limiteAlerta} unidades)</b>
       <ul style="margin-top:8px;padding-left:18px;line-height:1.9">
-        ${data
+        ${alertaveis
           .map(
             (v) => `
           <li>
             <b>${v.produtos?.nome || "#" + v.produto_id}</b> — ${v.nome}:
-            <span style="color:${v.estoque_qtd === 0 ? "#dc2626" : "#e67e22"};font-weight:700">
-              ${v.estoque_qtd === 0 ? "⛔ Esgotado" : v.estoque_qtd + " un"}
+            <span style="color:#e67e22;font-weight:700">
+              ${v.estoque_qtd} un
             </span>
           </li>
         `,

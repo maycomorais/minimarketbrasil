@@ -563,7 +563,13 @@
             <!-- ══ COLUNA DIREITA: Pedido ══ -->
             <div class="pdv-col-dir pdv-tab-panel" id="pdv-panel-carrinho">
 
-              <div class="pdv-dir-titulo">🛒 Novo Pedido</div>
+              <div class="pdv-dir-titulo" style="display:flex;align-items:center;justify-content:space-between;cursor:default">
+                <span>🛒 Novo Pedido</span>
+                <button id="pdv-toggle-dados-btn" onclick="pdvToggleDados()" title="Dados do cliente"
+                  style="background:#f0f0f0;border:1px solid #ddd;border-radius:6px;padding:3px 9px;font-size:0.7rem;font-weight:700;color:#555;cursor:pointer;display:flex;align-items:center;gap:4px">
+                  <i class="fas fa-user" style="font-size:0.65rem"></i> Cliente <i id="pdv-toggle-dados-icon" class="fas fa-chevron-down" style="font-size:0.6rem"></i>
+                </button>
+              </div>
 
               <!-- Tipo de pedido — toggle Delivery -->
               <div class="pdv-delivery-toggle-row">
