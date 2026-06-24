@@ -2147,10 +2147,10 @@ if (_sessaoCaixaAtiva) {
     // ── Multipagamento: distribui pelos métodos reais gravados em obs_pagamento ──
     if (pag === "multipagamento" && obsPag) {
       try {
-        const partes = JSON.parse(obsPag); // [{ forma, valor }, ...]
+        const partes = JSON.parse(obsPag); // [{ metodo, valor }, ...] — campo legado: forma
         if (Array.isArray(partes)) {
           partes.forEach((parte) => {
-            const pf = (parte.forma || "").toLowerCase();
+            const pf = (parte.metodo || parte.forma || "").toLowerCase();
             const pv = Math.round(Number(parte.valor) || 0);
             if (pf.includes("pix"))                                   totalPix     += pv;
             else if (pf.includes("transfer"))                         totalTransf  += pv;
@@ -2485,7 +2485,7 @@ function _finRelPopular(peds) {
         const partes = JSON.parse(obsPag);
         if (Array.isArray(partes)) {
           pgtoLabel = partes
-            .map((pt) => `${_sepIconePgto(pt.forma)} ${pt.forma} (Gs ${Math.round(Number(pt.valor) || 0).toLocaleString("es-PY")})`)
+            .map((pt) => { const m = pt.metodo || pt.forma || "—"; return `${_sepIconePgto(m)} ${m} (Gs ${Math.round(Number(pt.valor) || 0).toLocaleString("es-PY")})`; })
             .join(" + ");
         } else {
           pgtoLabel = p.forma_pagamento || "—";
@@ -3546,7 +3546,7 @@ async function exportarPDF() {
         const partes = JSON.parse(obsPag);
         if (Array.isArray(partes)) {
           partes.forEach((parte) => {
-            const pf = (parte.forma || "").toLowerCase();
+            const pf = (parte.metodo || parte.forma || "").toLowerCase();
             const pv = Number(parte.valor) || 0;
             if (pf.includes("pix"))                                   totalPix     += pv;
             else if (pf.includes("transfer"))                         totalTransf  += pv;

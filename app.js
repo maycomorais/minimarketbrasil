@@ -4135,7 +4135,7 @@ async function buscarPedido() {
 function atualizarTrackingVisual(status, motoboy) {
   const statusMap = {
     pendente: { msg: "Aguardando confirmação...", icon: "⏳", step: 1 },
-    em_preparo: { msg: "🔥 Preparando seu pedido!", icon: "🔥", step: 2 },
+    em_preparo: { msg: "🔥 Separando seu pedido!", icon: "🔥", step: 2 },
     pronto_entrega: {
       msg: "📦 Pronto! Aguardando motoboy...",
       icon: "📦",
@@ -4146,7 +4146,7 @@ function atualizarTrackingVisual(status, motoboy) {
       icon: "🛵",
       step: 3,
     },
-    entregue: { msg: "✅ Pedido entregue! Bom apetite!", icon: "✅", step: 4 },
+    entregue: { msg: "✅ Pedido entregue!", icon: "✅", step: 4 },
     cancelado: {
       msg: "❌ Pedido cancelado. Fale conosco.",
       icon: "❌",
