@@ -538,7 +538,7 @@
               </div>
 
               <!-- Busca por código de barras -->
-              <div class="pdv-busca-wrap">
+              <div class="pdv-busca-wrap" style="position:relative">
                 <i class="fas fa-barcode pdv-busca-icon"></i>
                 <input type="text" id="pdv-busca" class="pdv-busca-input"
                   placeholder="Código de barras ou nome do produto…"
@@ -549,6 +549,8 @@
                 <button id="pdv-f2-btn" class="pdv-f2-btn" onclick="togglePdvF2Mode()" title="F2 – Consultar preço sem adicionar ao carrinho">
                   <span>F2</span> <i class="fas fa-tag"></i>
                 </button>
+                <!-- Dropdown de resultados -->
+                <div id="pdv-busca-resultados" class="pdv-busca-dropdown" style="display:none"></div>
               </div>
 
               <!-- Mesas ativas -->

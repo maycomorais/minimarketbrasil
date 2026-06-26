@@ -644,8 +644,7 @@ select.form-control, select.input-modern {
     background: #fafafa;
 }
 .pdv-busca-icon {
-    position: absolute; left: 20px; top: 50%;
-    transform: translateY(-50%);
+    position: absolute; left: 20px; top: 22px;
     color: #aaa; font-size: 1rem; pointer-events: none;
 }
 .pdv-busca-input {
@@ -659,6 +658,87 @@ select.form-control, select.input-modern {
     background: #fff;
 }
 .pdv-busca-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,122,46,0.1); }
+
+/* ── Dropdown de resultados ─────────────────────────────── */
+.pdv-busca-dropdown {
+    position: absolute;
+    top: calc(100% - 2px);
+    left: 10px;
+    right: 10px;
+    background: #fff;
+    border: 2px solid var(--primary, #1a7a2e);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 999;
+    max-height: 420px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+.pdv-busca-dropdown::-webkit-scrollbar { width: 4px; }
+.pdv-busca-dropdown::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+
+.pdv-resultado-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background .1s;
+}
+.pdv-resultado-item:last-child { border-bottom: none; }
+.pdv-resultado-item:hover { background: #f0fdf4; }
+.pdv-resultado-item.pdv-resultado-ativo { background: #e8f5e9; }
+
+.pdv-resultado-foto {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #f5f5f5;
+    border: 1px solid #eee;
+}
+.pdv-resultado-foto-none {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #ccc;
+    font-size: 1.3rem;
+    border: 1px solid #eee;
+}
+.pdv-resultado-info { flex: 1; min-width: 0; }
+.pdv-resultado-nome {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pdv-resultado-preco {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #1a7a2e;
+    margin-top: 2px;
+}
+.pdv-resultado-cat {
+    font-size: 0.72rem;
+    color: #999;
+    margin-top: 1px;
+}
+.pdv-resultado-vazio {
+    padding: 20px;
+    text-align: center;
+    color: #aaa;
+    font-size: 0.88rem;
+}
 
 
 /* Mesas bar */

@@ -8726,30 +8726,68 @@ function togglePdvF2Mode() {
 }
 
 async function pdvBuscaKeydown(e) {
+  const dropdown = document.getElementById("pdv-busca-resultados");
+  const itens = dropdown ? [...dropdown.querySelectorAll(".pdv-resultado-item")] : [];
+
+  // ── Navegação ↓↑ no dropdown ────────────────────────────
+  if (e.key === "ArrowDown" && itens.length) {
+    e.preventDefault();
+    _pdvDropdownIdx = Math.min(_pdvDropdownIdx + 1, itens.length - 1);
+    itens.forEach((el, i) => el.classList.toggle("pdv-resultado-ativo", i === _pdvDropdownIdx));
+    itens[_pdvDropdownIdx]?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  if (e.key === "ArrowUp" && itens.length) {
+    e.preventDefault();
+    _pdvDropdownIdx = Math.max(_pdvDropdownIdx - 1, 0);
+    itens.forEach((el, i) => el.classList.toggle("pdv-resultado-ativo", i === _pdvDropdownIdx));
+    itens[_pdvDropdownIdx]?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+
+  // ── Escape: fecha dropdown, ou sai do F2 ─────────────────
+  if (e.key === "Escape") {
+    e.preventDefault();
+    if (dropdown && dropdown.style.display !== "none") {
+      _pdvFecharDropdown();
+      return;
+    }
+    if (_pdvF2Mode) togglePdvF2Mode();
+    return;
+  }
+
+  // ── F2 ───────────────────────────────────────────────────
   if (e.key === "F2") {
     e.preventDefault();
     togglePdvF2Mode();
     return;
   }
-  if (e.key === "Escape" && _pdvF2Mode) {
-    e.preventDefault();
-    togglePdvF2Mode();
-    return;
-  }
+
+  // ── Enter ────────────────────────────────────────────────
   if (e.key === "Enter") {
     e.preventDefault();
     const busca = (e.target.value || "").trim();
     if (!busca) return;
 
-    // Se parece um código de barras (>=6 chars, sem espaço, só dígitos/letras/hífen),
-    // busca direto no banco antes de procurar nos cards visíveis
+    // Item ativo no dropdown → selecionar
+    if (_pdvDropdownIdx >= 0 && itens[_pdvDropdownIdx]) {
+      itens[_pdvDropdownIdx].dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      return;
+    }
+
+    // Exatamente 1 resultado no dropdown → selecionar direto
+    if (itens.length === 1) {
+      itens[0].dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+      return;
+    }
+
+    // Parece código de barras → buscar no banco
     const pareceBarcode =
       busca.length >= 6 && !busca.includes(" ") && /^[\d\w\-]+$/.test(busca);
     if (pareceBarcode) {
       const produto = await buscarProdutoPorBarcode(busca);
       if (produto) {
         if (_pdvF2Mode) {
-          // Modo F2: apenas exibe o preço, NÃO adiciona ao carrinho
           _pdvMostrarToast(
             `🔍 ${produto.nome} — Gs ${produto.preco.toLocaleString("es-PY")}`,
             "#1565c0",
@@ -8759,7 +8797,6 @@ async function pdvBuscaKeydown(e) {
           if (typeof adicionarItemPDV === "function") adicionarItemPDV(produto);
           _pdvMostrarToast(`✅ ${produto.nome} adicionado!`, "#16a34a", 2000);
         }
-        // Limpa o campo após processar
         e.target.value = "";
         filtrarPDV("");
         return;
@@ -8831,9 +8868,98 @@ async function pdvTelefoneInput(tel) {
 
 // ── Fim funções auxiliares PDV ─────────────────────────────────────
 
+// ── Dropdown de busca PDV ───────────────────────────────────────────
+let _pdvDropdownIdx = -1; // índice do item ativo para navegação por teclado
+
 function filtrarPDV(valor) {
+  // Mantém o grid oculto sincronizado (compatibilidade com resto do código)
   renderizarGridPDV(valor);
+
+  const dropdown = document.getElementById("pdv-busca-resultados");
+  if (!dropdown) return;
+
+  const query = (valor || "").trim();
+
+  // Sem texto → fechar dropdown
+  if (!query) {
+    dropdown.style.display = "none";
+    _pdvDropdownIdx = -1;
+    return;
+  }
+
+  const ql = query.toLowerCase();
+  const resultados = (produtosCachePDV || [])
+    .filter((p) => p.ativo !== false &&
+      (p.nome.toLowerCase().includes(ql) ||
+       (p.codigo_barras && String(p.codigo_barras).includes(ql))))
+    .slice(0, 30); // máximo 30 itens
+
+  dropdown.innerHTML = "";
+  _pdvDropdownIdx = -1;
+
+  if (!resultados.length) {
+    dropdown.innerHTML = `<div class="pdv-resultado-vazio">Nenhum produto encontrado para "<b>${query}</b>"</div>`;
+    dropdown.style.display = "block";
+    return;
+  }
+
+  resultados.forEach((p, i) => {
+    const item = document.createElement("div");
+    item.className = "pdv-resultado-item";
+    item.dataset.idx = i;
+
+    let cfg = p.montagem_config;
+    if (typeof cfg === "string") { try { cfg = JSON.parse(cfg); } catch(_) { cfg = null; } }
+    const isKg = cfg && !Array.isArray(cfg) && cfg.__tipo === "kg";
+    const preco = isKg ? (cfg.preco_kg || p.preco || 0) : (p.preco || 0);
+    const precoStr = `Gs ${preco.toLocaleString("es-PY")}${isKg ? "/kg" : ""}`;
+    const catNome = (produtosCatsPDV || []).find(c => c.slug === p.categoria_slug)?.nome_exibicao || "";
+
+    const fotoHtml = p.imagem_url
+      ? `<img class="pdv-resultado-foto" src="${p.imagem_url}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : ``;
+    const fotoNone = `<div class="pdv-resultado-foto-none" ${p.imagem_url ? 'style="display:none"' : ''}><i class="fas fa-box"></i></div>`;
+
+    item.innerHTML = `
+      ${fotoHtml}${fotoNone}
+      <div class="pdv-resultado-info">
+        <div class="pdv-resultado-nome">${p.nome}${isKg ? ' <span style="font-size:0.72rem;color:#888">⚖️ kg</span>' : ''}</div>
+        <div class="pdv-resultado-preco">${precoStr}</div>
+        ${catNome ? `<div class="pdv-resultado-cat">${catNome}</div>` : ""}
+      </div>`;
+
+    item.addEventListener("mousedown", (e) => {
+      e.preventDefault(); // evita blur antes do click
+      _pdvSelecionarResultado(p);
+    });
+
+    dropdown.appendChild(item);
+  });
+
+  dropdown.style.display = "block";
 }
+
+function _pdvSelecionarResultado(p) {
+  adicionarItemPDV(p);
+  const input = document.getElementById("pdv-busca");
+  if (input) { input.value = ""; input.focus(); }
+  const dropdown = document.getElementById("pdv-busca-resultados");
+  if (dropdown) { dropdown.style.display = "none"; dropdown.innerHTML = ""; }
+  _pdvDropdownIdx = -1;
+}
+
+function _pdvFecharDropdown() {
+  const dropdown = document.getElementById("pdv-busca-resultados");
+  if (dropdown) dropdown.style.display = "none";
+  _pdvDropdownIdx = -1;
+}
+
+// Fechar dropdown ao clicar fora
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#pdv-busca-resultados") && e.target.id !== "pdv-busca") {
+    _pdvFecharDropdown();
+  }
+});
 
 // Categorias que NÃO recebem o upsell de extras globais
 const _CATS_SEM_EXTRAS_GLOBAIS = [
