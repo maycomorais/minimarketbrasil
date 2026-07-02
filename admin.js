@@ -9861,6 +9861,7 @@ function _mostrarModalPesoPDV(produto, precoKg) {
     const preco = calcularPreco(g);
     carrinhoPDV.push({
       id: produto.id + "_kg_" + Date.now(),
+      produto_id: produto.id,
       nome: produto.nome,
       preco: preco,
       preco_kg: precoKg,
@@ -10779,6 +10780,7 @@ async function salvarPedidoBalcao() {
 
   // ── Novos itens ganham status_item: 'pendente' ─────────────────
   const novosItens = carrinhoPDV.map((i) => ({
+    produto_id: i.produto_id || i.id,
     id: i.id || Date.now() + Math.random(),
     nome: i.nome,
     preco: i.preco,
@@ -13225,7 +13227,7 @@ async function _descontarEstoqueVendaItens(itens) {
   try {
     if (!itens?.length) return;
     const prodIds = [
-      ...new Set(itens.map((i) => i.id || i.produto_id).filter(Boolean)),
+      ...new Set(itens.map((i) => i.produto_id || i.id).filter(Boolean)),
     ];
     if (!prodIds.length) return;
     const { data: prods } = await supa
