@@ -2365,6 +2365,7 @@ function adicionarDoModal() {
 
   carrinho.push({
     id: Date.now(),
+    produto_id: prodAtual.id,
     nome: prodAtual.nome,
     variacao: variacao || "", // Guardado separado para não duplicar o nome
     preparo: preparoEscolhido, // Opção de preparo (ex: "Flambado", "Batata Frita")
@@ -2650,7 +2651,7 @@ function adicionarUpsell(item) {
     abrirModal(item);
     return;
   }
-  carrinho.push({ ...item, qtd: 1, montagem: [], obs: "" });
+  carrinho.push({ ...item, produto_id: item.id, qtd: 1, montagem: [], obs: "" });
   renderCarrinho();
   updateUI();
 }
@@ -3313,6 +3314,7 @@ async function enviarZap() {
               ? JSON.stringify(_coletarMultiPagamento())
               : "",
         itens: carrinho.map((i) => ({
+          produto_id: i.produto_id || i.id,
           n: i.nome,
           nome: i.nome, // alias legível para admin/motoboy
           p: i.preco,
